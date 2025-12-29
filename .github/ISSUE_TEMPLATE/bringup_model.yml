@@ -1,0 +1,24 @@
+name: Bring up model
+description: Request TTNN model bringup
+title: "Bringup: <hf_model_id>"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Apply one of the system labels: `n150`, `n300`, `lb`.
+        Keep the key names below intact so automation can parse them.
+  - type: textarea
+    id: fields
+    attributes:
+      label: Bringup fields
+      description: Fill in required fields. Leave <optional> values if unknown.
+      value: |
+        hf_model_id:
+        hf_revision: <optional>
+        architecture: <optional>
+        notes: <optional>
+        prefill_len: <optional int>
+        decode_len: <optional int>
+        batch: <optional int>
+    validations:
+      required: true

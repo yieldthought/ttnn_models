@@ -1,0 +1,19 @@
+name: New model candidate
+description: Suggest a model to validate for bringup
+title: "Candidate: <hf_model_id>"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Keep the key names below intact so automation can parse them.
+  - type: textarea
+    id: fields
+    attributes:
+      label: Candidate fields
+      description: Fill in required fields.
+      value: |
+        hf_model_id:
+        hf_revision:
+        notes:
+    validations:
+      required: true
