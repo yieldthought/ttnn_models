@@ -5,7 +5,7 @@
 Teacher-forcing evaluation for ttnn model bring-up.
 
 Usage:
-    python eval.py models/meta/llama32_1b/n150/functional/model.py
+    python eval.py models/meta-llama/Llama-3.2-1B/n150/functional/model.py
 """
 
 import argparse

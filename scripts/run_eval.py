@@ -18,22 +18,9 @@ DEFAULT_DECODE_LEN = 20
 PREFILL_DECODE_THRESHOLD = 512
 
 
-def load_registry(registry_path: pathlib.Path) -> dict:
-    """Load the HF model id -> model directory registry."""
-    if not registry_path.exists():
-        raise FileNotFoundError(f"Missing registry: {registry_path}")
-    registry = json.loads(registry_path.read_text())
-    if not isinstance(registry, dict):
-        raise ValueError("models/registry.json must contain a JSON object")
-    return registry
-
-
-def resolve_model_path(repo_root: pathlib.Path, hf_model_id: str, system: str, registry: dict) -> pathlib.Path:
-    """Resolve the model.py path for a given HF model id and system."""
-    model_dir = registry.get(hf_model_id)
-    if not model_dir:
-        raise KeyError(f"HF model id not found in registry: {hf_model_id}")
-    model_path = repo_root / "models" / model_dir / system / "functional" / "model.py"
+def resolve_model_path(repo_root: pathlib.Path, hf_model_id: str, system: str) -> pathlib.Path:
+    """Resolve model.py path using the HF model id as the directory convention."""
+    model_path = repo_root / "models" / hf_model_id / system / "functional" / "model.py"
     if not model_path.exists():
         raise FileNotFoundError(f"Missing model file: {model_path}")
     return model_path
@@ -239,8 +226,7 @@ def main():
     if args.mode == "hf":
         top1, top5, total = run_hf_eval(args.hf_model, tokenizer, prompt_ids, args.decode_len, args.cache_dir)
     else:
-        registry = load_registry(repo_root / "models" / "registry.json")
-        model_path = resolve_model_path(repo_root, args.hf_model, args.system, registry)
+        model_path = resolve_model_path(repo_root, args.hf_model, args.system)
         max_seq_len = max(2048, args.prefill_len + args.decode_len)
         prefill_decode = args.prefill_decode or args.prefill_len > PREFILL_DECODE_THRESHOLD
         top1, top5 = run_tt_eval(

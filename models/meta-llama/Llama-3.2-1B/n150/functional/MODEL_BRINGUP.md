@@ -4,22 +4,15 @@
 This is a minimal TTNN bringup of `meta-llama/Llama-3.2-1B` that runs the full forward pass on device.
 It is designed to be easy to read and to serve as a template for future bringups.
 
-- Model code: `models/meta/llama32_1b/n150/functional/model.py`
+- Model code: `models/meta-llama/Llama-3.2-1B/n150/functional/model.py`
 - Eval harness: `eval.py` (teacher forcing) and `scripts/run_eval.py` (automation wrapper)
-- Registry entry: `models/registry.json`
+- Directory convention: `models/<org>/<model_name>/<system>/functional/model.py`
 
-## Directory layout and registry
-For automation, each HF model id is mapped to a local directory via `models/registry.json`.
-The mapping for this model is:
-
-```
-"meta-llama/Llama-3.2-1B": "meta/llama32_1b"
-```
-
-The expected model file is:
+## Directory layout
+The HF model id is used as the directory path under `models/`.
 
 ```
-models/meta/llama32_1b/<system>/functional/model.py
+models/meta-llama/Llama-3.2-1B/<system>/functional/model.py
 ```
 
 ## Model API contract
@@ -70,7 +63,7 @@ into a helper and trace only the pure TTNN compute path.
 Teacher-forcing accuracy is computed against the HF reference model.
 
 ```
-python eval.py models/meta/llama32_1b/n150/functional/model.py
+python eval.py models/meta-llama/Llama-3.2-1B/n150/functional/model.py
 ```
 
 Automation wrapper (emits YT_METRICS JSON):
