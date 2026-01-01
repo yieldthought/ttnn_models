@@ -1,0 +1,77 @@
+Section 1
+Context: Blair packed 4 crates of panels in the morning and 6 more after lunch. Each crate holds 3 units, and each unit weighs 7 grams.
+Tasks:
+1) Compute the total weight in grams for the day.
+2) If Blair discards 3 units for defects, compute the new total units.
+3) Pick the correct label: A) increasing B) decreasing C) constant for the per-crate load.
+4) Write a one-line summary (max 12 words).
+
+Section 2
+Context: Casey sorted 5 crates of cables in the morning and 7 more after lunch. Each crate holds 4 units, and each unit weighs 9 grams.
+Tasks:
+1) Compute the total weight in grams for the day.
+2) If Casey discards 4 units for defects, compute the new total units.
+3) Pick the correct label: A) increasing B) decreasing C) constant for the per-crate load.
+4) Write a one-line summary (max 12 words).
+
+Section 3
+Context: Drew inspected 6 crates of sensors in the morning and 8 more after lunch. Each crate holds 5 units, and each unit weighs 11 grams.
+Tasks:
+1) Compute the total weight in grams for the day.
+2) If Drew discards 5 units for defects, compute the new total units.
+3) Pick the correct label: A) increasing B) decreasing C) constant for the per-crate load.
+4) Write a one-line summary (max 12 words).
+
+Section 4
+Context: Evan tested 7 crates of valves in the morning and 9 more after lunch. Each crate holds 6 units, and each unit weighs 13 grams.
+Tasks:
+1) Compute the total weight in grams for the day.
+2) If Evan discards 6 units for defects, compute the new total units.
+3) Pick the correct label: A) increasing B) decreasing C) constant for the per-crate load.
+4) Write a one-line summary (max 12 words).
+
+Section 5
+Context: Finley calibrated 8 crates of modules in the morning and 10 more after lunch. Each crate holds 7 units, and each unit weighs 15 grams.
+Tasks:
+1) Compute the total weight in grams for the day.
+2) If Finley discards 7 units for defects, compute the new total units.
+3) Pick the correct label: A) increasing B) decreasing C) constant for the per-crate load.
+4) Write a one-line summary (max 12 words).
+
+Section 6
+Context: Gray measured 9 crates of gears in the morning and 11 more after lunch. Each crate holds 8 units, and each unit weighs 17 grams.
+Tasks:
+1) Compute the total weight in grams for the day.
+2) If Gray discards 8 units for defects, compute the new total units.
+3) Pick the correct label: A) increasing B) decreasing C) constant for the per-crate load.
+4) Write a one-line summary (max 12 words).
+
+Section 7
+Context: Hayden packed 3 crates of batteries in the morning and 12 more after lunch. Each crate holds 9 units, and each unit weighs 12 grams.
+Tasks:
+1) Compute the total weight in grams for the day.
+2) If Hayden discards 9 units for defects, compute the new total units.
+3) Pick the correct label: A) increasing B) decreasing C) constant for the per-crate load.
+4) Write a one-line summary (max 12 words).
+
+Section 8
+Context: Indy sorted 4 crates of sprockets in the morning and 13 more after lunch. Each crate holds 10 units, and each unit weighs 14 grams.
+Tasks:
+1) Compute the total weight in grams for the day.
+2) If Indy discards 10 units for defects, compute the new total units.
+3) Pick the correct label: A) increasing B) decreasing C) constant for the per-crate load.
+4) Write a one-line summary (max 12 words).
+
+Section 9
+Context: Jules inspected 5 crates of panels in the morning and 14 more after lunch. Each crate holds 2 units, and each unit weighs 7 grams.
+Tasks:
+1) Compute the total weight in grams for the day.
+2) If Jules discards 2 units for defects, compute the new total units.
+3) Pick the correct label: A) increasing B) decreasing C) constant for the per-crate load.
+4) Write a one-line summary (max 12 words).
+
+Section 10
+Context: Alex tested 6 crates of cables in the morning and 15 more after lunch. Each crate holds 3 units, and each unit weighs 9 grams.
+Tasks:
+1) Compute the total weight in grams for the day.
+2) If Alex discards 3 units for

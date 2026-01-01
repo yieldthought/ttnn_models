@@ -10,6 +10,7 @@ Usage:
 
 import argparse
 import importlib.util
+import json
 import pathlib
 import sys
 
@@ -43,19 +44,38 @@ def score_step(logits: torch.Tensor, target_id: int) -> tuple[int, int]:
     return top1, top5_hit
 
 
-def evaluate(tt_model, reference_tokens: torch.Tensor, prompt_len: int, max_new_tokens: int) -> tuple[float, float, int]:
+def prefill_with_decode(tt_model, prompt_tokens: torch.Tensor):
+    past = None
+    logits = None
+    for token_id in prompt_tokens:
+        outputs = tt_model(token_id.view(1, 1), past_key_values=past, use_cache=True)
+        past = outputs.past_key_values
+        logits = outputs.logits[0, -1, :]
+    return past, logits
+
+
+def evaluate(
+    tt_model,
+    reference_tokens: torch.Tensor,
+    prompt_len: int,
+    max_new_tokens: int,
+    prefill_decode: bool,
+) -> tuple[float, float, int]:
     if max_new_tokens < 1:
         return 0.0, 0.0, 0
 
     top1 = 0
     top5 = 0
     total = 0
-    past = None
 
-    prompt_ids = reference_tokens[:prompt_len].unsqueeze(0)
-    outputs = tt_model(prompt_ids, past_key_values=past, use_cache=True)
-    past = outputs.past_key_values
-    logits = outputs.logits[0, -1, :]
+    if prefill_decode:
+        past, logits = prefill_with_decode(tt_model, reference_tokens[:prompt_len])
+    else:
+        past = None
+        prompt_ids = reference_tokens[:prompt_len].unsqueeze(0)
+        outputs = tt_model(prompt_ids, past_key_values=past, use_cache=True)
+        past = outputs.past_key_values
+        logits = outputs.logits[0, -1, :]
     target_id = int(reference_tokens[prompt_len].item())
     step_top1, step_top5 = score_step(logits, target_id)
     top1 += step_top1
@@ -81,8 +101,12 @@ def main():
     parser.add_argument("model_path", type=pathlib.Path)
     parser.add_argument("--model", default="meta-llama/Llama-3.2-1B")
     parser.add_argument("--prompt", default="1 2 3 4 5 6 7 8 9 10 11 12")
+    parser.add_argument("--prompt_file", type=pathlib.Path, default=None)
+    parser.add_argument("--prompt_ids_file", type=pathlib.Path, default=None)
     parser.add_argument("--max_new_tokens", type=int, default=20)
+    parser.add_argument("--min_new_tokens", type=int, default=None)
     parser.add_argument("--max_seq_len", type=int, default=2048)
+    parser.add_argument("--prefill_decode", action="store_true")
     parser.add_argument("--device_id", type=int, default=0)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--cache_dir", default=None, help="Cache directory for HuggingFace downloads")
@@ -104,6 +128,9 @@ def main():
     print(f"Loading model module: {model_path}")
     model_module = load_model_module(model_path)
 
+    if args.prompt_ids_file is not None and args.prompt_file is not None:
+        raise ValueError("Only one of --prompt_file or --prompt_ids_file may be set")
+
     print("Loading HuggingFace tokenizer...")
     cache_dir = args.cache_dir
     tokenizer = AutoTokenizer.from_pretrained(args.model, cache_dir=cache_dir)
@@ -116,17 +143,29 @@ def main():
 
     print("Generating reference tokens...")
     with torch.no_grad():
-        encoded = tokenizer(args.prompt, return_tensors="pt")
-        input_ids = encoded["input_ids"]
-        attention_mask = encoded.get("attention_mask")
-        output_ids = hf_model.generate(
-            input_ids,
-            attention_mask=attention_mask,
-            max_new_tokens=args.max_new_tokens,
-            do_sample=False,
-            use_cache=True,
-            pad_token_id=tokenizer.pad_token_id,
-        )
+        attention_mask = None
+        if args.prompt_ids_file is not None:
+            prompt_ids = json.loads(args.prompt_ids_file.read_text())
+            if not isinstance(prompt_ids, list) or not prompt_ids:
+                raise ValueError("--prompt_ids_file must contain a JSON list of token ids")
+            prompt_ids = [int(token_id) for token_id in prompt_ids]
+            input_ids = torch.tensor([prompt_ids], dtype=torch.long)
+            attention_mask = torch.ones_like(input_ids)
+        else:
+            if args.prompt_file is not None:
+                args.prompt = args.prompt_file.read_text()
+            encoded = tokenizer(args.prompt, return_tensors="pt")
+            input_ids = encoded["input_ids"]
+            attention_mask = encoded.get("attention_mask")
+        gen_kwargs = {
+            "max_new_tokens": args.max_new_tokens,
+            "do_sample": False,
+            "use_cache": True,
+            "pad_token_id": tokenizer.pad_token_id,
+        }
+        if args.min_new_tokens is not None:
+            gen_kwargs["min_new_tokens"] = args.min_new_tokens
+        output_ids = hf_model.generate(input_ids, attention_mask=attention_mask, **gen_kwargs)
     reference_tokens = output_ids[0].cpu()
     prompt_len = input_ids.shape[1]
     actual_new_tokens = reference_tokens.shape[0] - prompt_len
@@ -152,7 +191,13 @@ def main():
 
         print(f"Running teacher-forcing eval ({max_new_tokens} tokens)...")
         with torch.no_grad():
-            top1, top5, total = evaluate(tt_model, reference_tokens, prompt_len, max_new_tokens)
+            top1, top5, total = evaluate(
+                tt_model,
+                reference_tokens,
+                prompt_len,
+                max_new_tokens,
+                args.prefill_decode,
+            )
 
         if total == 0:
             print("No tokens to evaluate.")
