@@ -1,0 +1,7 @@
+torch
+transformers
+sentencepiece
+tiktoken
+safetensors
+loguru
+graphviz

@@ -17,19 +17,17 @@ Key ttnn operations used:
 - ttnn.fill_cache / ttnn.experimental.paged_update_cache: KV cache management
 - ttnn.silu, ttnn.mul: MLP activations
 
-Usage:
-    python models/demos/simple/llama32_1b.py --prompt "your prompt here" --max_new_tokens 20
-    python models/demos/simple/llama32_1b.py --model meta-llama/Llama-3.2-1B --device_id 0
+This file defines the ttnn model only. Use `eval.py` at repo root for
+teacher-forcing accuracy checks against the HuggingFace reference.
 """
 
-import argparse
 import math
 from dataclasses import dataclass
 from typing import Optional
 
 import torch
 import ttnn
-from transformers import AutoTokenizer, GenerationConfig
+from transformers import GenerationConfig
 from transformers.generation.utils import GenerationMixin
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
@@ -180,7 +178,6 @@ class Attention:
         x: ttnn.Tensor,
         start_pos: int,
         seq_len: int,
-        *,
         cur_pos_tensor: Optional[ttnn.Tensor] = None,
     ) -> ttnn.Tensor:
         """Forward pass for prefill (seq_len > 1) or decode (seq_len == 1)."""
@@ -306,7 +303,6 @@ class DecoderLayer:
         x: ttnn.Tensor,
         start_pos: int,
         seq_len: int,
-        *,
         cur_pos_tensor: Optional[ttnn.Tensor] = None,
     ) -> ttnn.Tensor:
         x = ttnn.add(x, self.attn(self.attn_norm(x), start_pos, seq_len, cur_pos_tensor=cur_pos_tensor))
@@ -457,86 +453,6 @@ class TtnnLlamaForCausalLM(torch.nn.Module, GenerationMixin):
             past_key_values=(self._tt_past_key_values if use_cache else None),
         )
 
-
-def generate(model: TtnnLlamaForCausalLM, tokenizer, prompt: str, max_new_tokens: int = 20) -> str:
-    """Greedy generation using HuggingFace `GenerationMixin.generate()`."""
-    inputs = tokenizer(prompt, return_tensors="pt")
-    input_ids = inputs["input_ids"]
-    attention_mask = inputs.get("attention_mask")
-    print(f"Input: {input_ids.shape[1]} tokens")
-    output_ids = model.generate(
-        input_ids,
-        attention_mask=attention_mask,
-        max_new_tokens=max_new_tokens,
-        do_sample=False,
-        use_cache=True,
-        pad_token_id=tokenizer.eos_token_id,
-    )
-    return tokenizer.decode(output_ids[0], skip_special_tokens=True)
-
-
-def main():
-    parser = argparse.ArgumentParser(description="Llama 3.2 1B ttnn Demo")
-    parser.add_argument("--model", default="meta-llama/Llama-3.2-1B")
-    parser.add_argument("--prompt", default="1 2 3 4 5 6 7 8 9 10 11 12")
-    parser.add_argument("--max_new_tokens", type=int, default=20)
-    parser.add_argument(
-        "--max_seq_len",
-        type=int,
-        default=None,
-        help="KV cache length (default: 2048; must be >= 2048 for this demo)",
-    )
-    parser.add_argument("--device_id", type=int, default=0)
-    args = parser.parse_args()
-    
-    print("=" * 60)
-    print("Llama 3.2 1B ttnn Demo (100% device execution)")
-    print("=" * 60)
-    
-    ttnn.CONFIG.throw_exception_on_fallback = True
-
-    print("\nLoading HuggingFace tokenizer...")
-    tokenizer = AutoTokenizer.from_pretrained(args.model)
-    if tokenizer.pad_token_id is None:
-        tokenizer.pad_token_id = tokenizer.eos_token_id
-
-    print("\nLoading HuggingFace model...")
-    from transformers import LlamaForCausalLM
-
-    hf_model = LlamaForCausalLM.from_pretrained(args.model, torch_dtype=torch.bfloat16)
-    hf_model.eval()
-    
-    print("\nOpening device...")
-    tt_device = ttnn.open_device(device_id=args.device_id)
-    
-    try:
-        prompt_ids = tokenizer(args.prompt, return_tensors="pt")["input_ids"]
-        max_seq_len = args.max_seq_len or 2048
-        if max_seq_len < 2048:
-            raise ValueError(
-                f"--max_seq_len={max_seq_len} is too small for this demo; "
-                "ttnn rotary embedding + decode attention assume a 2048-length cache."
-            )
-        total_needed = prompt_ids.shape[1] + args.max_new_tokens
-        if total_needed > max_seq_len:
-            raise ValueError(
-                f"prompt tokens ({prompt_ids.shape[1]}) + max_new_tokens ({args.max_new_tokens}) exceeds "
-                f"--max_seq_len ({max_seq_len}); increase --max_seq_len"
-            )
-
-        print("\nLoading model to device...")
-        model = TtnnLlamaForCausalLM(hf_model, tt_device, max_seq_len=max_seq_len)
-        print("Ready!")
-        
-        print(f"\nPrompt: {args.prompt}")
-        print("-" * 60)
-        output = generate(model, tokenizer, args.prompt, args.max_new_tokens)
-        print("-" * 60)
-        print(f"Output: {output}")
-        
-    finally:
-        ttnn.close_device(tt_device)
-
-
-if __name__ == "__main__":
-    main()
+def build_model(hf_model, tt_device, max_seq_len: int = 2048) -> TtnnLlamaForCausalLM:
+    """Build the ttnn model from a HuggingFace reference model."""
+    return TtnnLlamaForCausalLM(hf_model, tt_device, max_seq_len)
