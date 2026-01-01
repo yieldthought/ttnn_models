@@ -62,8 +62,9 @@ attn = ttnn.experimental.nlp_concat_heads(attn, memory_config=ttnn.DRAM_MEMORY_C
 
 - Check HuggingFace source: `transformers/models/<arch>/modeling_<arch>.py` for QKV layout,
   RoPE format, and cache semantics.
-- Validate weight shapes with safetensors or `state_dict` and match them to TTNN linear
-  and head-splitting expectations.
+- Validate weight shapes with `safetensors` or `state_dict` and match them to TTNN linear
+  and head-splitting expectations. Prefer `AutoConfig` + `safetensors.safe_open` for shape
+  inspection so you don't have to load the full model.
 - If outputs diverge, swap a submodule (attention or MLP) to torch to isolate the issue.
 - For each TTNN tensor, log `shape`, `padded_shape`, `dtype`, `layout`, and memory config.
 - Use `ttnn.to_torch` only for inspection or output; keep it outside trace capture.
