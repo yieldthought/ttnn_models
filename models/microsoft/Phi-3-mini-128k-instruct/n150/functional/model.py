@@ -23,7 +23,7 @@ TILE_SIZE = 32
 HEAD_DIM_TILE = 64
 WEIGHT_DTYPE = ttnn.bfloat16
 WEIGHT_LAYOUT = ttnn.TILE_LAYOUT
-MAX_CACHE_SEQ_LEN = 128
+MAX_CACHE_SEQ_LEN = 256
 
 
 def pad_to_tile(x: int) -> int:
@@ -306,8 +306,23 @@ class Attention:
             q = ttnn.to_memory_config(q, q_mem)
             k = ttnn.to_memory_config(k, k_mem)
 
-            ttnn.fill_cache(self.k_cache, k, batch_idx=0)
-            ttnn.fill_cache(self.v_cache, v, batch_idx=0)
+            # Shard KV for fill_cache to avoid interleaved grid-size limits at long prefill lengths.
+            grid = self.tt_device.core_grid
+            if self.n_kv_heads % grid.x != 0:
+                raise ValueError("n_kv_heads must be divisible by device grid.x for sharded fill_cache")
+            shard_grid = ttnn.CoreGrid(x=grid.x, y=self.n_kv_heads // grid.x)
+            shard_mem_config = ttnn.create_sharded_memory_config(
+                k.shape,
+                shard_grid,
+                ttnn.ShardStrategy.HEIGHT,
+                ttnn.ShardOrientation.ROW_MAJOR,
+            )
+            k_sharded = ttnn.to_memory_config(k, shard_mem_config)
+            v_sharded = ttnn.to_memory_config(v, shard_mem_config)
+            ttnn.fill_cache(self.k_cache, k_sharded, batch_idx=0)
+            ttnn.fill_cache(self.v_cache, v_sharded, batch_idx=0)
+            ttnn.deallocate(k_sharded)
+            ttnn.deallocate(v_sharded)
 
             attn_out = ttnn.transformer.scaled_dot_product_attention(
                 q, k, v, is_causal=True, scale=self.scale

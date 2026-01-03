@@ -34,9 +34,11 @@ large enough for that prompt so the long factors are used consistently.
 
 ## KV cache and tiling constraints
 - Cache tensors are allocated as `[32, n_kv_heads, cache_seq_len, head_dim]`.
-- Cache length is capped to 128 tokens in this bringup (`MAX_CACHE_SEQ_LEN`) to fit on a single device.
+- Cache length is capped to 256 tokens in this bringup (`MAX_CACHE_SEQ_LEN`) to fit on a single device.
 - Batch dimension is tile-aligned to 32 for decode ops.
 - Inputs are padded to tile size (32) before embedding and trimmed at the end.
+- Prefill uses height-sharded KV inputs for `fill_cache` to avoid interleaved grid-size limits.
+- Sharded prefill requires `n_kv_heads` to be divisible by the device grid x-dimension.
 
 ## Precision
 - Weights and activations use `ttnn.bfloat16`.

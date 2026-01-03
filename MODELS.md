@@ -20,4 +20,4 @@ python eval.py models/microsoft/Phi-3-mini-128k-instruct/n150/functional/model.p
 | Mistral-7B-Instruct-v0.3 | models/mistralai/Mistral-7B-Instruct-v0.3/n150/functional/model.py | mistralai/Mistral-7B-Instruct-v0.3 | 155 | 100 | 93.00% | 100.00% | pass | - |
 | Qwen3-0.6B | models/Qwen/Qwen3-0.6B/n150/functional/model.py | Qwen/Qwen3-0.6B | 140 | 100 | 99.00% | 100.00% | pass | - |
 | Gemma-3-4b-it | models/google/gemma-3-4b-it/n150/functional/model.py | google/gemma-3-4b-it | 139 | 100 | 92.00% | 100.00% | pass | MAX_CACHE_SEQ_LEN 256 |
-| Phi-3-mini-128k-instruct | models/microsoft/Phi-3-mini-128k-instruct/n150/functional/model.py | microsoft/Phi-3-mini-128k-instruct | 155 | 100 | n/a | n/a | blocked | cache length 128 < prompt length 155 (MAX_CACHE_SEQ_LEN) |
+| Phi-3-mini-128k-instruct | models/microsoft/Phi-3-mini-128k-instruct/n150/functional/model.py | microsoft/Phi-3-mini-128k-instruct | 155 | 100 | 90.00% | 99.00% | pass | MAX_CACHE_SEQ_LEN 256, sharded fill_cache |
