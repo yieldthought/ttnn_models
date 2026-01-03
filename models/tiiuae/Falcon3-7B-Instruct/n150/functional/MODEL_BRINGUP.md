@@ -1,10 +1,11 @@
-# MODEL_BRINGUP.md — Mistral 7B Instruct v0.3 (n150 functional)
+# MODEL_BRINGUP.md — Falcon3 7B Instruct (n150 functional)
 
 ## Overview
-This is a minimal TTNN bringup of `mistralai/Mistral-7B-Instruct-v0.3` that runs the full forward pass on device.
-It is designed to be easy to read and to serve as a template for future bringups.
+This is a minimal TTNN bringup of `tiiuae/Falcon3-7B-Instruct` that runs the full
+forward pass on device. It is designed to be easy to read and serve as a
+template for Llama-style models.
 
-- Model code: `models/mistralai/Mistral-7B-Instruct-v0.3/n150/functional/model.py`
+- Model code: `models/tiiuae/Falcon3-7B-Instruct/n150/functional/model.py`
 - Eval harness: `eval.py` (teacher forcing) and `scripts/run_eval.py` (automation wrapper)
 - Directory convention: `models/<org>/<model_name>/<system>/functional/model.py`
 
@@ -12,7 +13,7 @@ It is designed to be easy to read and to serve as a template for future bringups
 The HF model id is used as the directory path under `models/`.
 
 ```
-models/mistralai/Mistral-7B-Instruct-v0.3/<system>/functional/model.py
+models/tiiuae/Falcon3-7B-Instruct/<system>/functional/model.py
 ```
 
 ## Model API contract
@@ -30,14 +31,11 @@ models/mistralai/Mistral-7B-Instruct-v0.3/<system>/functional/model.py
 - `ttnn.fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
 
 ## RoPE notes
-Mistral uses HuggingFace-format RoPE with `rope_theta=1e6`. Use:
-
-- `ttnn.experimental.rotary_embedding`
+Falcon3 uses HuggingFace-format RoPE with `rope_theta=1000042` and no scaling.
 
 Decode path detail:
 - `rotary_embedding` with `start_pos` expects `[seq_len, 1, B, head_dim]`. For decode,
-  reshape Q and K to merge heads into the batch (`[1, 1, B*heads, head_dim]`), apply
-  RoPE, then reshape back to `[1, B, heads, head_dim]`.
+  reshape Q and K to merge heads into the batch, apply RoPE, then reshape back.
 
 ## KV cache and tiling constraints
 - Cache tensors are allocated as `[32, n_kv_heads, cache_seq_len, head_dim]`.
@@ -46,28 +44,31 @@ Decode path detail:
 - Cache length is capped to 1024 tokens in this bringup (`MAX_CACHE_SEQ_LEN`) to fit on a single device.
   Increase it if you have more DRAM.
 
-On this device, `ttnn.fill_cache` hits a grid limit for long prefill lengths (around 1024 tokens).
-If prefill hits a `fill_cache` grid limit, use `--prefill_decode` to debug. Final bringup metrics must use the full prefill pass (no `--prefill_decode`).
-`scripts/run_eval.py` enables this automatically for large prefill lengths.
+If prefill hits a `fill_cache` grid limit, use `--prefill_decode` to debug.
+Final bringup metrics must use the full prefill pass (no `--prefill_decode`).
+
+If `nlp_concat_heads` pads the width, slice back to `n_heads * head_dim` before
+the output projection.
 
 ## Precision
 - Weights use `ttnn.bfloat8_b` to fit the 7B model in device DRAM.
 - Activations use `ttnn.bfloat16`.
 
 ## Padding
-Inputs are padded to the TTNN tile size (32) before embedding and trimmed after logits are returned.
+Inputs are padded to the TTNN tile size (32) before embedding and trimmed after
+logits are returned.
 
 ## Evaluation
 Teacher-forcing accuracy is computed against the HF reference model.
 
 ```
-python eval.py models/mistralai/Mistral-7B-Instruct-v0.3/n150/functional/model.py --model mistralai/Mistral-7B-Instruct-v0.3
+python eval.py models/tiiuae/Falcon3-7B-Instruct/n150/functional/model.py --model tiiuae/Falcon3-7B-Instruct
 ```
 
 Automation wrapper (emits YT_METRICS JSON):
 
 ```
-python scripts/run_eval.py --mode tt --hf-model mistralai/Mistral-7B-Instruct-v0.3
+python scripts/run_eval.py --mode tt --hf-model tiiuae/Falcon3-7B-Instruct
 ```
 
 ## Debugging tips

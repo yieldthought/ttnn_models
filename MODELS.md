@@ -13,6 +13,7 @@ python eval.py models/mistralai/Mistral-7B-Instruct-v0.3/n150/functional/model.p
 python eval.py models/Qwen/Qwen3-0.6B/n150/functional/model.py --model Qwen/Qwen3-0.6B --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100
 python eval.py models/google/gemma-3-4b-it/n150/functional/model.py --model google/gemma-3-4b-it --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100
 python eval.py models/microsoft/Phi-3-mini-128k-instruct/n150/functional/model.py --model microsoft/Phi-3-mini-128k-instruct --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100
+python eval.py models/tiiuae/Falcon3-7B-Instruct/n150/functional/model.py --model tiiuae/Falcon3-7B-Instruct --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100
 
 | Model | Model Path | HF ID | Prompt Tokens | Max New Tokens | Top-1 | Top-5 | Status | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -21,3 +22,4 @@ python eval.py models/microsoft/Phi-3-mini-128k-instruct/n150/functional/model.p
 | Qwen3-0.6B | models/Qwen/Qwen3-0.6B/n150/functional/model.py | Qwen/Qwen3-0.6B | 140 | 100 | 99.00% | 100.00% | pass | - |
 | Gemma-3-4b-it | models/google/gemma-3-4b-it/n150/functional/model.py | google/gemma-3-4b-it | 139 | 100 | 92.00% | 100.00% | pass | MAX_CACHE_SEQ_LEN 256 |
 | Phi-3-mini-128k-instruct | models/microsoft/Phi-3-mini-128k-instruct/n150/functional/model.py | microsoft/Phi-3-mini-128k-instruct | 155 | 100 | 90.00% | 99.00% | pass | MAX_CACHE_SEQ_LEN 256, sharded fill_cache |
+| Falcon3-7B-Instruct | models/tiiuae/Falcon3-7B-Instruct/n150/functional/model.py | tiiuae/Falcon3-7B-Instruct | 137 | 100 | 97.00% | 100.00% | pass | MAX_CACHE_SEQ_LEN 1024 |
