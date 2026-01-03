@@ -13,3 +13,8 @@ This project favors simple, direct code over layered abstractions or rich typing
 - Clarity and conciseness are king. The best lines are the ones that aren't written.
 - It's good to be robust to external APIs failing, e.g. error if file exists, but for our own code we should be *defining* what it does and should definitely not be writing code that is robust to e.g. an internal API function not fulfilling its contract or having multiple confusing return types when one would do.
 - Remember the Zen of Python.
+
+## Device safety and debug mode
+- This machine has a single Wormhole card: run exactly one TTNN/TT process at a time and avoid any parallel device activity.
+- Do not leave `tt-smi` or other device tools running in the background; stop all TT processes before any reset.
+- Debug mode means zero assumptions: stop at the first unexpected behavior, verify with evidence, and only proceed once the discrepancy is understood.
