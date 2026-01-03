@@ -16,5 +16,6 @@ This project favors simple, direct code over layered abstractions or rich typing
 
 ## Device safety and debug mode
 - This machine has a single Wormhole card: run exactly one TTNN/TT process at a time and avoid any parallel device activity.
+- You have exclusive access to the card for model bringup; using it for long-running bringup and eval workloads is expected and fine.
 - Do not leave `tt-smi` or other device tools running in the background; stop all TT processes before any reset.
 - Debug mode means zero assumptions: stop at the first unexpected behavior, verify with evidence, and only proceed once the discrepancy is understood.
