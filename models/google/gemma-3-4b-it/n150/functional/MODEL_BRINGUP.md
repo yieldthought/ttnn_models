@@ -31,7 +31,7 @@ It is designed to be easy to read and to serve as a template for future bringups
 
 ## KV cache and tiling constraints
 - Cache tensors are `[32, n_kv_heads, max_seq_len, head_dim]`.
-- `MAX_CACHE_SEQ_LEN` is set to 128 to cap memory usage; increase if needed.
+- `MAX_CACHE_SEQ_LEN` is set to 256 to cap memory usage; increase if needed.
 
 ## Precision
 - Weights use `ttnn.bfloat8_b`.

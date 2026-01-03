@@ -19,7 +19,7 @@ from transformers.modeling_outputs import CausalLMOutputWithPast
 TILE_SIZE = 32
 WEIGHT_DTYPE = ttnn.bfloat8_b
 WEIGHT_LAYOUT = ttnn.TILE_LAYOUT
-MAX_CACHE_SEQ_LEN = 128
+MAX_CACHE_SEQ_LEN = 256
 
 
 def pad_to_tile(x: int) -> int:

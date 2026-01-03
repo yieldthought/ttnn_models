@@ -1,0 +1,23 @@
+# Model Bringup Eval Results
+
+Prompt file: prompts/bringup_eval_long.txt
+Target prompt length: 100-200 tokens (per-model tokenization varies)
+Generated tokens: 100
+
+Command template:
+python eval.py <model_path> --model <hf_id> --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100
+
+Commands used:
+python eval.py models/meta-llama/Llama-3.2-1B/n150/functional/model.py --model meta-llama/Llama-3.2-1B --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100
+python eval.py models/mistralai/Mistral-7B-Instruct-v0.3/n150/functional/model.py --model mistralai/Mistral-7B-Instruct-v0.3 --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100
+python eval.py models/Qwen/Qwen3-0.6B/n150/functional/model.py --model Qwen/Qwen3-0.6B --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100
+python eval.py models/google/gemma-3-4b-it/n150/functional/model.py --model google/gemma-3-4b-it --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100
+python eval.py models/microsoft/Phi-3-mini-128k-instruct/n150/functional/model.py --model microsoft/Phi-3-mini-128k-instruct --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100
+
+| Model | Model Path | HF ID | Prompt Tokens | Max New Tokens | Top-1 | Top-5 | Status | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Llama-3.2-1B | models/meta-llama/Llama-3.2-1B/n150/functional/model.py | meta-llama/Llama-3.2-1B | 141 | 100 | 93.00% | 100.00% | pass | - |
+| Mistral-7B-Instruct-v0.3 | models/mistralai/Mistral-7B-Instruct-v0.3/n150/functional/model.py | mistralai/Mistral-7B-Instruct-v0.3 | 155 | 100 | 93.00% | 100.00% | pass | - |
+| Qwen3-0.6B | models/Qwen/Qwen3-0.6B/n150/functional/model.py | Qwen/Qwen3-0.6B | 140 | 100 | 99.00% | 100.00% | pass | - |
+| Gemma-3-4b-it | models/google/gemma-3-4b-it/n150/functional/model.py | google/gemma-3-4b-it | 139 | 100 | 92.00% | 100.00% | pass | MAX_CACHE_SEQ_LEN 256 |
+| Phi-3-mini-128k-instruct | models/microsoft/Phi-3-mini-128k-instruct/n150/functional/model.py | microsoft/Phi-3-mini-128k-instruct | 155 | 100 | n/a | n/a | blocked | cache length 128 < prompt length 155 (MAX_CACHE_SEQ_LEN) |
