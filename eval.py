@@ -12,6 +12,7 @@ import argparse
 import importlib.util
 import json
 import pathlib
+import os
 import sys
 
 import torch
@@ -181,10 +182,48 @@ def main():
             f"--max_seq_len ({args.max_seq_len}); increase --max_seq_len"
         )
 
-    print("Opening device...")
-    tt_device = ttnn.open_device(device_id=args.device_id)
-
+    mesh_shape = getattr(model_module, "MESH_SHAPE", None)
+    fabric_config = None
+    is_mesh = False
+    tt_device = None
     try:
+        if mesh_shape is not None:
+            if not isinstance(mesh_shape, (tuple, list)) or len(mesh_shape) != 2:
+                raise ValueError("MESH_SHAPE must be a tuple like (rows, cols)")
+            if "TT_MESH_GRAPH_DESC_PATH" not in os.environ:
+                default_desc = pathlib.Path(
+                    "/proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/n300_mesh_graph_descriptor.textproto"
+                )
+                if not default_desc.exists():
+                    raise FileNotFoundError(f"Missing mesh graph descriptor: {default_desc}")
+                os.environ["TT_MESH_GRAPH_DESC_PATH"] = str(default_desc)
+                print(f"Using TT_MESH_GRAPH_DESC_PATH={default_desc}")
+            if mesh_shape[0] > 1 and mesh_shape[1] > 1:
+                fabric_config = ttnn.FabricConfig.FABRIC_2D
+            else:
+                fabric_config = ttnn.FabricConfig.FABRIC_1D
+            ttnn.set_fabric_config(fabric_config)
+            print(f"Opening mesh device: {mesh_shape}...")
+            system_mesh_desc = ttnn._ttnn.multi_device.SystemMeshDescriptor()
+            system_shape = tuple(system_mesh_desc.shape())
+            if mesh_shape[0] > system_shape[0] or mesh_shape[1] > system_shape[1]:
+                raise RuntimeError(f"Requested mesh {mesh_shape} exceeds system mesh {system_shape}")
+            physical_device_ids = []
+            for row in range(mesh_shape[0]):
+                for col in range(mesh_shape[1]):
+                    coord = ttnn.MeshCoordinate(row, col)
+                    if not system_mesh_desc.is_local(coord):
+                        raise RuntimeError(f"Mesh coord {(row, col)} is not local to this host")
+                    physical_device_ids.append(system_mesh_desc.get_device_id(coord))
+            tt_device = ttnn.open_mesh_device(
+                ttnn.MeshShape(*mesh_shape),
+                physical_device_ids=physical_device_ids,
+            )
+            is_mesh = True
+        else:
+            print("Opening device...")
+            tt_device = ttnn.open_device(device_id=args.device_id)
+
         print("Loading ttnn model...")
         tt_model = build_tt_model(model_module, hf_model, tt_device, args.max_seq_len)
         tt_model.eval()
@@ -209,7 +248,12 @@ def main():
         print(f"Top-5 accuracy: {top5_pct:.2f}% ({top5:.4f})")
 
     finally:
-        ttnn.close_device(tt_device)
+        if is_mesh and tt_device is not None:
+            ttnn.close_mesh_device(tt_device)
+        if fabric_config is not None:
+            ttnn.set_fabric_config(ttnn.FabricConfig.DISABLED)
+        else:
+            ttnn.close_device(tt_device)
 
 
 if __name__ == "__main__":
