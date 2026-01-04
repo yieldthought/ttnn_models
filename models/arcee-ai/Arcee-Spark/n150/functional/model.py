@@ -336,8 +336,34 @@ class Attention:
 
             k, v = self._repeat_kv_heads(k, v, heads_dim=1)
 
-            ttnn.fill_cache(self.k_cache, k, batch_idx=0)
-            ttnn.fill_cache(self.v_cache, v, batch_idx=0)
+            num_blocks_of_work = self.cache_kv_heads * (padded_seq // TILE_SIZE)
+            grid = self.tt_device.core_grid
+            if num_blocks_of_work > grid.x * grid.y:
+                grid_x = None
+                for candidate in range(grid.x, 0, -1):
+                    if self.cache_kv_heads % candidate == 0:
+                        grid_y = self.cache_kv_heads // candidate
+                        if grid_y <= grid.y:
+                            grid_x = candidate
+                            break
+                if grid_x is None:
+                    raise ValueError("cache_kv_heads must divide evenly across a shard grid")
+                shard_grid = ttnn.CoreGrid(x=grid_x, y=grid_y)
+                shard_mem_config = ttnn.create_sharded_memory_config(
+                    k.shape,
+                    shard_grid,
+                    ttnn.ShardStrategy.HEIGHT,
+                    ttnn.ShardOrientation.ROW_MAJOR,
+                )
+                k_sharded = ttnn.to_memory_config(k, shard_mem_config)
+                v_sharded = ttnn.to_memory_config(v, shard_mem_config)
+                ttnn.fill_cache(self.k_cache, k_sharded, batch_idx=0)
+                ttnn.fill_cache(self.v_cache, v_sharded, batch_idx=0)
+                ttnn.deallocate(k_sharded)
+                ttnn.deallocate(v_sharded)
+            else:
+                ttnn.fill_cache(self.k_cache, k, batch_idx=0)
+                ttnn.fill_cache(self.v_cache, v, batch_idx=0)
 
             attn_out = ttnn.transformer.scaled_dot_product_attention(
                 q, k, v, is_causal=True, scale=self.scale

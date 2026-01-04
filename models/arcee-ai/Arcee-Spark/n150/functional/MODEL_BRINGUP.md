@@ -46,6 +46,7 @@ Decode path detail:
 - The batch dimension is tile-aligned to 32 for decode ops.
 - Prefill uses `ttnn.fill_cache` and decode uses `ttnn.experimental.paged_update_cache`.
 - For Arcee-Spark, `cache_kv_heads == n_heads` because K/V are pre-repeated.
+- If `cache_kv_heads * seq_tiles` exceeds the device grid, K/V are height-sharded (ROW_MAJOR) for `fill_cache`.
 
 If prefill hits a `fill_cache` grid limit, use `--prefill_decode` to debug. Final bringup
 metrics must use the full prefill pass (no `--prefill_decode`).
@@ -75,7 +76,7 @@ python scripts/run_eval.py --mode tt --hf-model arcee-ai/Arcee-Spark
 
 Current bringup results (full prefill):
 - `python eval.py models/arcee-ai/Arcee-Spark/n150/functional/model.py --model arcee-ai/Arcee-Spark --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100`
-  - Top-1: 76.00% (0.7600), Top-5: 95.00% (0.9500)
+  - Top-1: 79.00% (0.7900), Top-5: 94.00% (0.9400)
 - `python eval.py models/arcee-ai/Arcee-Spark/n150/functional/model.py --model arcee-ai/Arcee-Spark --max_new_tokens 20`
   - Top-1: 85.00% (0.8500), Top-5: 95.00% (0.9500)
 - `python eval.py models/arcee-ai/Arcee-Spark/n150/functional/model.py --model arcee-ai/Arcee-Spark --max_new_tokens 1`
