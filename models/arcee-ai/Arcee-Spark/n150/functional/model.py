@@ -34,14 +34,14 @@ from transformers.modeling_outputs import CausalLMOutputWithPast
 
 TILE_SIZE = 32
 WEIGHT_DTYPE = ttnn.bfloat8_b
-ATTN_DTYPE = ttnn.bfloat16
+ATTN_DTYPE = ttnn.bfloat8_b
 EMBED_DTYPE = ttnn.bfloat8_b
 MLP_GATE_DTYPE = ttnn.bfloat8_b
 MLP_UP_DTYPE = ttnn.bfloat8_b
-MLP_DOWN_DTYPE = ttnn.bfloat16
+MLP_DOWN_DTYPE = ttnn.bfloat8_b
 LM_HEAD_DTYPE = ttnn.bfloat8_b
 WEIGHT_LAYOUT = ttnn.TILE_LAYOUT
-MAX_CACHE_SEQ_LEN = 512
+MAX_CACHE_SEQ_LEN = 256
 DEBUG_TORCH_ATTN_DECODE = False
 DEBUG_TORCH_CACHE_DECODE = False
 DEBUG_TORCH_ROPE_DECODE = False
@@ -502,11 +502,7 @@ class TtnnQwen2ForCausalLM(torch.nn.Module, GenerationMixin):
         self.hf_config = hf_model.config
         self.tt_config = ModelConfig.from_hf(hf_model.config)
         self.max_seq_len = max_seq_len
-        kv_repeat = self.tt_config.num_attention_heads // self.tt_config.num_key_value_heads
-        max_cache_seq_len = MAX_CACHE_SEQ_LEN
-        if kv_repeat > 1:
-            max_cache_seq_len = max_cache_seq_len // kv_repeat
-            max_cache_seq_len = max(TILE_SIZE, (max_cache_seq_len // TILE_SIZE) * TILE_SIZE)
+        max_cache_seq_len = max(TILE_SIZE, (MAX_CACHE_SEQ_LEN // TILE_SIZE) * TILE_SIZE)
         self.cache_seq_len = min(max_seq_len, max_cache_seq_len)
         self._pos = 0
 

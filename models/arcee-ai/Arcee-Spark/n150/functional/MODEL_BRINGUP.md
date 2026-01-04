@@ -41,9 +41,8 @@ Decode path detail:
 
 ## KV cache and tiling constraints
 - Cache tensors are allocated as `[32, cache_kv_heads, cache_seq_len, head_dim]`.
-- `cache_seq_len = min(max_seq_len, max_cache_seq_len)` where `max_cache_seq_len` scales down when K/V
-  are pre-repeated (currently `MAX_CACHE_SEQ_LEN // kv_repeat`, rounded down to a multiple of 32).
-  `MAX_CACHE_SEQ_LEN = 512`.
+- `cache_seq_len = min(max_seq_len, MAX_CACHE_SEQ_LEN)` (rounded down to a multiple of 32).
+  `MAX_CACHE_SEQ_LEN = 256`. Increase this only if DRAM allows the larger cache.
 - The batch dimension is tile-aligned to 32 for decode ops.
 - Prefill uses `ttnn.fill_cache` and decode uses `ttnn.experimental.paged_update_cache`.
 - For Arcee-Spark, `cache_kv_heads == n_heads` because K/V are pre-repeated.
@@ -53,8 +52,8 @@ metrics must use the full prefill pass (no `--prefill_decode`).
 
 ## Precision
 - Most weights use `ttnn.bfloat8_b` to fit the model in device DRAM.
-- Attention weights use `ttnn.bfloat16` for accuracy.
-- MLP `down_proj` weights use `ttnn.bfloat16`; gate/up remain `ttnn.bfloat8_b`.
+- Attention weights use `ttnn.bfloat8_b` to reduce DRAM pressure.
+- MLP `down_proj` weights use `ttnn.bfloat8_b`; gate/up remain `ttnn.bfloat8_b`.
 - QKV biases use `ttnn.bfloat16`.
 - Activations use `ttnn.bfloat16`.
 
@@ -88,8 +87,8 @@ Top-1 is still below target; prefill-only looks correct while decode remains off
 - `ttnn.transformer.scaled_dot_product_attention_decode` assumes a power-of-two `num_q_heads / num_kv_heads` ratio.
   Arcee-Spark uses 28/4=7, so we pre-repeat K/V heads to full heads before caching and SDPA.
   This is a workaround until the decode kernel supports non-power-of-two GQA.
-- Pre-repeating K/V grows cache memory, so `cache_seq_len` is reduced to fit DRAM. Long prompts may
-  exceed the cache unless `MAX_CACHE_SEQ_LEN` or cache layout changes.
+- Pre-repeating K/V grows cache memory, so longer prompts may require lowering `MAX_CACHE_SEQ_LEN`
+  or changing the cache layout if DRAM becomes tight.
 
 ## Debugging tips
 - Start with small prefill/decode lengths (e.g. 16/8).
