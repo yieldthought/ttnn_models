@@ -10,6 +10,7 @@ python eval.py <model_path> --model <hf_id> --prompt_file prompts/bringup_eval_l
 Commands used:
 python eval.py models/meta-llama/Llama-3.2-1B/n150/functional/model.py --model meta-llama/Llama-3.2-1B --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100
 TT_VISIBLE_DEVICES=0,2 python eval.py models/meta-llama/Llama-3.2-1B/n300/functional/model.py --model meta-llama/Llama-3.2-1B --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100
+TT_MESH_GRAPH_DESC_PATH=/home/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/t3k_mesh_graph_descriptor.textproto TT_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python eval.py models/meta-llama/Llama-3.2-1B/t3000/functional/model.py --model meta-llama/Llama-3.2-1B --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100
 python eval.py models/mistralai/Mistral-7B-Instruct-v0.3/n150/functional/model.py --model mistralai/Mistral-7B-Instruct-v0.3 --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100
 HF_HOME=/proj_sw/user_dev/moconnor/hf-cache TRANSFORMERS_CACHE=/proj_sw/user_dev/moconnor/hf-cache HF_HUB_CACHE=/proj_sw/user_dev/moconnor/hf-cache/hub TT_VISIBLE_DEVICES=0,2 TT_METAL_CACHE=/tmp/tt-metal-cache TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-runtime-root TT_METAL_INSPECTOR_LOG_PATH=/tmp/tt-metal-inspector TT_METAL_INSPECTOR_INITIALIZATION_IS_IMPORTANT=0 python eval.py models/mistralai/Mistral-7B-Instruct-v0.3/n300/functional/model.py --model mistralai/Mistral-7B-Instruct-v0.3 --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100
 python eval.py models/Qwen/Qwen3-0.6B/n150/functional/model.py --model Qwen/Qwen3-0.6B --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100
@@ -31,6 +32,7 @@ python eval.py models/arcee-ai/Arcee-Spark/n150/functional/model.py --model arce
 | ALLaM-7B-Instruct-preview (n300) | models/humain-ai/ALLaM-7B-Instruct-preview/n300/functional/model.py | humain-ai/ALLaM-7B-Instruct-preview | 146 | 100 | 98.00% | 100.00% | pass | 1x2 mesh, MAX_CACHE_SEQ_LEN 256 |
 | Llama-3.2-1B | models/meta-llama/Llama-3.2-1B/n150/functional/model.py | meta-llama/Llama-3.2-1B | 141 | 100 | 93.00% | 100.00% | pass | - |
 | Llama-3.2-1B (n300) | models/meta-llama/Llama-3.2-1B/n300/functional/model.py | meta-llama/Llama-3.2-1B | 141 | 100 | 91.00% | 100.00% | pass | 1x2 mesh |
+| Llama-3.2-1B (t3000) | models/meta-llama/Llama-3.2-1B/t3000/functional/model.py | meta-llama/Llama-3.2-1B | 141 | 100 | 87.00% | 100.00% | pass | 2x4 mesh |
 | Mistral-7B-Instruct-v0.3 | models/mistralai/Mistral-7B-Instruct-v0.3/n150/functional/model.py | mistralai/Mistral-7B-Instruct-v0.3 | 155 | 100 | 93.00% | 100.00% | pass | - |
 | Mistral-7B-Instruct-v0.3 (n300) | models/mistralai/Mistral-7B-Instruct-v0.3/n300/functional/model.py | mistralai/Mistral-7B-Instruct-v0.3 | 155 | 100 | 96.00% | 100.00% | pass | 1x2 mesh, MAX_CACHE_SEQ_LEN 1024, sharded fill_cache |
 | Qwen3-0.6B | models/Qwen/Qwen3-0.6B/n150/functional/model.py | Qwen/Qwen3-0.6B | 140 | 100 | 99.00% | 100.00% | pass | - |
