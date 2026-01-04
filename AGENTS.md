@@ -19,3 +19,6 @@ This project favors simple, direct code over layered abstractions or rich typing
 - You have exclusive access to the card for model bringup; using it for long-running bringup and eval workloads is expected and fine.
 - Do not leave `tt-smi` or other device tools running in the background; stop all TT processes before any reset.
 - Debug mode means zero assumptions: stop at the first unexpected behavior, verify with evidence, and only proceed once the discrepancy is understood.
+
+## Runtime gotchas
+- If you see `cannot map elf file into memory: No space left on device` from the TT metal cache, rerun with `TT_METAL_CACHE=/tmp/tt-metal-cache` and point `TT_METAL_RUNTIME_ROOT` at `/proj_sw/user_dev/moconnor/tt-runtime-root`.
