@@ -4,21 +4,7 @@
 """
 Simple Arcee-Spark (Qwen2) implementation in ttnn - 100% device execution.
 
-This is a minimal bringup for Qwen2-style attention + SwiGLU MLP.
-
-Key ttnn operations used:
-- ttnn.embedding: Token embedding lookup
-- ttnn.linear: Linear projections (QKV, output, MLP) with QKV bias
-- ttnn.rms_norm: RMSNorm normalization
-- ttnn.experimental.rotary_embedding: RoPE (HuggingFace format)
-- ttnn.experimental.nlp_create_qkv_heads[_decode]: Reshape for multi-head attention
-- ttnn.experimental.nlp_concat_heads: Concatenate heads after attention
-- ttnn.transformer.scaled_dot_product_attention[_decode]: Fused attention
-- ttnn.fill_cache / ttnn.experimental.paged_update_cache: KV cache management
-- ttnn.silu, ttnn.mul: MLP activations
-
-Use `eval.py` at repo root for teacher-forcing accuracy checks against the
-HuggingFace reference.
+This is a minimal bringup with all compute on device.
 """
 
 import math
@@ -33,18 +19,17 @@ from transformers.modeling_outputs import CausalLMOutputWithPast
 
 
 TILE_SIZE = 32
-WEIGHT_DTYPE = ttnn.bfloat8_b
-ATTN_DTYPE = ttnn.bfloat8_b
-EMBED_DTYPE = ttnn.bfloat8_b
-MLP_GATE_DTYPE = ttnn.bfloat8_b
-MLP_UP_DTYPE = ttnn.bfloat8_b
-MLP_DOWN_DTYPE = ttnn.bfloat8_b
-LM_HEAD_DTYPE = ttnn.bfloat8_b
 WEIGHT_LAYOUT = ttnn.TILE_LAYOUT
+ATTN_WEIGHT_DTYPE = ttnn.bfloat16
+MLP_WEIGHT_DTYPE = ttnn.bfloat8_b
+EMBED_DTYPE = ttnn.bfloat16
+LM_HEAD_DTYPE = ttnn.bfloat16
 MAX_CACHE_SEQ_LEN = 256
-DEBUG_TORCH_ATTN_DECODE = False
-DEBUG_TORCH_CACHE_DECODE = False
-DEBUG_TORCH_ROPE_DECODE = False
+ATTN_KERNEL_CONFIG = ttnn.WormholeComputeKernelConfig(
+    math_fidelity=ttnn.MathFidelity.HiFi4,
+    math_approx_mode=False,
+    fp32_dest_acc_en=True,
+)
 
 
 def pad_to_tile(x: int) -> int:
@@ -83,7 +68,7 @@ class ModelConfig:
             head_dim,
             hf_config.rms_norm_eps,
             hf_config.rope_theta,
-            hf_config.rope_scaling,
+            getattr(hf_config, "rope_scaling", None),
             hf_config.hidden_act,
             hf_config.tie_word_embeddings,
         )
@@ -129,33 +114,18 @@ class RMSNorm:
 class Attention:
     """Multi-head attention with GQA support, fully on ttnn."""
 
-    def __init__(
-        self,
-        config: ModelConfig,
-        layer_idx: int,
-        state_dict: dict,
-        cos_cache: ttnn.Tensor,
-        sin_cache: ttnn.Tensor,
-        cos_cache_torch: torch.Tensor,
-        sin_cache_torch: torch.Tensor,
-        tt_device,
-        max_seq_len: int,
-    ):
+    def __init__(self, config: ModelConfig, layer_idx: int, state_dict: dict,
+                 cos_cache: ttnn.Tensor, sin_cache: ttnn.Tensor,
+                 tt_device, max_seq_len: int):
         self.tt_device = tt_device
         self.n_heads = config.num_attention_heads
         self.n_kv_heads = config.num_key_value_heads
         self.head_dim = config.head_dim
         self.hidden_size = config.hidden_size
         self.scale = 1.0 / math.sqrt(self.head_dim)
-        if self.n_heads % self.n_kv_heads != 0:
-            raise ValueError("num_attention_heads must be divisible by num_key_value_heads")
-        self.kv_repeat = self.n_heads // self.n_kv_heads
-        self.cache_kv_heads = self.n_heads if self.kv_repeat > 1 else self.n_kv_heads
 
         self.cos_cache = cos_cache
         self.sin_cache = sin_cache
-        self.cos_cache_torch = cos_cache_torch
-        self.sin_cache_torch = sin_cache_torch
 
         p = f"model.layers.{layer_idx}.self_attn."
         self.q_proj = self._load_weight(state_dict[f"{p}q_proj.weight"])
@@ -166,7 +136,7 @@ class Attention:
         self.k_bias = self._load_bias(state_dict[f"{p}k_proj.bias"])
         self.v_bias = self._load_bias(state_dict[f"{p}v_proj.bias"])
 
-        cache_shape = (TILE_SIZE, self.cache_kv_heads, max_seq_len, self.head_dim)
+        cache_shape = (TILE_SIZE, self.n_kv_heads, max_seq_len, self.head_dim)
         self.k_cache = ttnn.as_tensor(
             torch.zeros(cache_shape, dtype=torch.bfloat16),
             dtype=ttnn.bfloat16,
@@ -181,117 +151,20 @@ class Attention:
             device=tt_device,
             memory_config=ttnn.DRAM_MEMORY_CONFIG,
         )
-        self._torch_k_cache = []
-        self._torch_v_cache = []
 
     def _load_weight(self, w: torch.Tensor) -> ttnn.Tensor:
         """Load weight transposed for ttnn.linear: [out, in] -> [1, 1, in, out]."""
         return ttnn.as_tensor(
             w.T.unsqueeze(0).unsqueeze(0).to(torch.bfloat16).contiguous(),
-            dtype=ATTN_DTYPE,
+            dtype=ATTN_WEIGHT_DTYPE,
             layout=WEIGHT_LAYOUT,
             device=self.tt_device,
             memory_config=ttnn.DRAM_MEMORY_CONFIG,
         )
 
     def _load_bias(self, b: torch.Tensor) -> ttnn.Tensor:
-        """Load bias as [1, 1, 1, out] for ttnn.linear."""
         return ttnn.as_tensor(
-            b.view(1, 1, 1, -1).to(torch.bfloat16),
-            dtype=ATTN_DTYPE,
-            layout=WEIGHT_LAYOUT,
-            device=self.tt_device,
-            memory_config=ttnn.DRAM_MEMORY_CONFIG,
-        )
-
-    def reset_cache(self):
-        self._torch_k_cache = []
-        self._torch_v_cache = []
-
-    def _torch_repeat_kv(self, hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
-        if n_rep == 1:
-            return hidden_states
-        batch, num_kv_heads, seq_len, head_dim = hidden_states.shape
-        hidden_states = hidden_states[:, :, None, :, :].expand(batch, num_kv_heads, n_rep, seq_len, head_dim)
-        return hidden_states.reshape(batch, num_kv_heads * n_rep, seq_len, head_dim)
-
-    def _torch_apply_rope(self, q: torch.Tensor, k: torch.Tensor, start_pos: int) -> tuple[torch.Tensor, torch.Tensor]:
-        cos = self.cos_cache_torch[:, :, start_pos : start_pos + 1, :]
-        sin = self.sin_cache_torch[:, :, start_pos : start_pos + 1, :]
-
-        def rotate_half(x):
-            x1 = x[..., : x.shape[-1] // 2]
-            x2 = x[..., x.shape[-1] // 2 :]
-            return torch.cat((-x2, x1), dim=-1)
-
-        q = (q * cos) + (rotate_half(q) * sin)
-        k = (k * cos) + (rotate_half(k) * sin)
-        return q, k
-
-    def _repeat_kv_heads(
-        self,
-        k: ttnn.Tensor,
-        v: ttnn.Tensor,
-        heads_dim: int,
-        k_mem: Optional[ttnn.MemoryConfig] = None,
-        v_mem: Optional[ttnn.MemoryConfig] = None,
-    ) -> tuple[ttnn.Tensor, ttnn.Tensor]:
-        if self.kv_repeat == 1:
-            if k_mem is not None:
-                k = ttnn.to_memory_config(k, k_mem)
-            if v_mem is not None:
-                v = ttnn.to_memory_config(v, v_mem)
-            return k, v
-        if heads_dim not in (1, 2):
-            raise ValueError("heads_dim must be 1 or 2")
-
-        def reshard_after_repeat(tensor: ttnn.Tensor, mem_config: Optional[ttnn.MemoryConfig]) -> ttnn.Tensor:
-            if mem_config is None:
-                return tensor
-            return ttnn.to_memory_config(tensor, mem_config)
-
-        k = ttnn.to_memory_config(k, ttnn.DRAM_MEMORY_CONFIG)
-        v = ttnn.to_memory_config(v, ttnn.DRAM_MEMORY_CONFIG)
-        k = ttnn.repeat_interleave(k, self.kv_repeat, dim=heads_dim, memory_config=ttnn.DRAM_MEMORY_CONFIG)
-        v = ttnn.repeat_interleave(v, self.kv_repeat, dim=heads_dim, memory_config=ttnn.DRAM_MEMORY_CONFIG)
-        k = reshard_after_repeat(k, k_mem)
-        v = reshard_after_repeat(v, v_mem)
-        return k, v
-
-    def _torch_attention_decode(self, q: ttnn.Tensor, start_pos: int) -> ttnn.Tensor:
-        q_t = ttnn.to_torch(q).squeeze(0).unsqueeze(2)
-        if DEBUG_TORCH_CACHE_DECODE:
-            if not self._torch_k_cache:
-                raise ValueError("torch cache is empty; run with --prefill_decode for DEBUG_TORCH_CACHE_DECODE")
-            k_t = torch.cat(self._torch_k_cache, dim=2)
-            v_t = torch.cat(self._torch_v_cache, dim=2)
-        else:
-            cur_len = start_pos + 1
-            k_attn = ttnn.slice(
-                self.k_cache,
-                (0, 0, 0, 0),
-                (TILE_SIZE, self.cache_kv_heads, cur_len, self.head_dim),
-            )
-            v_attn = ttnn.slice(
-                self.v_cache,
-                (0, 0, 0, 0),
-                (TILE_SIZE, self.cache_kv_heads, cur_len, self.head_dim),
-            )
-            k_t = ttnn.to_torch(k_attn)
-            v_t = ttnn.to_torch(v_attn)
-            ttnn.deallocate(k_attn)
-            ttnn.deallocate(v_attn)
-
-        n_rep = self.n_heads // self.cache_kv_heads
-        k_t = self._torch_repeat_kv(k_t, n_rep)
-        v_t = self._torch_repeat_kv(v_t, n_rep)
-
-        attn_weights = torch.matmul(q_t.float(), k_t.transpose(-2, -1).float()) * self.scale
-        attn_probs = torch.softmax(attn_weights, dim=-1)
-        attn_out = torch.matmul(attn_probs, v_t.float()).to(q_t.dtype)
-        attn_out = attn_out.squeeze(2).unsqueeze(0)
-        return ttnn.from_torch(
-            attn_out.to(torch.bfloat16),
+            b.reshape(1, 1, 1, -1).to(torch.bfloat16).contiguous(),
             dtype=ttnn.bfloat16,
             layout=ttnn.TILE_LAYOUT,
             device=self.tt_device,
@@ -309,14 +182,28 @@ class Attention:
         is_prefill = seq_len > 1
         padded_seq = pad_to_tile(seq_len)
 
-        if DEBUG_TORCH_CACHE_DECODE and not DEBUG_TORCH_ATTN_DECODE:
-            raise ValueError("DEBUG_TORCH_CACHE_DECODE requires DEBUG_TORCH_ATTN_DECODE")
-        if DEBUG_TORCH_CACHE_DECODE and is_prefill:
-            raise ValueError("DEBUG_TORCH_CACHE_DECODE requires --prefill_decode")
-
-        q = ttnn.linear(x, self.q_proj, bias=self.q_bias)
-        k = ttnn.linear(x, self.k_proj, bias=self.k_bias)
-        v = ttnn.linear(x, self.v_proj, bias=self.v_bias)
+        x = ttnn.to_dtype(x, dtype=ttnn.bfloat16)
+        q = ttnn.linear(
+            x,
+            self.q_proj,
+            bias=self.q_bias,
+            dtype=ttnn.bfloat16,
+            compute_kernel_config=ATTN_KERNEL_CONFIG,
+        )
+        k = ttnn.linear(
+            x,
+            self.k_proj,
+            bias=self.k_bias,
+            dtype=ttnn.bfloat16,
+            compute_kernel_config=ATTN_KERNEL_CONFIG,
+        )
+        v = ttnn.linear(
+            x,
+            self.v_proj,
+            bias=self.v_bias,
+            dtype=ttnn.bfloat16,
+            compute_kernel_config=ATTN_KERNEL_CONFIG,
+        )
         qkv = ttnn.concat([q, k, v], dim=-1)
 
         if is_prefill:
@@ -334,39 +221,16 @@ class Attention:
             q = ttnn.experimental.rotary_embedding(q, cos, sin)
             k = ttnn.experimental.rotary_embedding(k, cos, sin)
 
-            k, v = self._repeat_kv_heads(k, v, heads_dim=1)
-
-            num_blocks_of_work = self.cache_kv_heads * (padded_seq // TILE_SIZE)
-            grid = self.tt_device.core_grid
-            if num_blocks_of_work > grid.x * grid.y:
-                grid_x = None
-                for candidate in range(grid.x, 0, -1):
-                    if self.cache_kv_heads % candidate == 0:
-                        grid_y = self.cache_kv_heads // candidate
-                        if grid_y <= grid.y:
-                            grid_x = candidate
-                            break
-                if grid_x is None:
-                    raise ValueError("cache_kv_heads must divide evenly across a shard grid")
-                shard_grid = ttnn.CoreGrid(x=grid_x, y=grid_y)
-                shard_mem_config = ttnn.create_sharded_memory_config(
-                    k.shape,
-                    shard_grid,
-                    ttnn.ShardStrategy.HEIGHT,
-                    ttnn.ShardOrientation.ROW_MAJOR,
-                )
-                k_sharded = ttnn.to_memory_config(k, shard_mem_config)
-                v_sharded = ttnn.to_memory_config(v, shard_mem_config)
-                ttnn.fill_cache(self.k_cache, k_sharded, batch_idx=0)
-                ttnn.fill_cache(self.v_cache, v_sharded, batch_idx=0)
-                ttnn.deallocate(k_sharded)
-                ttnn.deallocate(v_sharded)
-            else:
-                ttnn.fill_cache(self.k_cache, k, batch_idx=0)
-                ttnn.fill_cache(self.v_cache, v, batch_idx=0)
+            ttnn.fill_cache(self.k_cache, k, batch_idx=0)
+            ttnn.fill_cache(self.v_cache, v, batch_idx=0)
 
             attn_out = ttnn.transformer.scaled_dot_product_attention(
-                q, k, v, is_causal=True, scale=self.scale
+                q,
+                k,
+                v,
+                is_causal=True,
+                scale=self.scale,
+                compute_kernel_config=ATTN_KERNEL_CONFIG,
             )
             attn_out = ttnn.experimental.nlp_concat_heads(attn_out, memory_config=ttnn.DRAM_MEMORY_CONFIG)
         else:
@@ -381,59 +245,25 @@ class Attention:
             )
             ttnn.deallocate(qkv)
 
-            q_mem = ttnn.get_memory_config(q)
-            k_mem = ttnn.get_memory_config(k)
-            v_mem = ttnn.get_memory_config(v)
-            q = ttnn.to_memory_config(q, ttnn.DRAM_MEMORY_CONFIG)
-            k = ttnn.to_memory_config(k, ttnn.DRAM_MEMORY_CONFIG)
+            q = ttnn.reshape(q, (1, 1, q.shape[1] * self.n_heads, self.head_dim))
+            q = ttnn.experimental.rotary_embedding(q, self.cos_cache, self.sin_cache, start_pos)
+            q = ttnn.reshape(q, (1, q.shape[2] // self.n_heads, self.n_heads, self.head_dim))
 
-            if DEBUG_TORCH_ROPE_DECODE:
-                q_t = ttnn.to_torch(q).squeeze(0).unsqueeze(2)
-                k_t = ttnn.to_torch(k).squeeze(0).unsqueeze(2)
-                q_t, k_t = self._torch_apply_rope(q_t, k_t, start_pos)
-                q = ttnn.from_torch(
-                    q_t.squeeze(2).unsqueeze(0).to(torch.bfloat16),
-                    dtype=ttnn.bfloat16,
-                    layout=ttnn.TILE_LAYOUT,
-                    device=self.tt_device,
-                    memory_config=ttnn.DRAM_MEMORY_CONFIG,
-                )
-                k = ttnn.from_torch(
-                    k_t.squeeze(2).unsqueeze(0).to(torch.bfloat16),
-                    dtype=ttnn.bfloat16,
-                    layout=ttnn.TILE_LAYOUT,
-                    device=self.tt_device,
-                    memory_config=ttnn.DRAM_MEMORY_CONFIG,
-                )
-            else:
-                q = ttnn.reshape(q, (1, 1, q.shape[1] * self.n_heads, self.head_dim))
-                q = ttnn.experimental.rotary_embedding(q, self.cos_cache, self.sin_cache, start_pos)
-                q = ttnn.reshape(q, (1, q.shape[2] // self.n_heads, self.n_heads, self.head_dim))
+            k = ttnn.reshape(k, (1, 1, k.shape[1] * self.n_kv_heads, self.head_dim))
+            k = ttnn.experimental.rotary_embedding(k, self.cos_cache, self.sin_cache, start_pos)
+            k = ttnn.reshape(k, (1, k.shape[2] // self.n_kv_heads, self.n_kv_heads, self.head_dim))
 
-                k = ttnn.reshape(k, (1, 1, k.shape[1] * self.n_kv_heads, self.head_dim))
-                k = ttnn.experimental.rotary_embedding(k, self.cos_cache, self.sin_cache, start_pos)
-                k = ttnn.reshape(k, (1, k.shape[2] // self.n_kv_heads, self.n_kv_heads, self.head_dim))
+            ttnn.experimental.paged_update_cache(self.k_cache, k, update_idxs_tensor=cur_pos_tensor)
+            ttnn.experimental.paged_update_cache(self.v_cache, v, update_idxs_tensor=cur_pos_tensor)
 
-            q = ttnn.to_memory_config(q, q_mem)
-            k = ttnn.to_memory_config(k, k_mem)
-            v = ttnn.to_memory_config(v, v_mem)
-
-            repeat_mem = q_mem if self.kv_repeat > 1 else k_mem
-            k, v = self._repeat_kv_heads(k, v, heads_dim=2, k_mem=repeat_mem, v_mem=repeat_mem)
-
-            if DEBUG_TORCH_CACHE_DECODE:
-                self._torch_k_cache.append(ttnn.to_torch(k).squeeze(0).unsqueeze(2))
-                self._torch_v_cache.append(ttnn.to_torch(v).squeeze(0).unsqueeze(2))
-            else:
-                ttnn.experimental.paged_update_cache(self.k_cache, k, update_idxs_tensor=cur_pos_tensor)
-                ttnn.experimental.paged_update_cache(self.v_cache, v, update_idxs_tensor=cur_pos_tensor)
-
-            if DEBUG_TORCH_ATTN_DECODE:
-                attn_out = self._torch_attention_decode(q, start_pos)
-            else:
-                attn_out = ttnn.transformer.scaled_dot_product_attention_decode(
-                    q, self.k_cache, self.v_cache, cur_pos_tensor=cur_pos_tensor, scale=self.scale
-                )
+            attn_out = ttnn.transformer.scaled_dot_product_attention_decode(
+                q,
+                self.k_cache,
+                self.v_cache,
+                cur_pos_tensor=cur_pos_tensor,
+                scale=self.scale,
+                compute_kernel_config=ATTN_KERNEL_CONFIG,
+            )
             attn_out = ttnn.transpose(attn_out, 1, 2)
             attn_out = ttnn.experimental.nlp_concat_heads(attn_out, memory_config=ttnn.DRAM_MEMORY_CONFIG)
 
@@ -453,14 +283,14 @@ class MLP:
 
     def __init__(self, layer_idx: int, state_dict: dict, tt_device):
         p = f"model.layers.{layer_idx}.mlp."
-        self.gate_proj = self._load_weight(state_dict[f"{p}gate_proj.weight"], tt_device, MLP_GATE_DTYPE)
-        self.up_proj = self._load_weight(state_dict[f"{p}up_proj.weight"], tt_device, MLP_UP_DTYPE)
-        self.down_proj = self._load_weight(state_dict[f"{p}down_proj.weight"], tt_device, MLP_DOWN_DTYPE)
+        self.gate_proj = self._load_weight(state_dict[f"{p}gate_proj.weight"], tt_device)
+        self.up_proj = self._load_weight(state_dict[f"{p}up_proj.weight"], tt_device)
+        self.down_proj = self._load_weight(state_dict[f"{p}down_proj.weight"], tt_device)
 
-    def _load_weight(self, w: torch.Tensor, tt_device, dtype: ttnn.DataType) -> ttnn.Tensor:
+    def _load_weight(self, w: torch.Tensor, tt_device) -> ttnn.Tensor:
         return ttnn.as_tensor(
             w.T.unsqueeze(0).unsqueeze(0).to(torch.bfloat16).contiguous(),
-            dtype=dtype,
+            dtype=MLP_WEIGHT_DTYPE,
             layout=WEIGHT_LAYOUT,
             device=tt_device,
             memory_config=ttnn.DRAM_MEMORY_CONFIG,
@@ -475,32 +305,13 @@ class MLP:
 class DecoderLayer:
     """Single transformer layer."""
 
-    def __init__(
-        self,
-        config: ModelConfig,
-        layer_idx: int,
-        state_dict: dict,
-        cos_cache: ttnn.Tensor,
-        sin_cache: ttnn.Tensor,
-        cos_cache_torch: torch.Tensor,
-        sin_cache_torch: torch.Tensor,
-        tt_device,
-        max_seq_len: int,
-    ):
+    def __init__(self, config: ModelConfig, layer_idx: int, state_dict: dict,
+                 cos_cache: ttnn.Tensor, sin_cache: ttnn.Tensor,
+                 tt_device, max_seq_len: int):
         p = f"model.layers.{layer_idx}."
         self.attn_norm = RMSNorm(state_dict[f"{p}input_layernorm.weight"], config.rms_norm_eps, tt_device)
         self.ffn_norm = RMSNorm(state_dict[f"{p}post_attention_layernorm.weight"], config.rms_norm_eps, tt_device)
-        self.attn = Attention(
-            config,
-            layer_idx,
-            state_dict,
-            cos_cache,
-            sin_cache,
-            cos_cache_torch,
-            sin_cache_torch,
-            tt_device,
-            max_seq_len,
-        )
+        self.attn = Attention(config, layer_idx, state_dict, cos_cache, sin_cache, tt_device, max_seq_len)
         self.mlp = MLP(layer_idx, state_dict, tt_device)
 
     def __call__(
@@ -528,8 +339,7 @@ class TtnnQwen2ForCausalLM(torch.nn.Module, GenerationMixin):
         self.hf_config = hf_model.config
         self.tt_config = ModelConfig.from_hf(hf_model.config)
         self.max_seq_len = max_seq_len
-        max_cache_seq_len = max(TILE_SIZE, (MAX_CACHE_SEQ_LEN // TILE_SIZE) * TILE_SIZE)
-        self.cache_seq_len = min(max_seq_len, max_cache_seq_len)
+        self.cache_seq_len = min(max_seq_len, MAX_CACHE_SEQ_LEN)
         self._pos = 0
 
         if self.tt_config.hidden_act != "silu":
@@ -558,8 +368,6 @@ class TtnnQwen2ForCausalLM(torch.nn.Module, GenerationMixin):
 
         print("  Computing RoPE cache...")
         cos, sin = compute_rope_cache(self.tt_config, max_seq_len)
-        self.cos_cache_torch = cos
-        self.sin_cache_torch = sin
         self.cos_cache = ttnn.as_tensor(
             cos,
             dtype=ttnn.bfloat16,
@@ -577,17 +385,7 @@ class TtnnQwen2ForCausalLM(torch.nn.Module, GenerationMixin):
 
         print(f"  Loading {self.tt_config.num_hidden_layers} layers...")
         self.layers = [
-            DecoderLayer(
-                self.tt_config,
-                i,
-                state_dict,
-                self.cos_cache,
-                self.sin_cache,
-                self.cos_cache_torch,
-                self.sin_cache_torch,
-                tt_device,
-                self.cache_seq_len,
-            )
+            DecoderLayer(self.tt_config, i, state_dict, self.cos_cache, self.sin_cache, tt_device, self.cache_seq_len)
             for i in range(self.tt_config.num_hidden_layers)
         ]
 
@@ -610,8 +408,6 @@ class TtnnQwen2ForCausalLM(torch.nn.Module, GenerationMixin):
     def reset(self):
         """Reset position counter for new sequence."""
         self._pos = 0
-        for layer in self.layers:
-            layer.attn.reset_cache()
 
     def prepare_inputs_for_generation(self, input_ids, past_key_values=None, **kwargs):
         if past_key_values is not None:
