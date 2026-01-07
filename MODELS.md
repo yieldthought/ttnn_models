@@ -30,10 +30,12 @@ python eval.py models/humain-ai/ALLaM-7B-Instruct-preview/n150/functional/model.
 HF_HOME=/proj_sw/user_dev/moconnor/hf-cache TRANSFORMERS_CACHE=/proj_sw/user_dev/moconnor/hf-cache HF_HUB_CACHE=/proj_sw/user_dev/moconnor/hf-cache/hub TT_VISIBLE_DEVICES=0,2 TT_METAL_CACHE=/tmp/tt-metal-cache TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-runtime-root TT_METAL_INSPECTOR_LOG_PATH=/tmp/tt-metal-inspector TT_METAL_INSPECTOR_INITIALIZATION_IS_IMPORTANT=0 python eval.py models/humain-ai/ALLaM-7B-Instruct-preview/n300/functional/model.py --model humain-ai/ALLaM-7B-Instruct-preview --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100
 TT_MESH_GRAPH_DESC_PATH=/home/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/t3k_mesh_graph_descriptor.textproto TT_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python eval.py models/humain-ai/ALLaM-7B-Instruct-preview/t3000/functional/model.py --model humain-ai/ALLaM-7B-Instruct-preview --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100
 python eval.py models/arcee-ai/Arcee-Spark/n150/functional/model.py --model arcee-ai/Arcee-Spark --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100
+python eval.py models/arcee-ai/AFM-4.5B/n150/functional/model.py --model arcee-ai/AFM-4.5B --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100
 
 | Model | Model Path | HF ID | Prompt Tokens | Max New Tokens | Top-1 | Top-5 | Status | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Arcee-Spark | models/arcee-ai/Arcee-Spark/n150/functional/model.py | arcee-ai/Arcee-Spark | 140 | 100 | 90.00% | 100.00% | pass | MAX_CACHE_SEQ_LEN 256, QKV path BF16 HiFi4, BF16 embed/lm_head |
+| AFM-4.5B | models/arcee-ai/AFM-4.5B/n150/functional/model.py | arcee-ai/AFM-4.5B | 141 | 100 | 98.00% | 100.00% | pass | MAX_CACHE_SEQ_LEN 256, GQA decode cache, bfloat8 weights |
 | ALLaM-7B-Instruct-preview | models/humain-ai/ALLaM-7B-Instruct-preview/n150/functional/model.py | humain-ai/ALLaM-7B-Instruct-preview | 146 | 100 | 95.00% | 100.00% | pass | MAX_CACHE_SEQ_LEN 256, sharded fill_cache |
 | ALLaM-7B-Instruct-preview (n300) | models/humain-ai/ALLaM-7B-Instruct-preview/n300/functional/model.py | humain-ai/ALLaM-7B-Instruct-preview | 146 | 100 | 98.00% | 100.00% | pass | 1x2 mesh, MAX_CACHE_SEQ_LEN 256 |
 | ALLaM-7B-Instruct-preview (t3000) | models/humain-ai/ALLaM-7B-Instruct-preview/t3000/functional/model.py | humain-ai/ALLaM-7B-Instruct-preview | 146 | 100 | 97.00% | 100.00% | pass | 2x4 mesh, MAX_CACHE_SEQ_LEN 256 |
