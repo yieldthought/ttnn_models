@@ -61,7 +61,9 @@ class ModelConfig:
     @classmethod
     def from_hf(cls, hf_config) -> "ModelConfig":
         num_kv_heads = getattr(hf_config, "num_key_value_heads", hf_config.num_attention_heads)
-        head_dim = getattr(hf_config, "head_dim", hf_config.hidden_size // hf_config.num_attention_heads)
+        head_dim = getattr(hf_config, "head_dim", None)
+        if head_dim is None:
+            head_dim = hf_config.hidden_size // hf_config.num_attention_heads
         return cls(
             hf_config.vocab_size,
             hf_config.hidden_size,
