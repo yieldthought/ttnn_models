@@ -38,6 +38,7 @@ SYSTEM_MESH_DESCRIPTORS = {
     "n300": "n300_mesh_graph_descriptor.textproto",
     "t3000": "t3k_mesh_graph_descriptor.textproto",
 }
+TRACE_REGION_SIZE = int(os.environ.get("TTNN_TRACE_REGION_SIZE", "10000000"))
 
 
 def load_model_module(model_path: pathlib.Path):
@@ -119,7 +120,11 @@ def open_tt_device(mesh_shape: Tuple[int, int], system: str, device_id: int):
     fabric_config = None
 
     if not is_mesh:
-        return ttnn.open_device(device_id=device_id), False, None
+        if TRACE_REGION_SIZE <= 0:
+            return ttnn.open_device(device_id=device_id), False, None
+        device = ttnn.CreateDevice(device_id, trace_region_size=TRACE_REGION_SIZE)
+        ttnn.SetDefaultDevice(device)
+        return device, False, None
 
     descriptor = set_mesh_descriptor(system, pathlib.Path(__file__).resolve().parent)
     if descriptor is None:
@@ -148,6 +153,7 @@ def open_tt_device(mesh_shape: Tuple[int, int], system: str, device_id: int):
     tt_device = ttnn.open_mesh_device(
         ttnn.MeshShape(*mesh_shape),
         physical_device_ids=physical_device_ids,
+        trace_region_size=TRACE_REGION_SIZE,
     )
     return tt_device, True, fabric_config
 
@@ -159,7 +165,10 @@ def close_tt_device(tt_device, is_mesh: bool, fabric_config):
     if is_mesh:
         ttnn.close_mesh_device(tt_device)
     else:
-        ttnn.close_device(tt_device)
+        if TRACE_REGION_SIZE <= 0:
+            ttnn.close_device(tt_device)
+        else:
+            ttnn.CloseDevice(tt_device)
 
     if fabric_config is not None:
         ttnn.set_fabric_config(ttnn.FabricConfig.DISABLED)
@@ -187,14 +196,26 @@ def sync_if_needed(tt_device, is_tt: bool):
 
 def warmup_model(model, input_ids: torch.Tensor, is_tt: bool, tt_device):
     """Warm up with one prefill and one decode step."""
-    with torch.no_grad():
-        outputs = model(input_ids, use_cache=True)
-        sync_if_needed(tt_device, is_tt)
-        logits = outputs.logits[:, -1, :]
-        next_token = int(torch.argmax(logits, dim=-1).item())
-        next_input = torch.tensor([[next_token]], dtype=torch.long)
-        _ = model(next_input, past_key_values=outputs.past_key_values, use_cache=True)
-        sync_if_needed(tt_device, is_tt)
+    trace_enabled = getattr(model, "use_decode_trace", None)
+    if trace_enabled is not None:
+        model.use_decode_trace = False
+    try:
+        with torch.no_grad():
+            outputs = model(input_ids, use_cache=True)
+            sync_if_needed(tt_device, is_tt)
+            logits = outputs.logits[:, -1, :]
+            next_token = int(torch.argmax(logits, dim=-1).item())
+            next_input = torch.tensor([[next_token]], dtype=torch.long)
+            _ = model(next_input, past_key_values=outputs.past_key_values, use_cache=True)
+            sync_if_needed(tt_device, is_tt)
+    finally:
+        if trace_enabled is not None:
+            model.use_decode_trace = trace_enabled
+
+    if trace_enabled and hasattr(model, "next_token_device"):
+        with torch.no_grad():
+            _ = model.next_token_device(input_ids[:, -1:], past_key_values=None, use_cache=True)
+            sync_if_needed(tt_device, is_tt)
 
     if hasattr(model, "reset"):
         model.reset()
@@ -233,19 +254,23 @@ def generate_with_timing(
     if max_new_tokens < 1:
         return "", 0, 0.0, 0.0, 0
 
+    use_device_sampling = is_tt and hasattr(model, "next_token_device") and temperature <= 0.0
+
     with torch.no_grad():
         start = time.perf_counter()
-        if attention_mask is None:
-            outputs = model(input_ids, use_cache=True)
+        if use_device_sampling:
+            next_token, past = model.next_token_device(input_ids, past_key_values=None, use_cache=True)
         else:
-            outputs = model(input_ids, attention_mask=attention_mask, use_cache=True)
-        sync_if_needed(tt_device, is_tt)
+            if attention_mask is None:
+                outputs = model(input_ids, use_cache=True)
+            else:
+                outputs = model(input_ids, attention_mask=attention_mask, use_cache=True)
+            next_token = pick_next_token(outputs.logits[:, -1, :], temperature, top_k)
+            past = outputs.past_key_values
+        if not use_device_sampling:
+            sync_if_needed(tt_device, is_tt)
         prefill_time = time.perf_counter() - start
-
-        logits = outputs.logits[:, -1, :]
-        next_token = pick_next_token(logits, temperature, top_k)
         generated = [next_token]
-        past = outputs.past_key_values
 
         eos_token_id = tokenizer.eos_token_id
         if eos_token_id is not None and next_token == eos_token_id:
@@ -253,13 +278,17 @@ def generate_with_timing(
             return text, len(generated), prefill_time, 0.0, 0
 
         decode_start = time.perf_counter()
+        input_token = torch.empty((1, 1), dtype=torch.long)
         for _ in range(max_new_tokens - 1):
-            input_token = torch.tensor([[generated[-1]]], dtype=torch.long)
-            outputs = model(input_token, past_key_values=past, use_cache=True)
-            sync_if_needed(tt_device, is_tt)
-            past = outputs.past_key_values
-            logits = outputs.logits[:, -1, :]
-            next_token = pick_next_token(logits, temperature, top_k)
+            input_token[0, 0] = generated[-1]
+            if use_device_sampling:
+                next_token, past = model.next_token_device(input_token, past_key_values=past, use_cache=True)
+            else:
+                outputs = model(input_token, past_key_values=past, use_cache=True)
+                past = outputs.past_key_values
+                next_token = pick_next_token(outputs.logits[:, -1, :], temperature, top_k)
+            if not use_device_sampling:
+                sync_if_needed(tt_device, is_tt)
             generated.append(next_token)
             if eos_token_id is not None and next_token == eos_token_id:
                 break
