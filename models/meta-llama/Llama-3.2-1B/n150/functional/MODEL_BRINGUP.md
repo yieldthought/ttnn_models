@@ -41,9 +41,11 @@ Avoid `ttnn.experimental.rotary_embedding_llama`, which expects Meta-format RoPE
 - The batch dimension is tile-aligned to 32 for decode ops.
 - Prefill uses `ttnn.fill_cache` and decode uses `ttnn.experimental.paged_update_cache`.
 
-On this device, `ttnn.fill_cache` hits a grid limit for long prefill lengths (around 1024 tokens).
-If prefill hits a `fill_cache` grid limit, use `--prefill_decode` to debug. Final bringup metrics must use the full prefill pass (no `--prefill_decode`).
-`scripts/run_eval.py` enables this automatically for large prefill lengths.
+Prefill now shards K/V before `fill_cache` to avoid the interleaved grid-size limit. On n150, the
+functional model builds and runs short prefill at `max_seq_len=9344`; `max_seq_len=9376` OOMs during
+prefill due to DRAM pressure. See `SEQ_LEN.md` for the full sweep and how to reproduce.
+`scripts/run_eval.py` supports prefill sweeps via `--prefill-len-range` (use `--force-prefill` to
+avoid auto `--prefill_decode`).
 
 ## Precision
 - Weights use `ttnn.bfloat16` in this bringup for simplicity.

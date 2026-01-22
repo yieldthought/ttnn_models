@@ -206,9 +206,26 @@ class Attention:
             q = ttnn.experimental.rotary_embedding(q, cos, sin)
             k = ttnn.experimental.rotary_embedding(k, cos, sin)
             
-            # Fill KV cache
-            ttnn.fill_cache(self.k_cache, k, batch_idx=0)
-            ttnn.fill_cache(self.v_cache, v, batch_idx=0)
+            # Shard KV for fill_cache to avoid interleaved grid-size limits at long prefill lengths.
+            grid = self.tt_device.core_grid
+            grid_x = min(grid.x, self.n_kv_heads)
+            while grid_x > 1 and self.n_kv_heads % grid_x != 0:
+                grid_x -= 1
+            shard_grid = ttnn.CoreGrid(x=grid_x, y=self.n_kv_heads // grid_x)
+            if shard_grid.y > grid.y:
+                raise ValueError("shard grid exceeds device core grid")
+            shard_mem_config = ttnn.create_sharded_memory_config(
+                k.shape,
+                shard_grid,
+                ttnn.ShardStrategy.HEIGHT,
+                ttnn.ShardOrientation.ROW_MAJOR,
+            )
+            k_sharded = ttnn.to_memory_config(k, shard_mem_config)
+            v_sharded = ttnn.to_memory_config(v, shard_mem_config)
+            ttnn.fill_cache(self.k_cache, k_sharded, batch_idx=0)
+            ttnn.fill_cache(self.v_cache, v_sharded, batch_idx=0)
+            ttnn.deallocate(k_sharded)
+            ttnn.deallocate(v_sharded)
             
             # SDPA prefill (causal)
             attn_out = ttnn.transformer.scaled_dot_product_attention(
