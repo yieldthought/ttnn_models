@@ -19,6 +19,7 @@ import torch
 import ttnn
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+TRACE_REGION_SIZE = int(os.environ.get("TTNN_TRACE_REGION_SIZE", "10000000"))
 
 def load_model_module(model_path: pathlib.Path):
     spec = importlib.util.spec_from_file_location("ttnn_model", model_path)
@@ -218,11 +219,16 @@ def main():
             tt_device = ttnn.open_mesh_device(
                 ttnn.MeshShape(*mesh_shape),
                 physical_device_ids=physical_device_ids,
+                trace_region_size=TRACE_REGION_SIZE,
             )
             is_mesh = True
         else:
             print("Opening device...")
-            tt_device = ttnn.open_device(device_id=args.device_id)
+            if TRACE_REGION_SIZE <= 0:
+                tt_device = ttnn.open_device(device_id=args.device_id)
+            else:
+                tt_device = ttnn.CreateDevice(args.device_id, trace_region_size=TRACE_REGION_SIZE)
+                ttnn.SetDefaultDevice(tt_device)
 
         print("Loading ttnn model...")
         tt_model = build_tt_model(model_module, hf_model, tt_device, args.max_seq_len)
@@ -253,7 +259,10 @@ def main():
         if fabric_config is not None:
             ttnn.set_fabric_config(ttnn.FabricConfig.DISABLED)
         else:
-            ttnn.close_device(tt_device)
+            if TRACE_REGION_SIZE <= 0:
+                ttnn.close_device(tt_device)
+            else:
+                ttnn.CloseDevice(tt_device)
 
 
 if __name__ == "__main__":

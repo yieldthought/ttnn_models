@@ -72,7 +72,9 @@ class ModelConfig:
     @classmethod
     def from_hf(cls, hf_config) -> "ModelConfig":
         num_kv_heads = getattr(hf_config, "num_key_value_heads", hf_config.num_attention_heads)
-        head_dim = getattr(hf_config, "head_dim", hf_config.hidden_size // hf_config.num_attention_heads)
+        head_dim = getattr(hf_config, "head_dim", None)
+        if head_dim is None:
+            head_dim = hf_config.hidden_size // hf_config.num_attention_heads
         original_max = getattr(hf_config, "original_max_position_embeddings", hf_config.max_position_embeddings)
         partial_rotary = getattr(hf_config, "partial_rotary_factor", 1.0)
         return cls(

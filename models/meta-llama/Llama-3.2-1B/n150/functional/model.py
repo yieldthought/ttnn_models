@@ -33,6 +33,8 @@ from transformers.modeling_outputs import CausalLMOutputWithPast
 
 
 TILE_SIZE = 32
+PAGED_BLOCK_SIZE = 64
+WEIGHT_DTYPE = ttnn.bfloat16
 
 
 def pad_to_tile(x: int) -> int:
@@ -68,6 +70,13 @@ class ModelConfig:
             rope_theta=hf_config.rope_theta,
             rope_scaling=hf_config.rope_scaling,
         )
+
+
+@dataclass
+class PagedAttentionConfig:
+    """Paged KV cache configuration."""
+    block_size: int
+    max_num_blocks: int
 
 
 def compute_rope_cache(config: ModelConfig, max_seq_len: int) -> tuple:
@@ -130,15 +139,28 @@ class Attention:
     - SDPA via ttnn.transformer.scaled_dot_product_attention[_decode]
     """
     
-    def __init__(self, config: ModelConfig, layer_idx: int, state_dict: dict,
-                 cos_cache: ttnn.Tensor, sin_cache: ttnn.Tensor,
-                 tt_device, max_seq_len: int):
+    def __init__(
+        self,
+        config: ModelConfig,
+        layer_idx: int,
+        state_dict: dict,
+        cos_cache: ttnn.Tensor,
+        sin_cache: ttnn.Tensor,
+        tt_device,
+        max_seq_len: int,
+        paged_attention_config: Optional[PagedAttentionConfig] = None,
+        page_table: Optional[ttnn.Tensor] = None,
+    ):
         self.tt_device = tt_device
         self.n_heads = config.num_attention_heads
         self.n_kv_heads = config.num_key_value_heads
         self.head_dim = config.head_dim
         self.hidden_size = config.hidden_size
         self.scale = 1.0 / math.sqrt(self.head_dim)
+        self.paged_attention_config = paged_attention_config
+        self.page_table = page_table
+        if self.paged_attention_config and self.page_table is None:
+            raise ValueError("page_table is required for paged KV cache")
         
         # RoPE caches
         self.cos_cache = cos_cache
@@ -151,9 +173,18 @@ class Attention:
         self.v_proj = self._load_weight(state_dict[f"{p}v_proj.weight"])
         self.o_proj = self._load_weight(state_dict[f"{p}o_proj.weight"])
         
-        # KV cache: [max_batch, n_kv_heads, max_seq_len, head_dim]
-        # max_batch must be tile-aligned (32) for decode mode
-        cache_shape = (TILE_SIZE, self.n_kv_heads, max_seq_len, self.head_dim)
+        # KV cache:
+        # - Paged: [max_num_blocks, n_kv_heads, block_size, head_dim]
+        # - Default: [max_batch, n_kv_heads, max_seq_len, head_dim] (max_batch=32)
+        if self.paged_attention_config:
+            cache_shape = (
+                self.paged_attention_config.max_num_blocks,
+                self.n_kv_heads,
+                self.paged_attention_config.block_size,
+                self.head_dim,
+            )
+        else:
+            cache_shape = (TILE_SIZE, self.n_kv_heads, max_seq_len, self.head_dim)
         self.k_cache = ttnn.as_tensor(
             torch.zeros(cache_shape, dtype=torch.bfloat16),
             dtype=ttnn.bfloat16, layout=ttnn.TILE_LAYOUT,
@@ -169,7 +200,7 @@ class Attention:
         """Load weight transposed for ttnn.linear: [out, in] -> [1, 1, in, out]"""
         return ttnn.as_tensor(
             w.T.unsqueeze(0).unsqueeze(0).to(torch.bfloat16).contiguous(),
-            dtype=ttnn.bfloat16, layout=ttnn.TILE_LAYOUT,
+            dtype=WEIGHT_DTYPE, layout=ttnn.TILE_LAYOUT,
             device=self.tt_device, memory_config=ttnn.DRAM_MEMORY_CONFIG,
         )
     
@@ -206,9 +237,30 @@ class Attention:
             q = ttnn.experimental.rotary_embedding(q, cos, sin)
             k = ttnn.experimental.rotary_embedding(k, cos, sin)
             
-            # Fill KV cache
-            ttnn.fill_cache(self.k_cache, k, batch_idx=0)
-            ttnn.fill_cache(self.v_cache, v, batch_idx=0)
+            if self.paged_attention_config:
+                ttnn.experimental.paged_fill_cache(self.k_cache, k, self.page_table, batch_idx=0)
+                ttnn.experimental.paged_fill_cache(self.v_cache, v, self.page_table, batch_idx=0)
+            else:
+                # Shard KV for fill_cache to avoid interleaved grid-size limits at long prefill lengths.
+                grid = self.tt_device.core_grid
+                grid_x = min(grid.x, self.n_kv_heads)
+                while grid_x > 1 and self.n_kv_heads % grid_x != 0:
+                    grid_x -= 1
+                shard_grid = ttnn.CoreGrid(x=grid_x, y=self.n_kv_heads // grid_x)
+                if shard_grid.y > grid.y:
+                    raise ValueError("shard grid exceeds device core grid")
+                shard_mem_config = ttnn.create_sharded_memory_config(
+                    k.shape,
+                    shard_grid,
+                    ttnn.ShardStrategy.HEIGHT,
+                    ttnn.ShardOrientation.ROW_MAJOR,
+                )
+                k_sharded = ttnn.to_memory_config(k, shard_mem_config)
+                v_sharded = ttnn.to_memory_config(v, shard_mem_config)
+                ttnn.fill_cache(self.k_cache, k_sharded, batch_idx=0)
+                ttnn.fill_cache(self.v_cache, v_sharded, batch_idx=0)
+                ttnn.deallocate(k_sharded)
+                ttnn.deallocate(v_sharded)
             
             # SDPA prefill (causal)
             attn_out = ttnn.transformer.scaled_dot_product_attention(
@@ -233,13 +285,31 @@ class Attention:
             k = ttnn.experimental.rotary_embedding(k, self.cos_cache, self.sin_cache, start_pos)
             
             # Update KV cache (needs position tensor with batch_size entries)
-            ttnn.experimental.paged_update_cache(self.k_cache, k, update_idxs_tensor=cur_pos_tensor)
-            ttnn.experimental.paged_update_cache(self.v_cache, v, update_idxs_tensor=cur_pos_tensor)
+            if self.paged_attention_config:
+                ttnn.experimental.paged_update_cache(
+                    self.k_cache, k, update_idxs_tensor=cur_pos_tensor, page_table=self.page_table
+                )
+                ttnn.experimental.paged_update_cache(
+                    self.v_cache, v, update_idxs_tensor=cur_pos_tensor, page_table=self.page_table
+                )
+            else:
+                ttnn.experimental.paged_update_cache(self.k_cache, k, update_idxs_tensor=cur_pos_tensor)
+                ttnn.experimental.paged_update_cache(self.v_cache, v, update_idxs_tensor=cur_pos_tensor)
             
             # SDPA decode
-            attn_out = ttnn.transformer.scaled_dot_product_attention_decode(
-                q, self.k_cache, self.v_cache, cur_pos_tensor=cur_pos_tensor, scale=self.scale,
-            )
+            if self.paged_attention_config:
+                attn_out = ttnn.transformer.paged_scaled_dot_product_attention_decode(
+                    q,
+                    self.k_cache,
+                    self.v_cache,
+                    page_table_tensor=self.page_table,
+                    cur_pos_tensor=cur_pos_tensor,
+                    scale=self.scale,
+                )
+            else:
+                attn_out = ttnn.transformer.scaled_dot_product_attention_decode(
+                    q, self.k_cache, self.v_cache, cur_pos_tensor=cur_pos_tensor, scale=self.scale,
+                )
             
             # Transpose and concatenate heads
             attn_out = ttnn.transpose(attn_out, 1, 2)
@@ -261,7 +331,7 @@ class MLP:
     def _load_weight(self, w: torch.Tensor, tt_device) -> ttnn.Tensor:
         return ttnn.as_tensor(
             w.T.unsqueeze(0).unsqueeze(0).to(torch.bfloat16).contiguous(),
-            dtype=ttnn.bfloat16, layout=ttnn.TILE_LAYOUT,
+            dtype=WEIGHT_DTYPE, layout=ttnn.TILE_LAYOUT,
             device=tt_device, memory_config=ttnn.DRAM_MEMORY_CONFIG,
         )
     
@@ -289,13 +359,32 @@ class RMSNorm:
 class DecoderLayer:
     """Single transformer layer."""
     
-    def __init__(self, config: ModelConfig, layer_idx: int, state_dict: dict,
-                 cos_cache: ttnn.Tensor, sin_cache: ttnn.Tensor,
-                 tt_device, max_seq_len: int):
+    def __init__(
+        self,
+        config: ModelConfig,
+        layer_idx: int,
+        state_dict: dict,
+        cos_cache: ttnn.Tensor,
+        sin_cache: ttnn.Tensor,
+        tt_device,
+        max_seq_len: int,
+        paged_attention_config: Optional[PagedAttentionConfig] = None,
+        page_table: Optional[ttnn.Tensor] = None,
+    ):
         p = f"model.layers.{layer_idx}."
         self.attn_norm = RMSNorm(state_dict[f"{p}input_layernorm.weight"], config.rms_norm_eps, tt_device)
         self.ffn_norm = RMSNorm(state_dict[f"{p}post_attention_layernorm.weight"], config.rms_norm_eps, tt_device)
-        self.attn = Attention(config, layer_idx, state_dict, cos_cache, sin_cache, tt_device, max_seq_len)
+        self.attn = Attention(
+            config,
+            layer_idx,
+            state_dict,
+            cos_cache,
+            sin_cache,
+            tt_device,
+            max_seq_len,
+            paged_attention_config=paged_attention_config,
+            page_table=page_table,
+        )
         self.mlp = MLP(layer_idx, state_dict, tt_device)
     
     def __call__(
@@ -324,6 +413,10 @@ class TtnnLlamaForCausalLM(torch.nn.Module, GenerationMixin):
         self.tt_config = ModelConfig.from_hf(hf_model.config)
         self.max_seq_len = max_seq_len
         self._pos = 0
+        self.paged_attention_config = PagedAttentionConfig(
+            block_size=PAGED_BLOCK_SIZE,
+            max_num_blocks=math.ceil(max_seq_len / PAGED_BLOCK_SIZE),
+        )
 
         self.config = self.hf_config
         self.generation_config = GenerationConfig.from_model_config(self.config)
@@ -355,11 +448,32 @@ class TtnnLlamaForCausalLM(torch.nn.Module, GenerationMixin):
             sin, dtype=ttnn.bfloat16, layout=ttnn.TILE_LAYOUT,
             device=tt_device, memory_config=ttnn.DRAM_MEMORY_CONFIG,
         )
+
+        # Page table for paged KV cache (tile-aligned batch dimension)
+        page_table = torch.arange(self.paged_attention_config.max_num_blocks, dtype=torch.int32)
+        page_table = page_table.repeat(TILE_SIZE, 1)
+        self.page_table = ttnn.as_tensor(
+            page_table,
+            dtype=ttnn.int32,
+            layout=ttnn.ROW_MAJOR_LAYOUT,
+            device=tt_device,
+            memory_config=ttnn.DRAM_MEMORY_CONFIG,
+        )
         
         # Transformer layers
         print(f"  Loading {self.tt_config.num_hidden_layers} layers...")
         self.layers = [
-            DecoderLayer(self.tt_config, i, state_dict, self.cos_cache, self.sin_cache, tt_device, max_seq_len)
+            DecoderLayer(
+                self.tt_config,
+                i,
+                state_dict,
+                self.cos_cache,
+                self.sin_cache,
+                tt_device,
+                max_seq_len,
+                paged_attention_config=self.paged_attention_config,
+                page_table=self.page_table,
+            )
             for i in range(self.tt_config.num_hidden_layers)
         ]
         
@@ -367,7 +481,7 @@ class TtnnLlamaForCausalLM(torch.nn.Module, GenerationMixin):
         self.norm = RMSNorm(state_dict["model.norm.weight"], self.tt_config.rms_norm_eps, tt_device)
         self.lm_head = ttnn.as_tensor(
             state_dict["lm_head.weight"].T.unsqueeze(0).unsqueeze(0).to(torch.bfloat16).contiguous(),
-            dtype=ttnn.bfloat16, layout=ttnn.TILE_LAYOUT,
+            dtype=WEIGHT_DTYPE, layout=ttnn.TILE_LAYOUT,
             device=tt_device, memory_config=ttnn.DRAM_MEMORY_CONFIG,
         )
 
@@ -417,8 +531,10 @@ class TtnnLlamaForCausalLM(torch.nn.Module, GenerationMixin):
             # Decode-only ops expect a [B] int32 tensor of positions, where B is tile-aligned (32).
             # Keep this host->device transfer at the model level (not inside Attention) so tracing can
             # later wrap the pure device compute separately.
+            cur_pos = torch.full((TILE_SIZE,), -1, dtype=torch.int32)
+            cur_pos[0] = start_pos
             cur_pos_tensor = ttnn.from_torch(
-                torch.full((TILE_SIZE,), start_pos, dtype=torch.int32),
+                cur_pos,
                 dtype=ttnn.int32,
                 device=self.tt_device,
             )

@@ -59,6 +59,32 @@ def build_prompt_ids(tokenizer, prefill_len: int) -> list:
     return prompt_ids
 
 
+def parse_prefill_len_range(spec: str) -> list:
+    """Parse a start:end[:step] range (end inclusive) into a list of lengths."""
+    parts = [int(part) for part in spec.split(":") if part]
+    if len(parts) not in (2, 3):
+        raise ValueError("--prefill-len-range must be start:end or start:end:step")
+    start = parts[0]
+    end = parts[1]
+    step = parts[2] if len(parts) == 3 else 1
+    if start < 1 or end < start or step < 1:
+        raise ValueError("--prefill-len-range must use positive lengths with start <= end")
+    return list(range(start, end + 1, step))
+
+
+def parse_max_seq_len_range(spec: str) -> list:
+    """Parse a start:end[:step] range (end inclusive) into a list of lengths."""
+    parts = [int(part) for part in spec.split(":") if part]
+    if len(parts) not in (2, 3):
+        raise ValueError("--max-seq-len-range must be start:end or start:end:step")
+    start = parts[0]
+    end = parts[1]
+    step = parts[2] if len(parts) == 3 else 1
+    if start < 1 or end < start or step < 1:
+        raise ValueError("--max-seq-len-range must use positive lengths with start <= end")
+    return list(range(start, end + 1, step))
+
+
 def score_step(logits: torch.Tensor, target_id: int) -> tuple[int, int]:
     top5 = torch.topk(logits, k=5).indices
     top1 = int(top5[0].item() == target_id)
@@ -196,62 +222,105 @@ def main():
     parser.add_argument("--hf-model", required=True)
     parser.add_argument("--system", default=os.environ.get("YT_SYSTEM", "n150"))
     parser.add_argument("--prefill-len", type=int, default=DEFAULT_PREFILL_LEN)
+    parser.add_argument("--prefill-len-range", default=None)
     parser.add_argument("--decode-len", type=int, default=DEFAULT_DECODE_LEN)
+    parser.add_argument("--max-seq-len", type=int, default=None)
+    parser.add_argument("--max-seq-len-range", default=None)
     parser.add_argument("--batch", type=int, default=1)
     parser.add_argument("--trace", type=int, default=0)
     parser.add_argument("--prefill-decode", action="store_true")
+    parser.add_argument("--force-prefill", action="store_true")
     parser.add_argument("--cache-dir", default=None)
     args = parser.parse_args()
 
     if args.batch != 1:
         raise ValueError("Only batch=1 is supported by the bringup eval")
-    if args.prefill_len < 1:
+    if args.prefill_len < 1 and args.prefill_len_range is None:
         raise ValueError("--prefill-len must be >= 1")
     if args.decode_len < 0:
         raise ValueError("--decode-len must be >= 0")
     if args.trace not in (0, 1):
         raise ValueError("--trace must be 0 or 1")
+    if args.max_seq_len is not None and args.max_seq_len < 1:
+        raise ValueError("--max-seq-len must be >= 1")
+    if args.prefill_len_range is not None and args.max_seq_len_range is not None:
+        raise ValueError("Use --prefill-len-range or --max-seq-len-range, not both")
 
     repo_root = pathlib.Path(__file__).resolve().parents[1]
 
     tokenizer = AutoTokenizer.from_pretrained(args.hf_model, cache_dir=args.cache_dir)
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token_id = tokenizer.eos_token_id
-    prompt_ids = build_prompt_ids(tokenizer, args.prefill_len)
 
-    top1 = 0.0
-    top5 = 0.0
-    total = 0
+    prefill_lens = [args.prefill_len]
+    if args.prefill_len_range is not None:
+        prefill_lens = parse_prefill_len_range(args.prefill_len_range)
 
-    if args.mode == "hf":
-        top1, top5, total = run_hf_eval(args.hf_model, tokenizer, prompt_ids, args.decode_len, args.cache_dir)
-    else:
+    max_seq_lens = None
+    if args.max_seq_len_range is not None:
+        max_seq_lens = parse_max_seq_len_range(args.max_seq_len_range)
+    elif args.max_seq_len is not None:
+        max_seq_lens = [args.max_seq_len]
+
+    for prefill_len in prefill_lens:
+        prompt_ids = build_prompt_ids(tokenizer, prefill_len)
+
+        top1 = 0.0
+        top5 = 0.0
+        total = 0
+
+        if args.mode == "hf":
+            top1, top5, total = run_hf_eval(args.hf_model, tokenizer, prompt_ids, args.decode_len, args.cache_dir)
+            metrics = {
+                "mode": args.mode,
+                "trace": bool(args.trace),
+                "top1": float(top1),
+                "top5": float(top5),
+                "prefill_len": prefill_len,
+                "decode_len": args.decode_len,
+                "batch": args.batch,
+                "total": int(total),
+            }
+            print(f"YT_METRICS={json.dumps(metrics)}")
+            continue
+
         model_path = resolve_model_path(repo_root, args.hf_model, args.system)
-        max_seq_len = max(2048, args.prefill_len + args.decode_len)
-        prefill_decode = args.prefill_decode or args.prefill_len > PREFILL_DECODE_THRESHOLD
-        top1, top5 = run_tt_eval(
-            repo_root,
-            args.hf_model,
-            model_path,
-            prompt_ids,
-            args.decode_len,
-            args.cache_dir,
-            prefill_decode,
-            max_seq_len,
-        )
-        total = max(args.decode_len, 0)
+        run_max_seq_lens = max_seq_lens
+        if run_max_seq_lens is None:
+            run_max_seq_lens = [max(2048, prefill_len + args.decode_len)]
 
-    metrics = {
-        "mode": args.mode,
-        "trace": bool(args.trace),
-        "top1": float(top1),
-        "top5": float(top5),
-        "prefill_len": args.prefill_len,
-        "decode_len": args.decode_len,
-        "batch": args.batch,
-        "total": int(total),
-    }
-    print(f"YT_METRICS={json.dumps(metrics)}")
+        for max_seq_len in run_max_seq_lens:
+            min_seq_len = prefill_len + args.decode_len
+            if max_seq_len < min_seq_len:
+                raise ValueError("--max-seq-len must be >= prefill_len + decode_len")
+
+            prefill_decode = args.prefill_decode or (
+                prefill_len > PREFILL_DECODE_THRESHOLD and not args.force_prefill
+            )
+            top1, top5 = run_tt_eval(
+                repo_root,
+                args.hf_model,
+                model_path,
+                prompt_ids,
+                args.decode_len,
+                args.cache_dir,
+                prefill_decode,
+                max_seq_len,
+            )
+            total = max(args.decode_len, 0)
+
+            metrics = {
+                "mode": args.mode,
+                "trace": bool(args.trace),
+                "top1": float(top1),
+                "top5": float(top5),
+                "prefill_len": prefill_len,
+                "decode_len": args.decode_len,
+                "max_seq_len": max_seq_len,
+                "batch": args.batch,
+                "total": int(total),
+            }
+            print(f"YT_METRICS={json.dumps(metrics)}")
 
 
 if __name__ == "__main__":
