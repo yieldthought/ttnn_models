@@ -26,8 +26,10 @@ models/Qwen/Qwen3-0.6B/<system>/functional/model.py
 - `ttnn.rms_norm` for RMSNorm and Q/K head norm
 - `ttnn.experimental.rotary_embedding` for HuggingFace-format RoPE
 - `ttnn.experimental.nlp_create_qkv_heads[_decode]` and `ttnn.experimental.nlp_concat_heads`
-- `ttnn.transformer.scaled_dot_product_attention[_decode]`
-- `ttnn.fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
+- `ttnn.transformer.scaled_dot_product_attention` and
+  `ttnn.transformer.paged_scaled_dot_product_attention_decode`
+- `ttnn.experimental.paged_fill_cache` (prefill) and
+  `ttnn.experimental.paged_update_cache` (decode)
 
 ## RoPE notes
 Qwen3 uses HuggingFace-format RoPE. Use:
@@ -40,13 +42,16 @@ Decode path detail:
   RoPE, then reshape back to `[1, B, heads, head_dim]`.
 
 ## KV cache and tiling constraints
-- Cache tensors are allocated as `[32, n_kv_heads, max_seq_len, head_dim]`.
-- The batch dimension is tile-aligned to 32 for decode ops.
-- Prefill uses `ttnn.fill_cache` and decode uses `ttnn.experimental.paged_update_cache`.
+- Cache tensors are allocated as `[max_num_blocks, n_kv_heads, block_size, head_dim]`
+  with `block_size=64` and `max_num_blocks=ceil(max_seq_len / block_size)`.
+- A page table is allocated as `[32, max_num_blocks]` (int32, row-major) with an
+  identity block mapping.
+- Prefill uses `ttnn.experimental.paged_fill_cache` with the page table.
+- Decode uses `ttnn.experimental.paged_update_cache` and
+  `ttnn.transformer.paged_scaled_dot_product_attention_decode`.
+- `cur_pos_tensor` is filled with `-1` for padded batch slots so decode skips them.
 
-On this device, `ttnn.fill_cache` hits a grid limit for long prefill lengths (around 1024 tokens).
-If prefill hits a `fill_cache` grid limit, use `--prefill_decode` to debug. Final bringup metrics must use the full prefill pass (no `--prefill_decode`).
-`scripts/run_eval.py` enables this automatically for large prefill lengths.
+`max_seq_len` defaults to the HF config `max_position_embeddings` (40960 for Qwen3-0.6B).
 
 ## Precision
 - Weights use `ttnn.bfloat16` in this bringup for simplicity.
@@ -66,6 +71,13 @@ Automation wrapper (emits YT_METRICS JSON):
 
 ```
 python scripts/run_eval.py --mode tt --hf-model Qwen/Qwen3-0.6B
+```
+
+Max sequence length run (paged KV cache):
+
+```
+python scripts/run_eval.py --mode tt --hf-model Qwen/Qwen3-0.6B --system n150 \
+  --prefill-len 128 --decode-len 1 --max-seq-len 40960 --force-prefill
 ```
 
 ## Debugging tips

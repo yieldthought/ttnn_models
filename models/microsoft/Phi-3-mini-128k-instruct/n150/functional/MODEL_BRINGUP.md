@@ -19,8 +19,9 @@ It mirrors the HuggingFace architecture with a fused QKV projection and a gated 
 - `ttnn.rms_norm` for RMSNorm
 - `ttnn.experimental.rotary_embedding` for RoPE
 - `ttnn.experimental.nlp_create_qkv_heads[_decode]` and `ttnn.experimental.nlp_concat_heads`
-- `ttnn.transformer.scaled_dot_product_attention[_decode]`
-- `ttnn.fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
+- `ttnn.transformer.scaled_dot_product_attention` (prefill)
+- `ttnn.transformer.paged_scaled_dot_product_attention_decode` (decode)
+- `ttnn.experimental.paged_fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
 
 ## RoPE notes
 Phi-3 uses LongRoPE (`rope_scaling.type = longrope`). This bringup:
@@ -33,12 +34,12 @@ If you need a prompt that crosses 4096 after prefill, rerun with a `max_seq_len`
 large enough for that prompt so the long factors are used consistently.
 
 ## KV cache and tiling constraints
-- Cache tensors are allocated as `[32, n_kv_heads, cache_seq_len, head_dim]`.
-- Cache length is capped to 256 tokens in this bringup (`MAX_CACHE_SEQ_LEN`) to fit on a single device.
-- Batch dimension is tile-aligned to 32 for decode ops.
+- Cache tensors are paged: `[max_num_blocks, n_kv_heads, block_size, head_dim]` with `block_size=64`.
+- Page table is `[32, max_num_blocks]` (tile-aligned batch dimension) with identity block mapping.
+- `max_seq_len` resolves from HF config `max_position_embeddings` (131072) or a user override.
+- On n150, KV cache + weights fit at `max_seq_len=12288` (single-user DRAM limit).
+- Batch dimension is tile-aligned to 32 for decode ops; set unused decode positions to `-1`.
 - Inputs are padded to tile size (32) before embedding and trimmed at the end.
-- Prefill uses height-sharded KV inputs for `fill_cache` to avoid interleaved grid-size limits.
-- Sharded prefill requires `n_kv_heads` to be divisible by the device grid x-dimension.
 
 ## Precision
 - Weights and activations use `ttnn.bfloat16`.
@@ -54,5 +55,5 @@ python eval.py models/microsoft/Phi-3-mini-128k-instruct/n150/functional/model.p
 Automation wrapper (emits YT_METRICS JSON):
 
 ```
-python scripts/run_eval.py --mode tt --hf-model microsoft/Phi-3-mini-128k-instruct
+python scripts/run_eval.py --mode tt --hf-model microsoft/Phi-3-mini-128k-instruct --system n150 --max-seq-len 12288
 ```

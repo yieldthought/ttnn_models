@@ -20,14 +20,19 @@ models/mistralai/Mistral-7B-Instruct-v0.3/<system>/functional/model.py
 - The returned class subclasses `torch.nn.Module` and `GenerationMixin` so HF `generate()` works.
 - The forward method returns `CausalLMOutputWithPast(logits=..., past_key_values=...)`.
 
+## Sequence length
+- `max_seq_len` defaults to `hf_config.max_position_embeddings`.
+- Pass a smaller value for debug runs if needed.
+
 ## Key TTNN ops
 - `ttnn.embedding` for token embeddings
 - `ttnn.linear` for QKV, output, and MLP projections
 - `ttnn.rms_norm` for RMSNorm
 - `ttnn.experimental.rotary_embedding` for HuggingFace-format RoPE
 - `ttnn.experimental.nlp_create_qkv_heads[_decode]` and `ttnn.experimental.nlp_concat_heads`
-- `ttnn.transformer.scaled_dot_product_attention[_decode]`
-- `ttnn.fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
+- `ttnn.transformer.scaled_dot_product_attention` (prefill)
+- `ttnn.transformer.paged_scaled_dot_product_attention_decode` (decode)
+- `ttnn.experimental.paged_fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
 
 ## RoPE notes
 Mistral uses HuggingFace-format RoPE with `rope_theta=1e6`. Use:
@@ -40,15 +45,11 @@ Decode path detail:
   RoPE, then reshape back to `[1, B, heads, head_dim]`.
 
 ## KV cache and tiling constraints
-- Cache tensors are allocated as `[32, n_kv_heads, cache_seq_len, head_dim]`.
-- The batch dimension is tile-aligned to 32 for decode ops.
-- Prefill uses `ttnn.fill_cache` and decode uses `ttnn.experimental.paged_update_cache`.
-- Cache length is capped to 1024 tokens in this bringup (`MAX_CACHE_SEQ_LEN`) to fit on a single device.
-  Increase it if you have more DRAM.
-
-On this device, `ttnn.fill_cache` hits a grid limit for long prefill lengths (around 1024 tokens).
-If prefill hits a `fill_cache` grid limit, use `--prefill_decode` to debug. Final bringup metrics must use the full prefill pass (no `--prefill_decode`).
-`scripts/run_eval.py` enables this automatically for large prefill lengths.
+- Cache tensors use paged layout: `[max_num_blocks, n_kv_heads, block_size, head_dim]`.
+- `block_size=64` and `max_num_blocks=ceil(max_seq_len / block_size)`.
+- Page table is an identity mapping with tile-aligned batch: `[32, max_num_blocks]` in ROW_MAJOR.
+- Prefill uses `ttnn.experimental.paged_fill_cache`, decode uses `ttnn.experimental.paged_update_cache`.
+- Decode positions use `-1` for the padded batch entries so only batch index 0 is active.
 
 ## Precision
 - Weights use `ttnn.bfloat8_b` to fit the 7B model in device DRAM.
@@ -67,7 +68,8 @@ python eval.py models/mistralai/Mistral-7B-Instruct-v0.3/n150/functional/model.p
 Automation wrapper (emits YT_METRICS JSON):
 
 ```
-python scripts/run_eval.py --mode tt --hf-model mistralai/Mistral-7B-Instruct-v0.3
+python scripts/run_eval.py --mode tt --hf-model mistralai/Mistral-7B-Instruct-v0.3 --system n150
+python scripts/run_eval.py --mode tt --hf-model mistralai/Mistral-7B-Instruct-v0.3 --system n150 --prefill-len 128 --decode-len 1 --max-seq-len 32768 --force-prefill
 ```
 
 ## Debugging tips

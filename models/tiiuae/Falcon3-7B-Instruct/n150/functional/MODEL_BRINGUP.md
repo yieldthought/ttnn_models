@@ -27,8 +27,9 @@ models/tiiuae/Falcon3-7B-Instruct/<system>/functional/model.py
 - `ttnn.rms_norm` for RMSNorm
 - `ttnn.experimental.rotary_embedding` for HuggingFace-format RoPE
 - `ttnn.experimental.nlp_create_qkv_heads[_decode]` and `ttnn.experimental.nlp_concat_heads`
-- `ttnn.transformer.scaled_dot_product_attention[_decode]`
-- `ttnn.fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
+- `ttnn.transformer.scaled_dot_product_attention` (prefill)
+- `ttnn.experimental.paged_fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
+- `ttnn.transformer.paged_scaled_dot_product_attention_decode`
 
 ## RoPE notes
 Falcon3 uses HuggingFace-format RoPE with `rope_theta=1000042` and no scaling.
@@ -38,14 +39,12 @@ Decode path detail:
   reshape Q and K to merge heads into the batch, apply RoPE, then reshape back.
 
 ## KV cache and tiling constraints
-- Cache tensors are allocated as `[32, n_kv_heads, cache_seq_len, head_dim]`.
-- The batch dimension is tile-aligned to 32 for decode ops.
-- Prefill uses `ttnn.fill_cache` and decode uses `ttnn.experimental.paged_update_cache`.
-- Cache length is capped to 1024 tokens in this bringup (`MAX_CACHE_SEQ_LEN`) to fit on a single device.
-  Increase it if you have more DRAM.
-
-If prefill hits a `fill_cache` grid limit, use `--prefill_decode` to debug.
-Final bringup metrics must use the full prefill pass (no `--prefill_decode`).
+- Cache tensors are allocated as `[max_num_blocks, n_kv_heads, block_size, head_dim]` with `block_size=64`.
+- Page table is `[32, max_num_blocks]` (tile-aligned batch) with identity block mapping.
+- Prefill uses `ttnn.experimental.paged_fill_cache` and decode uses `ttnn.experimental.paged_update_cache`.
+- Decode positions use `-1` for padded batch entries so unused slots are skipped.
+- Cache length comes from the HF config `max_position_embeddings` (32768 for Falcon3-7B-Instruct) unless a smaller
+  `max_seq_len` is passed to `build_model`.
 
 If `nlp_concat_heads` pads the width, slice back to `n_heads * head_dim` before
 the output projection.
@@ -69,6 +68,12 @@ Automation wrapper (emits YT_METRICS JSON):
 
 ```
 python scripts/run_eval.py --mode tt --hf-model tiiuae/Falcon3-7B-Instruct
+```
+
+Max-seq smoke test (full HF length):
+
+```
+python scripts/run_eval.py --mode tt --hf-model tiiuae/Falcon3-7B-Instruct --prefill-len 128 --decode-len 1 --max-seq-len 32768 --force-prefill
 ```
 
 ## Debugging tips

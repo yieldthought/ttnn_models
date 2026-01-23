@@ -27,7 +27,8 @@ models/humain-ai/ALLaM-7B-Instruct-preview/<system>/functional/model.py
 - `ttnn.experimental.rotary_embedding` for HuggingFace-format RoPE
 - `ttnn.experimental.nlp_create_qkv_heads[_decode]` and `ttnn.experimental.nlp_concat_heads`
 - `ttnn.transformer.scaled_dot_product_attention[_decode]`
-- `ttnn.fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
+- `ttnn.experimental.paged_fill_cache` and `ttnn.experimental.paged_update_cache`
+- `ttnn.transformer.paged_scaled_dot_product_attention_decode`
 
 ## RoPE notes
 ALLaM uses HuggingFace-format RoPE with `rope_theta=1e6`. Use:
@@ -37,15 +38,11 @@ ALLaM uses HuggingFace-format RoPE with `rope_theta=1e6`. Use:
 Avoid `ttnn.experimental.rotary_embedding_llama`, which expects Meta-format RoPE.
 
 ## KV cache and tiling constraints
-- Cache tensors are allocated as `[32, n_kv_heads, cache_seq_len, head_dim]`.
-- The batch dimension is tile-aligned to 32 for decode ops.
-- Prefill uses height-sharded KV inputs for `ttnn.fill_cache`, and decode uses `ttnn.experimental.paged_update_cache`.
-- Cache length is capped to 256 tokens in this bringup (`MAX_CACHE_SEQ_LEN`) to fit on a single device.
-  Increase it if you have more DRAM.
-
-On this device, interleaved `ttnn.fill_cache` hits a grid limit with 32 KV heads, so the model shards KV for prefill.
-If prefill still hits a `fill_cache` grid limit, use `--prefill_decode` to debug. Final bringup metrics must use the full prefill pass (no `--prefill_decode`).
-`scripts/run_eval.py` enables this automatically for large prefill lengths.
+- Cache tensors use paged layout: `[max_num_blocks, n_kv_heads, block_size, head_dim]` with `block_size=64`.
+- Page table shape is `[32, max_num_blocks]` (tile-aligned batch dimension), identity mapped.
+- Prefill uses `ttnn.experimental.paged_fill_cache`, decode uses `ttnn.experimental.paged_update_cache`
+  and `ttnn.transformer.paged_scaled_dot_product_attention_decode`.
+- `max_seq_len` defaults to the HF `max_position_embeddings` (4096) and can be lowered if DRAM is tight.
 
 ## Precision
 - Weights use `ttnn.bfloat8_b` to fit the 7B model in device DRAM.
@@ -65,6 +62,12 @@ Automation wrapper (emits YT_METRICS JSON):
 
 ```
 python scripts/run_eval.py --mode tt --hf-model humain-ai/ALLaM-7B-Instruct-preview
+```
+
+Max-sequence validation:
+
+```
+python scripts/run_eval.py --mode tt --hf-model humain-ai/ALLaM-7B-Instruct-preview --system n150 --prefill-len 128 --decode-len 1 --max-seq-len 4096 --force-prefill
 ```
 
 ## Debugging tips

@@ -19,7 +19,7 @@ from transformers.modeling_outputs import CausalLMOutputWithPast
 TILE_SIZE = 32
 WEIGHT_DTYPE = ttnn.bfloat8_b
 WEIGHT_LAYOUT = ttnn.TILE_LAYOUT
-MAX_CACHE_SEQ_LEN = 256
+PAGED_BLOCK_SIZE = 64
 
 
 def pad_to_tile(x: int) -> int:
@@ -46,7 +46,8 @@ class ModelConfig:
     attention_bias: bool
     query_pre_attn_scalar: float
     sliding_window: int
-    sliding_window_pattern: int
+    sliding_window_pattern: Optional[int]
+    layer_types: Optional[list]
     tie_word_embeddings: bool
     final_logit_softcapping: Optional[float]
 
@@ -69,10 +70,19 @@ class ModelConfig:
             text_config.attention_bias,
             text_config.query_pre_attn_scalar,
             text_config.sliding_window,
-            text_config.sliding_window_pattern,
+            getattr(text_config, "sliding_window_pattern", None),
+            getattr(text_config, "layer_types", None),
             text_config.tie_word_embeddings,
             getattr(text_config, "final_logit_softcapping", None),
         )
+
+
+@dataclass
+class PagedAttentionConfig:
+    """Paged KV cache configuration."""
+
+    block_size: int
+    max_num_blocks: int
 
 
 def compute_rope_cache(
@@ -98,6 +108,19 @@ def compute_rope_cache(
     return cos, sin
 
 
+def resolve_max_seq_len(hf_config, max_seq_len: Optional[int]) -> int:
+    """Resolve max sequence length from HF config when not provided."""
+    text_config = getattr(hf_config, "text_config", hf_config)
+    config_max = getattr(text_config, "max_position_embeddings", None)
+    if max_seq_len is None:
+        if config_max is None:
+            raise ValueError("max_seq_len is required when config has no max_position_embeddings")
+        return config_max
+    if config_max is not None and max_seq_len > config_max:
+        raise ValueError(f"max_seq_len {max_seq_len} exceeds config max {config_max}")
+    return max_seq_len
+
+
 class RMSNorm:
     """Gemma3 RMSNorm layer (scale is 1 + weight)."""
 
@@ -120,7 +143,7 @@ class MLP:
     """Gated MLP (gelu) for Gemma3."""
 
     def __init__(self, layer_idx: int, state_dict: dict, tt_device):
-        p = f"language_model.model.layers.{layer_idx}.mlp."
+        p = f"model.language_model.layers.{layer_idx}.mlp."
         self.gate_proj = self._load_weight(state_dict[f"{p}gate_proj.weight"], tt_device)
         self.up_proj = self._load_weight(state_dict[f"{p}up_proj.weight"], tt_device)
         self.down_proj = self._load_weight(state_dict[f"{p}down_proj.weight"], tt_device)
@@ -153,14 +176,21 @@ class Attention:
         cos_cache_local: ttnn.Tensor,
         sin_cache_local: ttnn.Tensor,
         tt_device,
-        max_seq_len: int,
+        paged_attention_config: PagedAttentionConfig,
+        page_table: ttnn.Tensor,
     ):
         self.tt_device = tt_device
         self.n_heads = config.num_attention_heads
         self.n_kv_heads = config.num_key_value_heads
         self.head_dim = config.head_dim
         self.scale = 1.0 / math.sqrt(config.query_pre_attn_scalar)
-        self.is_sliding = bool((layer_idx + 1) % config.sliding_window_pattern)
+        if config.layer_types is not None:
+            self.is_sliding = config.layer_types[layer_idx] == "sliding_attention"
+        else:
+            pattern = config.sliding_window_pattern or 6
+            self.is_sliding = bool((layer_idx + 1) % pattern)
+        self.paged_attention_config = paged_attention_config
+        self.page_table = page_table
 
         if config.attention_bias:
             raise ValueError("attention_bias=True is not supported in this bringup")
@@ -168,7 +198,7 @@ class Attention:
         self.cos_cache = cos_cache_local if self.is_sliding else cos_cache_global
         self.sin_cache = sin_cache_local if self.is_sliding else sin_cache_global
 
-        p = f"language_model.model.layers.{layer_idx}.self_attn."
+        p = f"model.language_model.layers.{layer_idx}.self_attn."
         self.q_proj = self._load_weight(state_dict[f"{p}q_proj.weight"], tt_device)
         self.k_proj = self._load_weight(state_dict[f"{p}k_proj.weight"], tt_device)
         self.v_proj = self._load_weight(state_dict[f"{p}v_proj.weight"], tt_device)
@@ -176,7 +206,12 @@ class Attention:
         self.q_norm = RMSNorm(state_dict[f"{p}q_norm.weight"], config.rms_norm_eps, tt_device)
         self.k_norm = RMSNorm(state_dict[f"{p}k_norm.weight"], config.rms_norm_eps, tt_device)
 
-        cache_shape = (TILE_SIZE, self.n_kv_heads, max_seq_len, self.head_dim)
+        cache_shape = (
+            self.paged_attention_config.max_num_blocks,
+            self.n_kv_heads,
+            self.paged_attention_config.block_size,
+            self.head_dim,
+        )
         self.k_cache = ttnn.as_tensor(
             torch.zeros(cache_shape, dtype=torch.bfloat16),
             dtype=ttnn.bfloat16,
@@ -240,8 +275,8 @@ class Attention:
             q = ttnn.experimental.rotary_embedding(q, cos, sin)
             k = ttnn.experimental.rotary_embedding(k, cos, sin)
 
-            ttnn.fill_cache(self.k_cache, k, batch_idx=0)
-            ttnn.fill_cache(self.v_cache, v, batch_idx=0)
+            ttnn.experimental.paged_fill_cache(self.k_cache, k, self.page_table, batch_idx=0)
+            ttnn.experimental.paged_fill_cache(self.v_cache, v, self.page_table, batch_idx=0)
 
             attn_out = ttnn.transformer.scaled_dot_product_attention(
                 q, k, v, is_causal=True, scale=self.scale
@@ -279,11 +314,20 @@ class Attention:
             q = ttnn.to_memory_config(q, q_mem)
             k = ttnn.to_memory_config(k, k_mem)
 
-            ttnn.experimental.paged_update_cache(self.k_cache, k, update_idxs_tensor=cur_pos_tensor)
-            ttnn.experimental.paged_update_cache(self.v_cache, v, update_idxs_tensor=cur_pos_tensor)
+            ttnn.experimental.paged_update_cache(
+                self.k_cache, k, update_idxs_tensor=cur_pos_tensor, page_table=self.page_table
+            )
+            ttnn.experimental.paged_update_cache(
+                self.v_cache, v, update_idxs_tensor=cur_pos_tensor, page_table=self.page_table
+            )
 
-            attn_out = ttnn.transformer.scaled_dot_product_attention_decode(
-                q, self.k_cache, self.v_cache, cur_pos_tensor=cur_pos_tensor, scale=self.scale
+            attn_out = ttnn.transformer.paged_scaled_dot_product_attention_decode(
+                q,
+                self.k_cache,
+                self.v_cache,
+                page_table_tensor=self.page_table,
+                cur_pos_tensor=cur_pos_tensor,
+                scale=self.scale,
             )
             attn_out = ttnn.transpose(attn_out, 1, 2)
             attn_out = ttnn.experimental.nlp_concat_heads(attn_out, memory_config=ttnn.DRAM_MEMORY_CONFIG)
@@ -312,9 +356,10 @@ class DecoderLayer:
         cos_cache_local: ttnn.Tensor,
         sin_cache_local: ttnn.Tensor,
         tt_device,
-        max_seq_len: int,
+        paged_attention_config: PagedAttentionConfig,
+        page_table: ttnn.Tensor,
     ):
-        p = f"language_model.model.layers.{layer_idx}."
+        p = f"model.language_model.layers.{layer_idx}."
         self.attn_norm = RMSNorm(state_dict[f"{p}input_layernorm.weight"], config.rms_norm_eps, tt_device)
         self.post_attn_norm = RMSNorm(state_dict[f"{p}post_attention_layernorm.weight"], config.rms_norm_eps, tt_device)
         self.pre_ffn_norm = RMSNorm(state_dict[f"{p}pre_feedforward_layernorm.weight"], config.rms_norm_eps, tt_device)
@@ -330,7 +375,8 @@ class DecoderLayer:
             cos_cache_local,
             sin_cache_local,
             tt_device,
-            max_seq_len,
+            paged_attention_config,
+            page_table,
         )
         self.mlp = MLP(layer_idx, state_dict, tt_device)
 
@@ -361,14 +407,13 @@ class TtnnGemma3ForCausalLM(torch.nn.Module, GenerationMixin):
     HuggingFace `generate()`-compatible via `GenerationMixin`.
     """
 
-    def __init__(self, hf_model, tt_device, max_seq_len: int = 2048):
+    def __init__(self, hf_model, tt_device, max_seq_len: Optional[int] = None):
         super().__init__()
 
         self.tt_device = tt_device
         self.hf_config = hf_model.config
         self.tt_config = ModelConfig.from_hf(hf_model.config)
-        self.max_seq_len = max_seq_len
-        self.cache_seq_len = min(max_seq_len, MAX_CACHE_SEQ_LEN)
+        self.max_seq_len = resolve_max_seq_len(self.hf_config, max_seq_len)
         self._pos = 0
 
         if self.tt_config.hidden_activation != "gelu_pytorch_tanh":
@@ -386,7 +431,7 @@ class TtnnGemma3ForCausalLM(torch.nn.Module, GenerationMixin):
 
         print("  Loading embeddings...")
         embed_scale = torch.tensor(self.tt_config.hidden_size**0.5, dtype=torch.bfloat16)
-        embed_weight = state_dict["language_model.model.embed_tokens.weight"].to(torch.bfloat16) * embed_scale
+        embed_weight = state_dict["model.language_model.embed_tokens.weight"].to(torch.bfloat16) * embed_scale
         self.embed = ttnn.as_tensor(
             embed_weight.unsqueeze(0).unsqueeze(0).contiguous(),
             dtype=WEIGHT_DTYPE,
@@ -398,13 +443,13 @@ class TtnnGemma3ForCausalLM(torch.nn.Module, GenerationMixin):
         print("  Computing RoPE cache...")
         cos_global, sin_global = compute_rope_cache(
             self.tt_config.head_dim,
-            self.cache_seq_len,
+            self.max_seq_len,
             rope_theta=self.tt_config.rope_theta,
             rope_scaling=self.tt_config.rope_scaling,
         )
         cos_local, sin_local = compute_rope_cache(
             self.tt_config.head_dim,
-            self.cache_seq_len,
+            self.max_seq_len,
             rope_theta=self.tt_config.rope_local_base_freq,
             rope_scaling=None,
         )
@@ -437,6 +482,17 @@ class TtnnGemma3ForCausalLM(torch.nn.Module, GenerationMixin):
             memory_config=ttnn.DRAM_MEMORY_CONFIG,
         )
 
+        max_num_blocks = math.ceil(self.max_seq_len / PAGED_BLOCK_SIZE)
+        self.paged_attention_config = PagedAttentionConfig(PAGED_BLOCK_SIZE, max_num_blocks)
+        page_table = torch.arange(max_num_blocks, dtype=torch.int32).repeat(TILE_SIZE, 1)
+        self.page_table = ttnn.as_tensor(
+            page_table,
+            dtype=ttnn.int32,
+            layout=ttnn.ROW_MAJOR_LAYOUT,
+            device=tt_device,
+            memory_config=ttnn.DRAM_MEMORY_CONFIG,
+        )
+
         print(f"  Loading {self.tt_config.num_hidden_layers} layers...")
         self.layers = [
             DecoderLayer(
@@ -448,15 +504,16 @@ class TtnnGemma3ForCausalLM(torch.nn.Module, GenerationMixin):
                 self.cos_cache_local,
                 self.sin_cache_local,
                 tt_device,
-                self.cache_seq_len,
+                self.paged_attention_config,
+                self.page_table,
             )
             for i in range(self.tt_config.num_hidden_layers)
         ]
 
-        self.norm = RMSNorm(state_dict["language_model.model.norm.weight"], self.tt_config.rms_norm_eps, tt_device)
-        lm_head_weight = state_dict.get("language_model.lm_head.weight")
+        self.norm = RMSNorm(state_dict["model.language_model.norm.weight"], self.tt_config.rms_norm_eps, tt_device)
+        lm_head_weight = state_dict.get("lm_head.weight")
         if lm_head_weight is None:
-            lm_head_weight = state_dict["language_model.model.embed_tokens.weight"]
+            lm_head_weight = state_dict["model.language_model.embed_tokens.weight"]
         self.lm_head = ttnn.as_tensor(
             lm_head_weight.T.unsqueeze(0).unsqueeze(0).to(torch.bfloat16).contiguous(),
             dtype=WEIGHT_DTYPE,
@@ -501,16 +558,15 @@ class TtnnGemma3ForCausalLM(torch.nn.Module, GenerationMixin):
             assert seq_len == 1, "Only 1-token decode supported when using cache"
 
         start_pos = self._pos
-        if start_pos + seq_len > self.cache_seq_len:
+        if start_pos + seq_len > self.max_seq_len:
             raise ValueError(
-                f"sequence length {start_pos + seq_len} exceeds cache length {self.cache_seq_len}; "
-                "increase MAX_CACHE_SEQ_LEN if memory allows"
+                f"sequence length {start_pos + seq_len} exceeds max_seq_len {self.max_seq_len}"
             )
 
         cur_pos_tensor = None
         if seq_len == 1:
             cur_pos_tensor = ttnn.from_torch(
-                torch.full((TILE_SIZE,), start_pos, dtype=torch.int32),
+                torch.tensor([start_pos] + [-1] * (TILE_SIZE - 1), dtype=torch.int32),
                 dtype=ttnn.int32,
                 device=self.tt_device,
             )
@@ -546,6 +602,6 @@ class TtnnGemma3ForCausalLM(torch.nn.Module, GenerationMixin):
         )
 
 
-def build_model(hf_model, tt_device, max_seq_len: int = 2048) -> TtnnGemma3ForCausalLM:
+def build_model(hf_model, tt_device, max_seq_len: Optional[int] = None) -> TtnnGemma3ForCausalLM:
     """Build the ttnn model from a HuggingFace reference model."""
     return TtnnGemma3ForCausalLM(hf_model, tt_device, max_seq_len)

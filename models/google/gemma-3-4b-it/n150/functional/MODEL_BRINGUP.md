@@ -19,8 +19,9 @@ It is designed to be easy to read and to serve as a template for future bringups
 - `ttnn.rms_norm` for RMSNorm and Q/K head norm
 - `ttnn.experimental.rotary_embedding` for HuggingFace-format RoPE
 - `ttnn.experimental.nlp_create_qkv_heads[_decode]` and `ttnn.experimental.nlp_concat_heads`
-- `ttnn.transformer.scaled_dot_product_attention[_decode]`
-- `ttnn.fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
+- `ttnn.transformer.scaled_dot_product_attention` (prefill)
+- `ttnn.transformer.paged_scaled_dot_product_attention_decode` (decode)
+- `ttnn.experimental.paged_fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
 
 ## Gemma3 specifics
 - Q/K RMSNorm uses `(1 + weight)` (Gemma3RMSNorm).
@@ -30,8 +31,10 @@ It is designed to be easy to read and to serve as a template for future bringups
 - Sliding-window masking is not implemented; it only matters for very long contexts.
 
 ## KV cache and tiling constraints
-- Cache tensors are `[32, n_kv_heads, max_seq_len, head_dim]`.
-- `MAX_CACHE_SEQ_LEN` is set to 256 to cap memory usage; increase if needed.
+- Cache tensors are paged: `[max_num_blocks, n_kv_heads, block_size, head_dim]` with `block_size=64`.
+- Page table is `[32, max_num_blocks]` (tile-aligned batch dimension) with identity block mapping.
+- `max_seq_len` resolves from HF config `max_position_embeddings` (131072 for Gemma-3-4b-it) or a user override.
+- On n150, KV cache + weights fit at `max_seq_len=40960` (single-user DRAM limit). OOM at 49152.
 
 ## Precision
 - Weights use `ttnn.bfloat8_b`.
@@ -50,7 +53,7 @@ python eval.py models/google/gemma-3-4b-it/n150/functional/model.py --model goog
 Automation wrapper (emits YT_METRICS JSON):
 
 ```
-python scripts/run_eval.py --mode tt --hf-model google/gemma-3-4b-it
+python scripts/run_eval.py --mode tt --hf-model google/gemma-3-4b-it --system n150 --max-seq-len 40960
 ```
 
 ## Debugging tips

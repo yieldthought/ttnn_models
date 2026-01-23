@@ -13,8 +13,8 @@ Key ttnn operations used:
 - ttnn.experimental.rotary_embedding: RoPE (HuggingFace format)
 - ttnn.experimental.nlp_create_qkv_heads[_decode]: Reshape for multi-head attention
 - ttnn.experimental.nlp_concat_heads: Concatenate heads after attention
-- ttnn.transformer.scaled_dot_product_attention[_decode]: Fused attention
-- ttnn.fill_cache / ttnn.experimental.paged_update_cache: KV cache management
+- ttnn.transformer.scaled_dot_product_attention, ttnn.transformer.paged_scaled_dot_product_attention_decode
+- ttnn.experimental.paged_fill_cache / ttnn.experimental.paged_update_cache: KV cache management
 - ttnn.silu, ttnn.mul: MLP activations
 
 Use `eval.py` at repo root for teacher-forcing accuracy checks against the
@@ -33,6 +33,7 @@ from transformers.modeling_outputs import CausalLMOutputWithPast
 
 
 TILE_SIZE = 32
+PAGED_BLOCK_SIZE = 64
 
 
 def pad_to_tile(x: int) -> int:
@@ -81,6 +82,14 @@ class ModelConfig:
         )
 
 
+@dataclass
+class PagedAttentionConfig:
+    """Paged KV cache configuration."""
+
+    block_size: int
+    max_num_blocks: int
+
+
 def compute_rope_cache(config: ModelConfig, max_seq_len: int) -> tuple:
     """
     Precompute RoPE cos/sin cache in HuggingFace format.
@@ -99,6 +108,22 @@ def compute_rope_cache(config: ModelConfig, max_seq_len: int) -> tuple:
     cos = emb.cos().unsqueeze(0).unsqueeze(0).to(torch.bfloat16)
     sin = emb.sin().unsqueeze(0).unsqueeze(0).to(torch.bfloat16)
     return cos, sin
+
+
+def resolve_max_seq_len(hf_config, max_seq_len: Optional[int]) -> int:
+    """Resolve max sequence length from HF config when not provided."""
+    config_max = getattr(hf_config, "max_position_embeddings", None)
+    if config_max is None:
+        config_max = getattr(hf_config, "seq_length", None)
+    if config_max is None:
+        config_max = getattr(hf_config, "max_seq_len", None)
+    if max_seq_len is None:
+        if config_max is None:
+            raise ValueError("max_seq_len is required when config has no max_position_embeddings")
+        return config_max
+    if config_max is not None and max_seq_len > config_max:
+        raise ValueError(f"max_seq_len {max_seq_len} exceeds config max {config_max}")
+    return max_seq_len
 
 
 class RMSNorm:
@@ -127,13 +152,16 @@ class Attention:
 
     def __init__(self, config: ModelConfig, layer_idx: int, state_dict: dict,
                  cos_cache: ttnn.Tensor, sin_cache: ttnn.Tensor,
-                 tt_device, max_seq_len: int):
+                 tt_device, paged_attention_config: PagedAttentionConfig,
+                 page_table: ttnn.Tensor):
         self.tt_device = tt_device
         self.n_heads = config.num_attention_heads
         self.n_kv_heads = config.num_key_value_heads
         self.head_dim = config.head_dim
         self.hidden_size = config.hidden_size
         self.scale = 1.0 / math.sqrt(self.head_dim)
+        self.paged_attention_config = paged_attention_config
+        self.page_table = page_table
 
         if config.attention_bias:
             raise ValueError("attention_bias=True is not supported in this bringup")
@@ -149,7 +177,12 @@ class Attention:
         self.q_norm = RMSNorm(state_dict[f"{p}q_norm.weight"], config.rms_norm_eps, tt_device)
         self.k_norm = RMSNorm(state_dict[f"{p}k_norm.weight"], config.rms_norm_eps, tt_device)
 
-        cache_shape = (TILE_SIZE, self.n_kv_heads, max_seq_len, self.head_dim)
+        cache_shape = (
+            self.paged_attention_config.max_num_blocks,
+            self.n_kv_heads,
+            self.paged_attention_config.block_size,
+            self.head_dim,
+        )
         self.k_cache = ttnn.as_tensor(
             torch.zeros(cache_shape, dtype=torch.bfloat16),
             dtype=ttnn.bfloat16,
@@ -215,8 +248,8 @@ class Attention:
             q = ttnn.experimental.rotary_embedding(q, cos, sin)
             k = ttnn.experimental.rotary_embedding(k, cos, sin)
 
-            ttnn.fill_cache(self.k_cache, k, batch_idx=0)
-            ttnn.fill_cache(self.v_cache, v, batch_idx=0)
+            ttnn.experimental.paged_fill_cache(self.k_cache, k, self.page_table, batch_idx=0)
+            ttnn.experimental.paged_fill_cache(self.v_cache, v, self.page_table, batch_idx=0)
 
             attn_out = ttnn.transformer.scaled_dot_product_attention(
                 q, k, v, is_causal=True, scale=self.scale
@@ -260,11 +293,26 @@ class Attention:
             q = ttnn.to_memory_config(q, q_mem)
             k = ttnn.to_memory_config(k, k_mem)
 
-            ttnn.experimental.paged_update_cache(self.k_cache, k, update_idxs_tensor=cur_pos_tensor)
-            ttnn.experimental.paged_update_cache(self.v_cache, v, update_idxs_tensor=cur_pos_tensor)
+            ttnn.experimental.paged_update_cache(
+                self.k_cache,
+                k,
+                update_idxs_tensor=cur_pos_tensor,
+                page_table=self.page_table,
+            )
+            ttnn.experimental.paged_update_cache(
+                self.v_cache,
+                v,
+                update_idxs_tensor=cur_pos_tensor,
+                page_table=self.page_table,
+            )
 
-            attn_out = ttnn.transformer.scaled_dot_product_attention_decode(
-                q, self.k_cache, self.v_cache, cur_pos_tensor=cur_pos_tensor, scale=self.scale
+            attn_out = ttnn.transformer.paged_scaled_dot_product_attention_decode(
+                q,
+                self.k_cache,
+                self.v_cache,
+                page_table_tensor=self.page_table,
+                cur_pos_tensor=cur_pos_tensor,
+                scale=self.scale,
             )
             attn_out = ttnn.transpose(attn_out, 1, 2)
             attn_out = ttnn.experimental.nlp_concat_heads(attn_out, memory_config=ttnn.DRAM_MEMORY_CONFIG)
@@ -309,11 +357,21 @@ class DecoderLayer:
 
     def __init__(self, config: ModelConfig, layer_idx: int, state_dict: dict,
                  cos_cache: ttnn.Tensor, sin_cache: ttnn.Tensor,
-                 tt_device, max_seq_len: int):
+                 tt_device, paged_attention_config: PagedAttentionConfig,
+                 page_table: ttnn.Tensor):
         p = f"model.layers.{layer_idx}."
         self.attn_norm = RMSNorm(state_dict[f"{p}input_layernorm.weight"], config.rms_norm_eps, tt_device)
         self.ffn_norm = RMSNorm(state_dict[f"{p}post_attention_layernorm.weight"], config.rms_norm_eps, tt_device)
-        self.attn = Attention(config, layer_idx, state_dict, cos_cache, sin_cache, tt_device, max_seq_len)
+        self.attn = Attention(
+            config,
+            layer_idx,
+            state_dict,
+            cos_cache,
+            sin_cache,
+            tt_device,
+            paged_attention_config,
+            page_table,
+        )
         self.mlp = MLP(layer_idx, state_dict, tt_device)
 
     def __call__(
@@ -334,13 +392,13 @@ class TtnnQwen3ForCausalLM(torch.nn.Module, GenerationMixin):
     HuggingFace `generate()`-compatible via `GenerationMixin`.
     """
 
-    def __init__(self, hf_model, tt_device, max_seq_len: int = 2048):
+    def __init__(self, hf_model, tt_device, max_seq_len: Optional[int] = None):
         super().__init__()
 
         self.tt_device = tt_device
         self.hf_config = hf_model.config
         self.tt_config = ModelConfig.from_hf(hf_model.config)
-        self.max_seq_len = max_seq_len
+        self.max_seq_len = resolve_max_seq_len(self.hf_config, max_seq_len)
         self._pos = 0
 
         if self.tt_config.hidden_act != "silu":
@@ -368,7 +426,7 @@ class TtnnQwen3ForCausalLM(torch.nn.Module, GenerationMixin):
         )
 
         print("  Computing RoPE cache...")
-        cos, sin = compute_rope_cache(self.tt_config, max_seq_len)
+        cos, sin = compute_rope_cache(self.tt_config, self.max_seq_len)
         self.cos_cache = ttnn.as_tensor(
             cos,
             dtype=ttnn.bfloat16,
@@ -384,9 +442,29 @@ class TtnnQwen3ForCausalLM(torch.nn.Module, GenerationMixin):
             memory_config=ttnn.DRAM_MEMORY_CONFIG,
         )
 
+        max_num_blocks = math.ceil(self.max_seq_len / PAGED_BLOCK_SIZE)
+        self.paged_attention_config = PagedAttentionConfig(PAGED_BLOCK_SIZE, max_num_blocks)
+        page_table = torch.arange(max_num_blocks, dtype=torch.int32).repeat(TILE_SIZE, 1)
+        self.page_table = ttnn.as_tensor(
+            page_table,
+            dtype=ttnn.int32,
+            layout=ttnn.ROW_MAJOR_LAYOUT,
+            device=tt_device,
+            memory_config=ttnn.DRAM_MEMORY_CONFIG,
+        )
+
         print(f"  Loading {self.tt_config.num_hidden_layers} layers...")
         self.layers = [
-            DecoderLayer(self.tt_config, i, state_dict, self.cos_cache, self.sin_cache, tt_device, max_seq_len)
+            DecoderLayer(
+                self.tt_config,
+                i,
+                state_dict,
+                self.cos_cache,
+                self.sin_cache,
+                tt_device,
+                self.paged_attention_config,
+                self.page_table,
+            )
             for i in range(self.tt_config.num_hidden_layers)
         ]
 
@@ -440,11 +518,9 @@ class TtnnQwen3ForCausalLM(torch.nn.Module, GenerationMixin):
 
         cur_pos_tensor = None
         if seq_len == 1:
-            cur_pos_tensor = ttnn.from_torch(
-                torch.full((TILE_SIZE,), start_pos, dtype=torch.int32),
-                dtype=ttnn.int32,
-                device=self.tt_device,
-            )
+            cur_pos = torch.full((TILE_SIZE,), -1, dtype=torch.int32)
+            cur_pos[0] = start_pos
+            cur_pos_tensor = ttnn.from_torch(cur_pos, dtype=ttnn.int32, device=self.tt_device)
 
         padded_seq = pad_to_tile(seq_len)
         if seq_len < padded_seq:
@@ -473,6 +549,6 @@ class TtnnQwen3ForCausalLM(torch.nn.Module, GenerationMixin):
         )
 
 
-def build_model(hf_model, tt_device, max_seq_len: int = 2048) -> TtnnQwen3ForCausalLM:
+def build_model(hf_model, tt_device, max_seq_len: Optional[int] = None) -> TtnnQwen3ForCausalLM:
     """Build the ttnn model from a HuggingFace reference model."""
     return TtnnQwen3ForCausalLM(hf_model, tt_device, max_seq_len)
