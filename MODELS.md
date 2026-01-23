@@ -37,7 +37,7 @@ python eval.py models/arcee-ai/Arcee-Spark/n150/functional/model.py --model arce
 | ALLaM-7B-Instruct-preview | models/humain-ai/ALLaM-7B-Instruct-preview/n150/functional/model.py | humain-ai/ALLaM-7B-Instruct-preview | 146 | 100 | 95.00% | 100.00% | pass | MAX_CACHE_SEQ_LEN 256, sharded fill_cache |
 | ALLaM-7B-Instruct-preview (n300) | models/humain-ai/ALLaM-7B-Instruct-preview/n300/functional/model.py | humain-ai/ALLaM-7B-Instruct-preview | 146 | 100 | 98.00% | 100.00% | pass | 1x2 mesh, MAX_CACHE_SEQ_LEN 256 |
 | ALLaM-7B-Instruct-preview (t3000) | models/humain-ai/ALLaM-7B-Instruct-preview/t3000/functional/model.py | humain-ai/ALLaM-7B-Instruct-preview | 146 | 100 | 97.00% | 100.00% | pass | 2x4 mesh, MAX_CACHE_SEQ_LEN 256 |
-| Llama-3.2-1B | models/meta-llama/Llama-3.2-1B/n150/functional/model.py | meta-llama/Llama-3.2-1B | 141 | 100 | 93.00% | 100.00% | pass | max_seq_len 9344 (OOM >= 9376), sharded fill_cache |
+| Llama-3.2-1B | models/meta-llama/Llama-3.2-1B/n150/functional/model.py | meta-llama/Llama-3.2-1B | 141 | 100 | 92.00% | 100.00% | pass | paged KV cache, max_seq_len 131072 (HF max) |
 | Llama-3.2-1B (n300) | models/meta-llama/Llama-3.2-1B/n300/functional/model.py | meta-llama/Llama-3.2-1B | 141 | 100 | 91.00% | 100.00% | pass | 1x2 mesh |
 | Llama-3.2-1B (t3000) | models/meta-llama/Llama-3.2-1B/t3000/functional/model.py | meta-llama/Llama-3.2-1B | 141 | 100 | 87.00% | 100.00% | pass | 2x4 mesh |
 | Mistral-7B-Instruct-v0.3 | models/mistralai/Mistral-7B-Instruct-v0.3/n150/functional/model.py | mistralai/Mistral-7B-Instruct-v0.3 | 155 | 100 | 93.00% | 100.00% | pass | - |

@@ -1,41 +1,72 @@
 # Sequence Length Notes (n150 functional models)
 
 This doc records sequence-length limits and a repeatable method to raise them on n150.
-The usual failure is `fill_cache` hitting a grid-size limit when inputs are interleaved.
-Fix that first, then push max length until DRAM runs out.
+The biggest limiter is KV cache layout: the default cache `[32, n_kv_heads, max_seq_len, head_dim]`
+incurs a 32x batch tile tax. Paged KV cache removes that and enables full model lengths.
 
 ## What changed for Llama-3.2-1B (n150 functional)
 
-- Root cause: interleaved `fill_cache` uses one work block per KV-head tile.
-  With 8 KV heads and 32x32 tiles, `seq_len=512` -> 16 tiles -> 8 * 16 = 128 blocks,
-  which exceeds the 8x8 grid (64) and crashes.
-- Fix: shard K/V before `fill_cache` (height-sharded, ROW_MAJOR).
-- Resulting max `max_seq_len` on n150 (DRAM-limited): **9344**.
-  - `max_seq_len=9344` builds and runs short prefill (128 tokens).
-  - `max_seq_len=9376` builds but OOMs during prefill.
-  - `max_seq_len=9408+` OOMs during model build or lm_head upload.
+- **Non-paged cache (legacy):**
+  - Sharded `fill_cache` avoids interleaved grid-size limits.
+  - DRAM limit hit at `max_seq_len=9344` (OOM at 9376+).
+- **Paged cache (current):**
+  - Cache shape `[max_num_blocks, n_kv_heads, block_size, head_dim]` with `block_size=64`.
+  - Page table `[32, max_num_blocks]` (tile-aligned batch dim) with identity block mapping.
+  - Supports full HF `max_position_embeddings=131072` on n150.
+  - Validation: 1-token teacher-forcing succeeds at `--max_seq_len 131072`.
 
-Summary sweep (Llama-3.2-1B, n150 functional):
+## Paged KV cache recipe (recommended)
 
-| max_seq_len | Build | Prefill(128) | Result |
-| --- | --- | --- | --- |
-| 8192 | ok | ok | pass |
-| 9216 | ok | ok | pass |
-| 9344 | ok | ok | **max** |
-| 9376 | ok | OOM | fail |
-| 9408 | OOM | - | fail |
-| 9472 | OOM | - | fail |
-| 9600 | OOM | - | fail |
-| 10240 | OOM | - | fail |
-| 12288 | OOM | - | fail |
-| 16384 | OOM | - | fail |
+1. Pick `block_size` (multiple of 32). Use 64 by default.
+2. `max_num_blocks = ceil(max_seq_len / block_size)`.
+3. Allocate K/V cache as `[max_num_blocks, n_kv_heads, block_size, head_dim]`.
+4. Create a page table (identity mapping) with tile batch:
+   - Shape `[32, max_num_blocks]`, dtype `int32`, layout `ROW_MAJOR`.
+5. Prefill: use paged fill.
+6. Decode: use paged update + paged SDPA decode.
+7. Decode positions: set `cur_pos_tensor` to `-1` for padded batch entries so unused slots are skipped.
 
-## Fixing `fill_cache` grid limits
-
-Use sharded K/V for prefill:
+Code sketch:
 
 ```python
-# Shard KV for fill_cache to avoid interleaved grid-size limits at long prefill lengths.
+block_size = 64
+max_num_blocks = math.ceil(max_seq_len / block_size)
+
+page_table = torch.arange(max_num_blocks, dtype=torch.int32).repeat(32, 1)
+page_table = ttnn.as_tensor(
+    page_table,
+    dtype=ttnn.int32,
+    layout=ttnn.ROW_MAJOR_LAYOUT,
+    device=tt_device,
+    memory_config=ttnn.DRAM_MEMORY_CONFIG,
+)
+
+# Prefill
+ttnn.experimental.paged_fill_cache(k_cache, k, page_table, batch_idx=0)
+ttnn.experimental.paged_fill_cache(v_cache, v, page_table, batch_idx=0)
+
+# Decode
+ttnn.experimental.paged_update_cache(k_cache, k, update_idxs_tensor=cur_pos_tensor, page_table=page_table)
+ttnn.experimental.paged_update_cache(v_cache, v, update_idxs_tensor=cur_pos_tensor, page_table=page_table)
+attn_out = ttnn.transformer.paged_scaled_dot_product_attention_decode(
+    q, k_cache, v_cache, page_table_tensor=page_table, cur_pos_tensor=cur_pos_tensor
+)
+```
+
+### Memory math (paged cache)
+
+Per-token bytes (batch=1):
+`n_kv_heads * head_dim * 2 (K+V) * 2 bytes * num_layers`
+
+Llama-3.2-1B:
+`8 * 64 * 2 * 2 * 16 = 32768 bytes` (~32 KB/token)  
+`131072 tokens ~ 4.0 GiB` of KV cache.
+
+## Non-paged cache grid limits (legacy)
+
+If you keep the default cache layout, you still need sharded K/V for `fill_cache`:
+
+```python
 grid = tt_device.core_grid
 grid_x = min(grid.x, n_kv_heads)
 while grid_x > 1 and n_kv_heads % grid_x != 0:
@@ -51,45 +82,25 @@ shard_mem_config = ttnn.create_sharded_memory_config(
 )
 k_sharded = ttnn.to_memory_config(k, shard_mem_config)
 v_sharded = ttnn.to_memory_config(v, shard_mem_config)
-
 ttnn.fill_cache(k_cache, k_sharded, batch_idx=0)
 ttnn.fill_cache(v_cache, v_sharded, batch_idx=0)
-ttnn.deallocate(k_sharded)
-ttnn.deallocate(v_sharded)
 ```
 
-Notes:
-- Height-sharded + ROW_MAJOR is required by `fill_cache`.
-- Pick a shard grid that evenly divides `n_kv_heads` and fits within the device grid.
+## How to sweep max sequence length
 
-## How to measure max seq length for another model
-
-1. Identify KV cache shape and head config.
-   - Cache shape is usually `[32, n_kv_heads, max_seq_len, head_dim]` on n150.
-2. Fix `fill_cache` if interleaved prefill hits the grid limit (see snippet above).
-3. Find the DRAM limit with short prefill (fast, avoids O(S^2) prefill compute):
-   - Build the TT model with a large `max_seq_len`.
-   - Run a short prefill (e.g., 128 tokens) to ensure runtime buffers can still allocate.
-   - If you see OOM during model build or prefill, lower `max_seq_len` and retry.
-4. Optionally run a longer prefill (e.g., 4096) to validate long-seq behavior.
-
-Tip: cache memory dominates. For Llama-3.2-1B (16 layers, 8 KV heads, head_dim 64),
-KV cache bytes per token ~ 32 (batch tiles) * 8 * 64 * 2 (BF16) * 2 (K+V) * 16 layers
-~ 0.5 MB per token. That makes 2048 tokens ~ 1 GB of cache.
-
-## Eval tooling for sweeps
-
-`scripts/run_eval.py` now supports prefill sweeps:
-
-- Range sweep: `--prefill-len-range start:end[:step]`
-- Force full prefill (avoid auto prefill_decode): `--force-prefill`
-
-Example:
+`scripts/run_eval.py` supports max-seq sweeps:
 
 ```bash
 python scripts/run_eval.py --mode tt --hf-model meta-llama/Llama-3.2-1B \
-  --prefill-len-range 512:4096:512 --decode-len 4 --force-prefill
+  --prefill-len 128 --decode-len 1 --max-seq-len 131072 --force-prefill
 ```
+
+```bash
+python scripts/run_eval.py --mode tt --hf-model meta-llama/Llama-3.2-1B \
+  --prefill-len 128 --decode-len 1 --max-seq-len-range 8192:131072:8192 --force-prefill
+```
+
+Prefill sweeps still work via `--prefill-len-range`.
 
 ## Runtime gotchas
 

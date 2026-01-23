@@ -37,21 +37,18 @@ Llama 3.x on HuggingFace uses the HuggingFace RoPE layout. Use:
 Avoid `ttnn.experimental.rotary_embedding_llama`, which expects Meta-format RoPE.
 
 ## KV cache and tiling constraints
-- Cache tensors are allocated as `[32, n_kv_heads, max_seq_len, head_dim]`.
-- The batch dimension is tile-aligned to 32 for decode ops.
-- Prefill uses `ttnn.fill_cache` and decode uses `ttnn.experimental.paged_update_cache`.
+- Cache tensors are paged: `[max_num_blocks, n_kv_heads, block_size, head_dim]` with `block_size=64`.
+- The page table is `[32, max_num_blocks]` (tile-aligned batch dimension) with identity block mapping.
+- Prefill uses `ttnn.experimental.paged_fill_cache`.
+- Decode uses `ttnn.experimental.paged_update_cache` and
+  `ttnn.transformer.paged_scaled_dot_product_attention_decode`.
+- Decode `cur_pos_tensor` uses `-1` for padded batch entries so unused slots are skipped.
 
-Prefill now shards K/V before `fill_cache` to avoid the interleaved grid-size limit. On n150, the
-functional model builds and runs short prefill at `max_seq_len=9344`; `max_seq_len=9376` OOMs during
-prefill due to DRAM pressure. See `SEQ_LEN.md` for the full sweep and how to reproduce.
-`scripts/run_eval.py` supports prefill sweeps via `--prefill-len-range` (use `--force-prefill` to
-avoid auto `--prefill_decode`).
+With paged KV cache, the model builds and runs at the full HF max sequence length (`131072`).
+See `SEQ_LEN.md` for the paged-cache how-to and the long-sequence validation commands.
 
 ## Precision
-- Weights use `ttnn.bfloat16` in this bringup for simplicity.
-- Activations use `ttnn.bfloat16`.
-
-The intent is correctness-first; bfloat8 weights can be tried later if accuracy allows.
+- Weights and activations use `ttnn.bfloat16`.
 
 ## Padding
 Inputs are padded to the TTNN tile size (32) before embedding and trimmed after logits are returned.
