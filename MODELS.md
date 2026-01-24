@@ -34,8 +34,8 @@ python eval.py models/arcee-ai/AFM-4.5B/n150/functional/model.py --model arcee-a
 
 | Model | Model Path | HF ID | Prompt Tokens | Max New Tokens | Top-1 | Top-5 | Status | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Arcee-Spark | models/arcee-ai/Arcee-Spark/n150/functional/model.py | arcee-ai/Arcee-Spark | 140 | 100 | 90.00% | 100.00% | pass | MAX_CACHE_SEQ_LEN 256, QKV path BF16 HiFi4, BF16 embed/lm_head |
-| AFM-4.5B | models/arcee-ai/AFM-4.5B/n150/functional/model.py | arcee-ai/AFM-4.5B | 141 | 100 | 98.00% | 100.00% | pass | MAX_CACHE_SEQ_LEN 256, GQA decode cache, bfloat8 weights |
+| Arcee-Spark | models/arcee-ai/Arcee-Spark/n150/functional/model.py | arcee-ai/Arcee-Spark | 140 | 100 | 90.00% | 100.00% | pass | paged KV cache, max_seq_len 29952 (n150 DRAM limit; HF max 32768 OOM), QKV path BF16 HiFi4, BF16 embed/lm_head |
+| AFM-4.5B | models/arcee-ai/AFM-4.5B/n150/functional/model.py | arcee-ai/AFM-4.5B | 141 | 100 | 98.00% | 100.00% | pass | paged KV cache, max_seq_len 65536 (HF max), bfloat8 weights |
 | ALLaM-7B-Instruct-preview | models/humain-ai/ALLaM-7B-Instruct-preview/n150/functional/model.py | humain-ai/ALLaM-7B-Instruct-preview | 146 | 100 | 95.00% | 100.00% | pass | paged KV cache, max_seq_len 4096 (HF max) |
 | ALLaM-7B-Instruct-preview (n300) | models/humain-ai/ALLaM-7B-Instruct-preview/n300/functional/model.py | humain-ai/ALLaM-7B-Instruct-preview | 146 | 100 | 98.00% | 100.00% | pass | 1x2 mesh, MAX_CACHE_SEQ_LEN 256 |
 | ALLaM-7B-Instruct-preview (t3000) | models/humain-ai/ALLaM-7B-Instruct-preview/t3000/functional/model.py | humain-ai/ALLaM-7B-Instruct-preview | 146 | 100 | 97.00% | 100.00% | pass | 2x4 mesh, MAX_CACHE_SEQ_LEN 256 |

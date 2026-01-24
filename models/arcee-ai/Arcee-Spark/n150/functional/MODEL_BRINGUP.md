@@ -29,7 +29,7 @@ Minimal TTNN bringup of `arcee-ai/Arcee-Spark` (Qwen2 family) with full device e
 ## KV cache and limits
 - Paged KV cache uses `[max_num_blocks, n_kv_heads, block_size, head_dim]` with `block_size=64`.
 - Page table is identity-mapped with shape `[32, max_num_blocks]`.
-- `max_seq_len` defaults to `max_position_embeddings` from the HF config (32768 for Arcee-Spark).
+- `max_seq_len` defaults to `max_position_embeddings` from the HF config (32768 for Arcee-Spark), but n150 DRAM limits validation to 29952.
 
 ## Evaluation
 Teacher-forcing accuracy against the HF reference model:
@@ -41,7 +41,9 @@ python eval.py models/arcee-ai/Arcee-Spark/n150/functional/model.py --model arce
 Max sequence length validation (prefill only, 1-token decode):
 
 ```
-python scripts/run_eval.py --mode tt --hf-model arcee-ai/Arcee-Spark --system n150 --prefill-len 128 --decode-len 1 --max-seq-len 32768
+python scripts/run_eval.py --mode tt --hf-model arcee-ai/Arcee-Spark --system n150 --prefill-len 128 --decode-len 1 --max-seq-len 29952
 ```
+
+Note: 30080+ (including the HF max 32768) OOMs during embeddings on n150.
 
 Note: `--force-prefill`/`--prefill_decode` was a hack and has been removed from the eval scripts.
