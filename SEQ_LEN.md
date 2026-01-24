@@ -92,12 +92,12 @@ ttnn.fill_cache(v_cache, v_sharded, batch_idx=0)
 
 ```bash
 python scripts/run_eval.py --mode tt --hf-model meta-llama/Llama-3.2-1B \
-  --prefill-len 128 --decode-len 1 --max-seq-len 131072 --force-prefill
+  --prefill-len 128 --decode-len 1 --max-seq-len 131072
 ```
 
 ```bash
 python scripts/run_eval.py --mode tt --hf-model meta-llama/Llama-3.2-1B \
-  --prefill-len 128 --decode-len 1 --max-seq-len-range 8192:131072:8192 --force-prefill
+  --prefill-len 128 --decode-len 1 --max-seq-len-range 8192:131072:8192
 ```
 
 Prefill sweeps still work via `--prefill-len-range`.

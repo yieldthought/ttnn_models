@@ -67,8 +67,10 @@ python scripts/run_eval.py --mode tt --hf-model humain-ai/ALLaM-7B-Instruct-prev
 Max-sequence validation:
 
 ```
-python scripts/run_eval.py --mode tt --hf-model humain-ai/ALLaM-7B-Instruct-preview --system n150 --prefill-len 128 --decode-len 1 --max-seq-len 4096 --force-prefill
+python scripts/run_eval.py --mode tt --hf-model humain-ai/ALLaM-7B-Instruct-preview --system n150 --prefill-len 128 --decode-len 1 --max-seq-len 4096
 ```
+
+Note: `--force-prefill`/`--prefill_decode` was a hack and has been removed from the eval scripts.
 
 ## Debugging tips
 - Start with small prefill/decode lengths (e.g. 16/8).

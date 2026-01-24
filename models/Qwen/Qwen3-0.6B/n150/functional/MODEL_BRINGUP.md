@@ -77,8 +77,10 @@ Max sequence length run (paged KV cache):
 
 ```
 python scripts/run_eval.py --mode tt --hf-model Qwen/Qwen3-0.6B --system n150 \
-  --prefill-len 128 --decode-len 1 --max-seq-len 40960 --force-prefill
+  --prefill-len 128 --decode-len 1 --max-seq-len 40960
 ```
+
+Note: `--force-prefill`/`--prefill_decode` was a hack and has been removed from the eval scripts.
 
 ## Debugging tips
 - Start with small prefill/decode lengths (e.g. 16/8).

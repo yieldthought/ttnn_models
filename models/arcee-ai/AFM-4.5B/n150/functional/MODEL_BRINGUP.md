@@ -26,8 +26,8 @@ models/arcee-ai/AFM-4.5B/<system>/functional/model.py
 - `ttnn.rms_norm` for RMSNorm
 - `ttnn.experimental.rotary_embedding` for HF-format RoPE (Yarn scaling)
 - `ttnn.experimental.nlp_create_qkv_heads[_decode]` and `ttnn.experimental.nlp_concat_heads`
-- `ttnn.transformer.scaled_dot_product_attention[_decode]`
-- `ttnn.fill_cache` and `ttnn.experimental.paged_update_cache`
+- `ttnn.transformer.scaled_dot_product_attention` and `ttnn.transformer.paged_scaled_dot_product_attention_decode`
+- `ttnn.experimental.paged_fill_cache` and `ttnn.experimental.paged_update_cache`
 
 ## RoPE notes
 Arcee uses Yarn RoPE scaling with the HuggingFace RoPE layout. Use:
@@ -45,9 +45,13 @@ relu2 = ttnn.mul(relu, relu)
 ```
 
 ## KV cache and sequence limits
-- RoPE cache is precomputed to `MAX_CACHE_SEQ_LEN` (256) to fit device memory.
-- Prefill uses `ttnn.fill_cache`, decode uses `ttnn.experimental.paged_update_cache`.
-- Decode RoPE merges heads into the batch dimension before applying `rotary_embedding`.
+- Max sequence length defaults to `hf_config.max_position_embeddings` (65536 for AFM-4.5B).
+- RoPE cache is computed to `max_seq_len` so decode and prefill share the same cache.
+- KV cache uses paged layout:
+  - Cache shape `[max_num_blocks, n_kv_heads, block_size, head_dim]` with `block_size=64`.
+  - Page table `[32, max_num_blocks]` with identity mapping.
+- Prefill uses `ttnn.experimental.paged_fill_cache`, decode uses `ttnn.experimental.paged_update_cache`.
+- Decode positions use a tile-aligned `cur_pos_tensor` with `-1` in unused slots.
 - TT ops may pad head count to 32; trim after `nlp_concat_heads` if needed.
 
 ## Precision
@@ -65,6 +69,17 @@ python eval.py models/arcee-ai/AFM-4.5B/n150/functional/model.py --model arcee-a
 ```
 
 Latest eval (141 prompt tokens, 100 new tokens): top-1 98.00%, top-5 100.00%.
+
+## Max sequence length validation
+Run once with the HF max length:
+
+```
+python scripts/run_eval.py --mode tt --hf-model arcee-ai/AFM-4.5B --system n150 --prefill-len 128 --decode-len 1 --max-seq-len 65536
+```
+
+Note: `--force-prefill`/`--prefill_decode` was a hack and has been removed from the eval scripts.
+
+If the device fails to initialize firmware, reset the board and rerun.
 
 ## Debugging tips
 - Start with small prefill/decode lengths (e.g. 16/8).

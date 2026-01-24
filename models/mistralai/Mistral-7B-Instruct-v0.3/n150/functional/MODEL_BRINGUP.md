@@ -69,8 +69,10 @@ Automation wrapper (emits YT_METRICS JSON):
 
 ```
 python scripts/run_eval.py --mode tt --hf-model mistralai/Mistral-7B-Instruct-v0.3 --system n150
-python scripts/run_eval.py --mode tt --hf-model mistralai/Mistral-7B-Instruct-v0.3 --system n150 --prefill-len 128 --decode-len 1 --max-seq-len 32768 --force-prefill
+python scripts/run_eval.py --mode tt --hf-model mistralai/Mistral-7B-Instruct-v0.3 --system n150 --prefill-len 128 --decode-len 1 --max-seq-len 32768
 ```
+
+Note: `--force-prefill`/`--prefill_decode` was a hack and has been removed from the eval scripts.
 
 ## Debugging tips
 - Start with small prefill/decode lengths (e.g. 16/8).

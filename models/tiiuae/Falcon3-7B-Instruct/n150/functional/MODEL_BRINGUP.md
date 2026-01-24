@@ -73,8 +73,10 @@ python scripts/run_eval.py --mode tt --hf-model tiiuae/Falcon3-7B-Instruct
 Max-seq smoke test (full HF length):
 
 ```
-python scripts/run_eval.py --mode tt --hf-model tiiuae/Falcon3-7B-Instruct --prefill-len 128 --decode-len 1 --max-seq-len 32768 --force-prefill
+python scripts/run_eval.py --mode tt --hf-model tiiuae/Falcon3-7B-Instruct --prefill-len 128 --decode-len 1 --max-seq-len 32768
 ```
+
+Note: `--force-prefill`/`--prefill_decode` was a hack and has been removed from the eval scripts.
 
 ## Debugging tips
 - Start with small prefill/decode lengths (e.g. 16/8).

@@ -15,7 +15,6 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 DEFAULT_PREFILL_LEN = 20
 DEFAULT_DECODE_LEN = 20
-PREFILL_DECODE_THRESHOLD = 512
 
 
 def resolve_model_path(repo_root: pathlib.Path, hf_model_id: str, system: str) -> pathlib.Path:
@@ -183,7 +182,6 @@ def run_tt_eval(
     prompt_ids: list,
     decode_len: int,
     cache_dir,
-    prefill_decode: bool,
     max_seq_len: int,
 ) -> tuple[float, float]:
     """Run eval.py and parse top1/top5."""
@@ -204,8 +202,6 @@ def run_tt_eval(
         ]
         if cache_dir:
             cmd.extend(["--cache_dir", cache_dir])
-        if prefill_decode:
-            cmd.append("--prefill_decode")
         result = subprocess.run(cmd, cwd=repo_root, capture_output=True, text=True)
 
     if result.returncode != 0:
@@ -228,8 +224,6 @@ def main():
     parser.add_argument("--max-seq-len-range", default=None)
     parser.add_argument("--batch", type=int, default=1)
     parser.add_argument("--trace", type=int, default=0)
-    parser.add_argument("--prefill-decode", action="store_true")
-    parser.add_argument("--force-prefill", action="store_true")
     parser.add_argument("--cache-dir", default=None)
     args = parser.parse_args()
 
@@ -294,9 +288,6 @@ def main():
             if max_seq_len < min_seq_len:
                 raise ValueError("--max-seq-len must be >= prefill_len + decode_len")
 
-            prefill_decode = args.prefill_decode or (
-                prefill_len > PREFILL_DECODE_THRESHOLD and not args.force_prefill
-            )
             top1, top5 = run_tt_eval(
                 repo_root,
                 args.hf_model,
@@ -304,7 +295,6 @@ def main():
                 prompt_ids,
                 args.decode_len,
                 args.cache_dir,
-                prefill_decode,
                 max_seq_len,
             )
             total = max(args.decode_len, 0)

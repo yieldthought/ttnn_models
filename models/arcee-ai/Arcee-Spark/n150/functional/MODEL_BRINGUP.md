@@ -18,8 +18,8 @@ Minimal TTNN bringup of `arcee-ai/Arcee-Spark` (Qwen2 family) with full device e
 - `ttnn.rms_norm` for RMSNorm
 - `ttnn.experimental.rotary_embedding` for HuggingFace-format RoPE
 - `ttnn.experimental.nlp_create_qkv_heads[_decode]` and `ttnn.experimental.nlp_concat_heads`
-- `ttnn.transformer.scaled_dot_product_attention[_decode]`
-- `ttnn.fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
+- `ttnn.transformer.scaled_dot_product_attention` and `ttnn.transformer.paged_scaled_dot_product_attention_decode`
+- `ttnn.experimental.paged_fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
 
 ## Precision and fidelity
 - Attention Q/K/V path stays in BF16 and uses HiFi4 compute kernel config to handle outlier channels.
@@ -27,8 +27,9 @@ Minimal TTNN bringup of `arcee-ai/Arcee-Spark` (Qwen2 family) with full device e
 - Embedding and LM head weights are `ttnn.bfloat16` for accuracy.
 
 ## KV cache and limits
-- Cache tensors are allocated as `[32, n_kv_heads, MAX_CACHE_SEQ_LEN, head_dim]`.
-- `MAX_CACHE_SEQ_LEN` is set to 256; evaluation prompts must fit within it.
+- Paged KV cache uses `[max_num_blocks, n_kv_heads, block_size, head_dim]` with `block_size=64`.
+- Page table is identity-mapped with shape `[32, max_num_blocks]`.
+- `max_seq_len` defaults to `max_position_embeddings` from the HF config (32768 for Arcee-Spark).
 
 ## Evaluation
 Teacher-forcing accuracy against the HF reference model:
@@ -36,3 +37,11 @@ Teacher-forcing accuracy against the HF reference model:
 ```
 python eval.py models/arcee-ai/Arcee-Spark/n150/functional/model.py --model arcee-ai/Arcee-Spark --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100
 ```
+
+Max sequence length validation (prefill only, 1-token decode):
+
+```
+python scripts/run_eval.py --mode tt --hf-model arcee-ai/Arcee-Spark --system n150 --prefill-len 128 --decode-len 1 --max-seq-len 32768
+```
+
+Note: `--force-prefill`/`--prefill_decode` was a hack and has been removed from the eval scripts.

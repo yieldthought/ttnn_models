@@ -60,8 +60,8 @@ Decode path detail:
 - Prefill uses `ttnn.fill_cache` and decode uses `ttnn.experimental.paged_update_cache`.
 
 On this device, `ttnn.fill_cache` hits a grid limit for long prefill lengths (around 1024 tokens).
-If prefill hits a `fill_cache` grid limit, use `--prefill_decode` to debug. Final bringup metrics must use the full prefill pass (no `--prefill_decode`).
-`scripts/run_eval.py` enables this automatically for large prefill lengths.
+If prefill hits a `fill_cache` grid limit, reduce the prefill length or fix the model. The old
+`--prefill_decode` workaround was a hack and has been removed from the eval scripts.
 
 ## Precision
 - Weights use `ttnn.bfloat16` in this bringup for simplicity.

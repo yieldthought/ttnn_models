@@ -46,22 +46,11 @@ def score_step(logits: torch.Tensor, target_id: int) -> tuple[int, int]:
     return top1, top5_hit
 
 
-def prefill_with_decode(tt_model, prompt_tokens: torch.Tensor):
-    past = None
-    logits = None
-    for token_id in prompt_tokens:
-        outputs = tt_model(token_id.view(1, 1), past_key_values=past, use_cache=True)
-        past = outputs.past_key_values
-        logits = outputs.logits[0, -1, :]
-    return past, logits
-
-
 def evaluate(
     tt_model,
     reference_tokens: torch.Tensor,
     prompt_len: int,
     max_new_tokens: int,
-    prefill_decode: bool,
 ) -> tuple[float, float, int]:
     if max_new_tokens < 1:
         return 0.0, 0.0, 0
@@ -70,14 +59,11 @@ def evaluate(
     top5 = 0
     total = 0
 
-    if prefill_decode:
-        past, logits = prefill_with_decode(tt_model, reference_tokens[:prompt_len])
-    else:
-        past = None
-        prompt_ids = reference_tokens[:prompt_len].unsqueeze(0)
-        outputs = tt_model(prompt_ids, past_key_values=past, use_cache=True)
-        past = outputs.past_key_values
-        logits = outputs.logits[0, -1, :]
+    past = None
+    prompt_ids = reference_tokens[:prompt_len].unsqueeze(0)
+    outputs = tt_model(prompt_ids, past_key_values=past, use_cache=True)
+    past = outputs.past_key_values
+    logits = outputs.logits[0, -1, :]
     target_id = int(reference_tokens[prompt_len].item())
     step_top1, step_top5 = score_step(logits, target_id)
     top1 += step_top1
@@ -108,7 +94,6 @@ def main():
     parser.add_argument("--max_new_tokens", type=int, default=20)
     parser.add_argument("--min_new_tokens", type=int, default=None)
     parser.add_argument("--max_seq_len", type=int, default=2048)
-    parser.add_argument("--prefill_decode", action="store_true")
     parser.add_argument("--device_id", type=int, default=0)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--cache_dir", default=None, help="Cache directory for HuggingFace downloads")
@@ -241,7 +226,6 @@ def main():
                 reference_tokens,
                 prompt_len,
                 max_new_tokens,
-                args.prefill_decode,
             )
 
         if total == 0:
