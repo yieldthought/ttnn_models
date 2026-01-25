@@ -6,3 +6,5 @@ tiktoken
 safetensors
 loguru
 graphviz
+codexapi
+gh-task
