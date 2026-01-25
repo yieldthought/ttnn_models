@@ -10,6 +10,7 @@ set_up: |
   Make sure you are in /localdev/moconnor/ttnn_models
   If there are any unsaved changes, stash them and be sure to mention it in your output.
   Create and switch to a new branch named test_<model_name> for this model: {{item}}
+  Run 'tt-smi -r' to reset the device.
 on_success: |
   Add, commit and push the changes, then use 'gh' to open a PR and link it back to the issue {{item}}.
 on_failure: |

@@ -1,4 +1,5 @@
 ttnn
+tt-smi
 torch
 transformers
 sentencepiece
