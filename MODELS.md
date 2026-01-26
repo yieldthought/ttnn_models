@@ -10,7 +10,7 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | ----------------------------------- | -------- | ---------- | ----- | ----- | ---- | ----- | ------- |
 | arcee-ai/Arcee-Spark                | n150     | functional |   88% |  100% |   98 |  12.2 |   29952 |
 | arcee-ai/AFM-4.5B                   | n150     | functional |   98% |  100% | 72ms |  17.2 |   65536 |
-| humain-ai/ALLaM-7B-Instruct-preview | n150     | functional |   95% |  100% |      |       |    4096 |
+| humain-ai/ALLaM-7B-Instruct-preview | n150     | functional |   97% |  100% |   76 |  14.9 |    4096 |
 | humain-ai/ALLaM-7B-Instruct-preview | n300     | functional |   98% |  100% |      |       |     256 |
 | humain-ai/ALLaM-7B-Instruct-preview | t3000    | functional |   97% |  100% |      |       |     256 |
 | meta-llama/Llama-3.2-1B             | n150     | functional |   92% |  100% |      |       |  131072 |
