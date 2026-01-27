@@ -9,35 +9,16 @@ Usage:
 """
 
 import argparse
-import importlib.util
 import json
 import pathlib
-import os
-import sys
 
 import torch
 import ttnn
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-TRACE_REGION_SIZE = int(os.environ.get("TTNN_TRACE_REGION_SIZE", "10000000"))
+from device_utils import build_tt_model, close_tt_device, load_model_module, open_tt_device, pick_mesh_shape, resolve_tt_metadata
 
-def load_model_module(model_path: pathlib.Path):
-    spec = importlib.util.spec_from_file_location("ttnn_model", model_path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Failed to load module from {model_path}")
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
-
-
-def build_tt_model(module, hf_model, tt_device, max_seq_len: int):
-    if hasattr(module, "build_model"):
-        return module.build_model(hf_model, tt_device, max_seq_len)
-    if hasattr(module, "TtnnLlamaForCausalLM"):
-        return module.TtnnLlamaForCausalLM(hf_model, tt_device, max_seq_len)
-    raise AttributeError("Model module must define build_model or TtnnLlamaForCausalLM")
-
+DEFAULT_MODEL = "meta-llama/Llama-3.2-1B"
 
 def score_step(logits: torch.Tensor, target_id: int) -> tuple[int, int]:
     top5 = torch.topk(logits, k=5).indices
@@ -87,7 +68,7 @@ def evaluate(
 def main():
     parser = argparse.ArgumentParser(description="Teacher-forcing eval for ttnn models")
     parser.add_argument("model_path", type=pathlib.Path)
-    parser.add_argument("--model", default="meta-llama/Llama-3.2-1B")
+    parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--prompt", default="1 2 3 4 5 6 7 8 9 10 11 12")
     parser.add_argument("--prompt_file", type=pathlib.Path, default=None)
     parser.add_argument("--prompt_ids_file", type=pathlib.Path, default=None)
@@ -117,6 +98,11 @@ def main():
 
     if args.prompt_ids_file is not None and args.prompt_file is not None:
         raise ValueError("Only one of --prompt_file or --prompt_ids_file may be set")
+
+    model_id, system = resolve_tt_metadata(model_path)
+    if args.model == DEFAULT_MODEL and model_id != DEFAULT_MODEL:
+        print(f"Using HuggingFace model inferred from path: {model_id}")
+        args.model = model_id
 
     print("Loading HuggingFace tokenizer...")
     cache_dir = args.cache_dir
@@ -168,52 +154,13 @@ def main():
             f"--max_seq_len ({args.max_seq_len}); increase --max_seq_len"
         )
 
-    mesh_shape = getattr(model_module, "MESH_SHAPE", None)
+    mesh_shape = pick_mesh_shape(system, model_module)
     fabric_config = None
     is_mesh = False
     tt_device = None
     try:
-        if mesh_shape is not None:
-            if not isinstance(mesh_shape, (tuple, list)) or len(mesh_shape) != 2:
-                raise ValueError("MESH_SHAPE must be a tuple like (rows, cols)")
-            if "TT_MESH_GRAPH_DESC_PATH" not in os.environ:
-                default_desc = pathlib.Path(
-                    "/proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/n300_mesh_graph_descriptor.textproto"
-                )
-                if not default_desc.exists():
-                    raise FileNotFoundError(f"Missing mesh graph descriptor: {default_desc}")
-                os.environ["TT_MESH_GRAPH_DESC_PATH"] = str(default_desc)
-                print(f"Using TT_MESH_GRAPH_DESC_PATH={default_desc}")
-            if mesh_shape[0] > 1 and mesh_shape[1] > 1:
-                fabric_config = ttnn.FabricConfig.FABRIC_2D
-            else:
-                fabric_config = ttnn.FabricConfig.FABRIC_1D
-            ttnn.set_fabric_config(fabric_config)
-            print(f"Opening mesh device: {mesh_shape}...")
-            system_mesh_desc = ttnn._ttnn.multi_device.SystemMeshDescriptor()
-            system_shape = tuple(system_mesh_desc.shape())
-            if mesh_shape[0] > system_shape[0] or mesh_shape[1] > system_shape[1]:
-                raise RuntimeError(f"Requested mesh {mesh_shape} exceeds system mesh {system_shape}")
-            physical_device_ids = []
-            for row in range(mesh_shape[0]):
-                for col in range(mesh_shape[1]):
-                    coord = ttnn.MeshCoordinate(row, col)
-                    if not system_mesh_desc.is_local(coord):
-                        raise RuntimeError(f"Mesh coord {(row, col)} is not local to this host")
-                    physical_device_ids.append(system_mesh_desc.get_device_id(coord))
-            tt_device = ttnn.open_mesh_device(
-                ttnn.MeshShape(*mesh_shape),
-                physical_device_ids=physical_device_ids,
-                trace_region_size=TRACE_REGION_SIZE,
-            )
-            is_mesh = True
-        else:
-            print("Opening device...")
-            if TRACE_REGION_SIZE <= 0:
-                tt_device = ttnn.open_device(device_id=args.device_id)
-            else:
-                tt_device = ttnn.CreateDevice(args.device_id, trace_region_size=TRACE_REGION_SIZE)
-                ttnn.SetDefaultDevice(tt_device)
+        print(f"Opening device ({mesh_shape[0]}x{mesh_shape[1]})...")
+        tt_device, is_mesh, fabric_config = open_tt_device(mesh_shape, args.device_id)
 
         print("Loading ttnn model...")
         tt_model = build_tt_model(model_module, hf_model, tt_device, args.max_seq_len)
@@ -238,15 +185,7 @@ def main():
         print(f"Top-5 accuracy: {top5_pct:.2f}% ({top5:.4f})")
 
     finally:
-        if is_mesh and tt_device is not None:
-            ttnn.close_mesh_device(tt_device)
-        if fabric_config is not None:
-            ttnn.set_fabric_config(ttnn.FabricConfig.DISABLED)
-        else:
-            if TRACE_REGION_SIZE <= 0:
-                ttnn.close_device(tt_device)
-            else:
-                ttnn.CloseDevice(tt_device)
+        close_tt_device(tt_device, is_mesh, fabric_config)
 
 
 if __name__ == "__main__":
