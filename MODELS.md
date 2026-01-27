@@ -9,6 +9,7 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | Model                               | Hardware |  Variant   | Top-1 | Top-5 |   TTFT | t/s/u | Seq len |
 | ----------------------------------- | :------: | :--------: | ----: | ----: | -----: | ----: | ------: |
 | arcee-ai/Arcee-Spark                |   n150   | functional |   88% |  100% |   98ms |  12.2 |   29952 |
+| arcee-ai/Arcee-Spark                |  t3000   | functional |   88% |  100% |   94ms |  12.3 |   32768 |
 | arcee-ai/AFM-4.5B                   |   n150   | functional |   98% |  100% |   72ms |  17.2 |   65536 |
 | humain-ai/ALLaM-7B-Instruct-preview |   n150   | functional |   97% |  100% |   76ms |  14.9 |    4096 |
 | humain-ai/ALLaM-7B-Instruct-preview |   n300   | functional |   98% |  100% |        |       |     256 |
