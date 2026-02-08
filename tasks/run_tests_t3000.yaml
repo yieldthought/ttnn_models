@@ -1,0 +1,22 @@
+prompt: |
+  Welcome to the ttnn_models project! Take your time to read the source code and understand it. This is based on tt-metal and ttnn. You can find the tt-metal source in /proj_sw/user_dev/moconnor/tt-metal/ if you need to look something up.
+  Our task today is to run the demo (for TTFT and t/s/u) and long eval test (for top-1 and top-5, use --max-tokens 100 --prompt_file prompts/bringup_eval_long.txt) for a model and update the appropriate part of the table in MODELS.md. You should also check the output of the demo looks sensible and is not clearly garbage or corrupted. If it is bad, replace the top-1 and top-5 scores with 'bad'.
+
+  This task is for t3000 issues only (the issue title should include '/t3000/').
+  The details for the model we are running are {{item}}.
+
+  Deliverables:
+  - Updated MODELS.md with TTFT, t/s/u, top-1 and top-5 columns filled in.
+  - demo.log and eval.log files in the model's own directory start with the command run and then containing the output of the demo/eval runs respectively.
+set_up: |
+  Make sure you are in /localdev/moconnor/ttnn_models
+  If there are any unsaved changes, stash them and be sure to mention it in your output.
+  Create and switch to a new branch named test_<sanitized_title>, where <sanitized_title> is the issue title with the leading 'models/' stripped and slashes replaced by dashes: {{item}}
+  Run 'tt-smi -r' to reset the device.
+on_success: |
+  Add, commit and push MODELS.md and the demo and eval log files, remove anything in generated/, then use 'gh' to open a PR and link it back to the issue {{item}}.
+on_failure: |
+  Add, commit and push MODELS.md and the demo and eval log files
+tear_down: |
+  Switch back to the main branch and leave the repo is in a clean state, e.g. no temporary files etc.
+
