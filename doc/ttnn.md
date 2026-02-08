@@ -11,6 +11,8 @@ failure modes we keep hitting.
 - Inspect weight shapes (safetensors or state_dict) before wiring TTNN ops. Q/K/V shapes
   drive head_dim and GQA logic.
 - Decide prefill vs decode flow early. The cache layout and decode shapes are strict.
+- For long sequence lengths (and generally on n150), use a paged KV cache from day 1
+  (block_size=64, page_table shape `[32, max_num_blocks]`).
 - Keep `ttnn.from_torch` and `ttnn.as_tensor` outside trace capture. Avoid allocate/deallocate
   inside traces.
 - Log both `shape` and `padded_shape` at each stage, plus `dtype`, `layout`, and memory config.
@@ -23,6 +25,7 @@ failure modes we keep hitting.
 - H: hidden size
 - n_qh, n_kh: num_query_heads, num_kv_heads
 - d: head_dim = H / n_qh
+- `cur_pos_tensor`: `[32]` int32 for decode; use `-1` for inactive lanes so kernels skip them.
 
 TTNN uses padded shapes due to 32x32 tiles. Use a `pad_to_tile()` helper and check
 `tensor.padded_shape()` whenever an op refuses to run.
@@ -30,6 +33,19 @@ TTNN uses padded shapes due to 32x32 tiles. Use a `pad_to_tile()` helper and che
 ## Prefill / decode skeleton
 
 ```python
+# Paged KV cache (recommended)
+block_size = 64  # multiple of 32
+max_num_blocks = math.ceil(max_seq_len / block_size)
+
+page_table = torch.arange(max_num_blocks, dtype=torch.int32).repeat(32, 1)
+page_table = ttnn.as_tensor(
+    page_table,
+    dtype=ttnn.int32,
+    layout=ttnn.ROW_MAJOR_LAYOUT,
+    device=device,
+    memory_config=ttnn.DRAM_MEMORY_CONFIG,
+)
+
 # Prefill (seq_len > 1)
 qkv = ttnn.concat([q, k, v], dim=-1)
 q, k, v = ttnn.experimental.nlp_create_qkv_heads(
@@ -38,8 +54,8 @@ q, k, v = ttnn.experimental.nlp_create_qkv_heads(
 )
 q = ttnn.experimental.rotary_embedding(q, cos, sin)
 k = ttnn.experimental.rotary_embedding(k, cos, sin)
-ttnn.fill_cache(k_cache, k, batch_idx=0)
-ttnn.fill_cache(v_cache, v, batch_idx=0)
+ttnn.experimental.paged_fill_cache(k_cache, k, page_table, batch_idx=0)
+ttnn.experimental.paged_fill_cache(v_cache, v, page_table, batch_idx=0)
 attn = ttnn.transformer.scaled_dot_product_attention(q, k, v, is_causal=True, scale=scale)
 attn = ttnn.experimental.nlp_concat_heads(attn, memory_config=ttnn.DRAM_MEMORY_CONFIG)
 
@@ -49,13 +65,73 @@ q, k, v = ttnn.experimental.nlp_create_qkv_heads_decode(
 )
 q = ttnn.experimental.rotary_embedding(q, cos_cache, sin_cache, start_pos)
 k = ttnn.experimental.rotary_embedding(k, cos_cache, sin_cache, start_pos)
-ttnn.experimental.paged_update_cache(k_cache, k, update_idxs_tensor=cur_pos_tensor)
-ttnn.experimental.paged_update_cache(v_cache, v, update_idxs_tensor=cur_pos_tensor)
-attn = ttnn.transformer.scaled_dot_product_attention_decode(
-    q, k_cache, v_cache, cur_pos_tensor=cur_pos_tensor, scale=scale,
+ttnn.experimental.paged_update_cache(k_cache, k, update_idxs_tensor=cur_pos_tensor, page_table=page_table)
+ttnn.experimental.paged_update_cache(v_cache, v, update_idxs_tensor=cur_pos_tensor, page_table=page_table)
+attn = ttnn.transformer.paged_scaled_dot_product_attention_decode(
+    q,
+    k_cache,
+    v_cache,
+    page_table_tensor=page_table,
+    cur_pos_tensor=cur_pos_tensor,
+    scale=scale,
 )
 attn = ttnn.transpose(attn, 1, 2)
 attn = ttnn.experimental.nlp_concat_heads(attn, memory_config=ttnn.DRAM_MEMORY_CONFIG)
+```
+
+## Sequence length and paged KV cache
+
+The legacy cache layout `[32, n_kv_heads, max_seq_len, head_dim]` effectively pays a 32x
+batch tile tax even for batch=1 decode. A paged KV cache removes that and is the easiest
+path to large HuggingFace `max_position_embeddings`.
+
+Paged cache recipe:
+- Choose `block_size` (multiple of 32). Use 64 by default.
+- `max_num_blocks = ceil(max_seq_len / block_size)`.
+- Allocate K/V cache: `[max_num_blocks, n_kv_heads, block_size, head_dim]`.
+- Allocate an identity page table with tile batch: `[32, max_num_blocks]`, int32, ROW_MAJOR.
+- Prefill: `ttnn.experimental.paged_fill_cache`.
+- Decode: `ttnn.experimental.paged_update_cache(..., page_table=page_table)` and
+  `ttnn.transformer.paged_scaled_dot_product_attention_decode(..., page_table_tensor=page_table, cur_pos_tensor=cur_pos_tensor)`.
+- Decode positions: set `cur_pos_tensor` to `-1` for padded batch entries so unused slots are skipped.
+
+### Legacy non-paged KV cache (fallback)
+
+If you keep the default cache layout `[32, n_kv_heads, max_seq_len, head_dim]`, prefill uses
+`ttnn.fill_cache`. Interleaved `fill_cache` can hit the grid-size work-block limit for large
+`n_kv_heads * seq_tiles`. In that case, shard K/V for `fill_cache` (height-sharded, ROW_MAJOR):
+
+```python
+grid = tt_device.core_grid
+grid_x = min(grid.x, n_kv_heads)
+while grid_x > 1 and n_kv_heads % grid_x != 0:
+    grid_x -= 1
+shard_grid = ttnn.CoreGrid(x=grid_x, y=n_kv_heads // grid_x)
+if shard_grid.y > grid.y:
+    raise ValueError("shard grid exceeds device core grid")
+
+shard_mem_config = ttnn.create_sharded_memory_config(
+    k.shape,
+    shard_grid,
+    ttnn.ShardStrategy.HEIGHT,
+    ttnn.ShardOrientation.ROW_MAJOR,
+)
+k_sharded = ttnn.to_memory_config(k, shard_mem_config)
+v_sharded = ttnn.to_memory_config(v, shard_mem_config)
+ttnn.fill_cache(k_cache, k_sharded, batch_idx=0)
+ttnn.fill_cache(v_cache, v_sharded, batch_idx=0)
+```
+
+Rough KV memory math (batch=1):
+`bytes_per_token = n_kv_heads * head_dim * 2 (K+V) * dtype_bytes * num_layers`.
+For BF16, `dtype_bytes=2`.
+
+Sweeping max sequence length (teacher forcing, 1-token decode):
+```bash
+python scripts/run_eval.py --mode tt --hf-model <hf-id> \
+  --prefill-len 128 --decode-len 1 --max-seq-len <max_seq_len>
+python scripts/run_eval.py --mode tt --hf-model <hf-id> \
+  --prefill-len 128 --decode-len 1 --max-seq-len-range 8192:131072:8192
 ```
 
 ## Debug playbook
@@ -292,7 +368,10 @@ Gotchas:
 
 ### `ttnn.fill_cache`
 
-Purpose: copy prefill K/V into cache at batch index.
+Purpose: copy prefill K/V into a legacy (non-paged) cache at batch index.
+
+Prefer paged KV cache (`ttnn.experimental.paged_fill_cache` / `ttnn.experimental.paged_update_cache`)
+for long sequence lengths.
 
 Call:
 ```python
@@ -311,29 +390,49 @@ Gotchas:
 - Interleaved inputs with seq_len > 1 must fit within grid size; sharded inputs must not be
   WIDTH_SHARDED and shard width must match padded width.
 
+### `ttnn.experimental.paged_fill_cache`
+
+Purpose: copy prefill K/V into a paged KV cache.
+
+Call:
+```python
+ttnn.experimental.paged_fill_cache(k_cache, k, page_table, batch_idx=0)
+```
+
+Typical shapes:
+- `k_cache`/`v_cache`: `[max_num_blocks, n_kv, block_size, d]` (TILE, DRAM)
+- `k`/`v`: `[1, n_kv, S, d]` (TILE)
+- `page_table`: `[32, max_num_blocks]` int32 (ROW_MAJOR, DRAM)
+
+Gotchas:
+- `block_size` must be a multiple of 32 (64 is a good default).
+- Use an identity page table for bringup: `page_table[b, i] = i`.
+- For batch=1 bringup, use `batch_idx=0` and keep the other 31 lanes padded/unused.
+
 ### `ttnn.experimental.paged_update_cache`
 
 Purpose: update cache positions during decode.
 
 Call:
 ```python
-ttnn.experimental.paged_update_cache(cache, k, update_idxs_tensor=cur_pos_tensor)
+ttnn.experimental.paged_update_cache(
+    k_cache,
+    k,
+    update_idxs_tensor=cur_pos_tensor,
+    page_table=page_table,
+)
 ```
 
 Typical shapes:
-- `cache`: `[B, n_kv, S_max, d]` (TILE, DRAM)
-- `k`/`v`: `[B, n_kv, 1, d]` (decode)
-- `cur_pos_tensor`: `[B]` int32, B tile-aligned
+- `k_cache`/`v_cache`: `[max_num_blocks, n_kv, block_size, d]` (TILE, DRAM)
+- `k`/`v`: `[1, B, n_kv, d]` (decode, B tile-aligned)
+- `cur_pos_tensor`: `[B]` int32 (ROW_MAJOR, DRAM); use `-1` for inactive lanes
+- `page_table`: `[32, max_num_blocks]` int32 (ROW_MAJOR, DRAM)
 
 Gotchas:
-- Input/cache must be on device and TILE layout; cache must be interleaved.
-- Input must be sharded (not WIDTH_SHARDED) with ROW_MAJOR orientation.
-- Input dtype must be BF16/FP32; cache supports BF16/BFP8/BFP4/FP32.
-- `update_idxs_tensor` must be INT32 ROW_MAJOR; if sharded it must be HEIGHT_SHARDED in L1,
-  if interleaved it must be DRAM.
-- `page_table` (if provided) must be ROW_MAJOR; dtype INT32 (interleaved) or UINT16 (sharded).
-  `share_cache` is not supported with paged cache.
-- `batch_offset` must be 0.
+- Inputs/cache must be on device and TILE layout.
+- `cur_pos_tensor` must be tile-aligned batch (usually 32) and int32 row-major in DRAM.
+- `page_table` must be int32 row-major; for bringup use identity mapping and keep it in DRAM.
 
 ### `ttnn.experimental.rotary_embedding`
 
@@ -450,29 +549,34 @@ Gotchas:
 - If `attn_mask` is provided: must be TILE, DRAM, dtype BF16/BFP8/BFP4, shape `[B, 1, Sq, Sk]`,
   and `Sq/Sk` divisible by `q_chunk_size/k_chunk_size` (default 32).
 
-### `ttnn.transformer.scaled_dot_product_attention_decode`
+### `ttnn.transformer.paged_scaled_dot_product_attention_decode`
 
-Purpose: fused decode attention using KV cache.
+Purpose: fused decode attention using a paged KV cache.
 
 Call:
 ```python
-attn_out = ttnn.transformer.scaled_dot_product_attention_decode(
-    q, k_cache, v_cache, cur_pos_tensor=cur_pos_tensor, scale=scale,
+attn_out = ttnn.transformer.paged_scaled_dot_product_attention_decode(
+    q,
+    k_cache,
+    v_cache,
+    page_table_tensor=page_table,
+    cur_pos_tensor=cur_pos_tensor,
+    scale=scale,
 )
 ```
 
 Typical shapes:
 - `q`: `[1, B, n_qh, d]`
-- `k_cache`/`v_cache`: `[B, n_kh, S_max, d]`
-- `cur_pos_tensor`: `[B]` int32
+- `k_cache`/`v_cache`: `[max_num_blocks, n_kh, block_size, d]`
+- `page_table`: `[32, max_num_blocks]` int32 (ROW_MAJOR)
+- `cur_pos_tensor`: `[B]` int32 (ROW_MAJOR)
 - `attn_out`: `[1, B, n_qh, d]` (transpose before concat)
 
 Gotchas:
-- Decode mode requires `Q` batch size == 1 (shape `[1, B, nqh, dh]`), K/V in DRAM and TILE
-  layout.
-- `K` and `V` must match shapes; `cur_pos` entries must be < K sequence length.
-- `k_chunk_size` must be provided and be a multiple of 32 in unpaged mode.
-- GQA is partially supported: output cannot be sharded, `Q` dtype must be BF16, and Q heads
-  must be multiple of K heads.
-- Paged mode requires page_table (ROW_MAJOR INT32 or UINT16 for sharded) and `cur_pos_tensor`
-  for causal mode.
+- Decode uses tile-aligned batch B (usually 32) even for batch=1; set `cur_pos_tensor` to `-1`
+  for inactive lanes so they are skipped.
+- `page_table` must be ROW_MAJOR int32 and match how cache blocks are mapped (identity mapping is fine).
+
+Legacy note:
+- `ttnn.transformer.scaled_dot_product_attention_decode` is the non-paged decode attention op and
+  expects a non-paged KV cache layout.

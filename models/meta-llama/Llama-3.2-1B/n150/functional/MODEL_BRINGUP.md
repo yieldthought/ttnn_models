@@ -45,7 +45,8 @@ Avoid `ttnn.experimental.rotary_embedding_llama`, which expects Meta-format RoPE
 - Decode `cur_pos_tensor` uses `-1` for padded batch entries so unused slots are skipped.
 
 With paged KV cache, the model builds and runs at the full HF max sequence length (`131072`).
-See `SEQ_LEN.md` for the paged-cache how-to and the long-sequence validation commands.
+See `doc/ttnn.md` (Sequence length and paged KV cache) for the paged-cache how-to and the
+long-sequence validation commands.
 
 ## Precision
 - Weights and activations use `ttnn.bfloat16`.
