@@ -19,7 +19,9 @@ set_up: |
   Run 'tt-smi -r' to reset the device.
   Run 'tt-smi -ls' and set TT_VISIBLE_DEVICES to a single PCI Dev ID before running demo/eval (example: export TT_VISIBLE_DEVICES=4).
 on_success: |
-  Add, commit and push MODELS.md and the demo and eval log files, remove anything in generated/, then use 'gh' to open a PR and link it back to the issue {{item}}.
+  Add, commit and push MODELS.md and the demo and eval log files, remove anything in generated/.
+  Open a PR that auto-closes the issue by including `Fixes #<issue-number>` on its own line in the PR body.
+  Use `gh pr create --body-file ...` (not `--body` with `\n` escapes) so GitHub recognizes the closing keyword.
 on_failure: |
   Add, commit and push MODELS.md and the demo and eval log files
 tear_down: |
