@@ -163,3 +163,12 @@
 - #71 Phi-3-mini t3000
 - #72 Arcee-Spark n300
 
+## 2026-02-09T11:59:34+01:00
+
+- Read and refreshed the repo's task runner docs and task files (`tasks/`, `../codexapi/README.md`, `../gh-task/README.md`) to ensure the current worker loop matches expectations.
+- Project `yieldthought/projects/6` status: Backlog 0, In review 0, In progress 3 (#28 n300, #37 t3000, #66 n150), Ready 6 (#67-#72). No open PRs at the time of this tick.
+- IRD reservations healthy with >6h remaining on all three workers:
+- ID 1 `aus-wh-01:42857` -> `agent1` (n300) running `codexapi task` and actively executing ALLaM n300 demo/eval under `TT_VISIBLE_DEVICES=0` and the n300 mesh graph descriptor. `eval.log` shows Top-1 97% / Top-5 100%; `demo.log` shows TTFT 170ms and 8.5 t/s/u (still finalizing issue/PR flow).
+- ID 2 `wh-lb-43:42857` -> `agent2` (t3000) running Falcon3 t3000 eval with `TT_VISIBLE_DEVICES=0,1,2,3` and the t3k mesh graph descriptor. `eval.log` shows Top-1 97% / Top-5 100% (awaiting PR).
+- ID 3 `wh-04:42857` -> `agent3` (n150) running Arcee-Spark n150 demo; still in kernel build/model load (no results yet).
+- Noted remaining release gaps in `MODELS.md` that will likely need follow-up after reruns: Arcee-Spark n150/n300 (<90 Top-1), Phi n150 (<90/<99), and Llama t3000 (Top-1 89%). Also several multi-device rows still use small `Seq len` values (e.g., 256/1024/2048) that may require a dedicated "increase max_seq_len + paged cache" effort depending on DRAM constraints.
