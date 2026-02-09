@@ -172,3 +172,17 @@
 - ID 2 `wh-lb-43:42857` -> `agent2` (t3000) running Falcon3 t3000 eval with `TT_VISIBLE_DEVICES=0,1,2,3` and the t3k mesh graph descriptor. `eval.log` shows Top-1 97% / Top-5 100% (awaiting PR).
 - ID 3 `wh-04:42857` -> `agent3` (n150) running Arcee-Spark n150 demo; still in kernel build/model load (no results yet).
 - Noted remaining release gaps in `MODELS.md` that will likely need follow-up after reruns: Arcee-Spark n150/n300 (<90 Top-1), Phi n150 (<90/<99), and Llama t3000 (Top-1 89%). Also several multi-device rows still use small `Seq len` values (e.g., 256/1024/2048) that may require a dedicated "increase max_seq_len + paged cache" effort depending on DRAM constraints.
+
+## 2026-02-09T12:29:34+01:00
+
+- In review triage/merges:
+- Merged PR #80 (Arcee-Spark n150 run_tests rerun) and it closed #66; Top-1 regressed to 86% (below target) with refreshed logs.
+- Merged PR #79 (Falcon3 t3000 rerun) and updated MODELS.md to Top-1 97% / Top-5 100% with new logs.
+- #79 did not auto-close #37 because the PR body contained literal `\\n` sequences; closed #37 manually and moved it to Done.
+- Merged PR #81 (ALLaM t3000 rerun) and it closed #68; MODELS.md now shows Top-1 96% / Top-5 100% (still Seq len 256 due to cache cap).
+
+- Task/automation improvement:
+- Merged PR #82 updating all task `on_success` instructions to create PRs using `gh pr create --body-file ...` and include a standalone `Fixes #<issue-number>` line so GitHub reliably auto-closes issues.
+
+- Project `yieldthought/projects/6` status at end of tick: In review 0, In progress 3 (#28 ALLaM n300, #67 Phi n150, #70 gemma t3000), Ready 3 (#69 gemma n300, #71 Phi t3000, #72 Arcee-Spark n300).
+- Runners: all IRD reservations healthy with >5h remaining; workers active on separate hosts (no shared /localdev interference).
