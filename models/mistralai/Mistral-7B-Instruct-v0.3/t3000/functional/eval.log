@@ -1,0 +1,245 @@
+TT_VISIBLE_DEVICES=0,3,1,2 TT_MESH_GRAPH_DESC_PATH=/proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/t3k_mesh_graph_descriptor.textproto python eval.py models/mistralai/Mistral-7B-Instruct-v0.3/t3000/functional/model.py --model mistralai/Mistral-7B-Instruct-v0.3 --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100
+2026-02-09 02:09:10.149 | DEBUG    | ttnn:<module>:77 - Initial ttnn.CONFIG:
+Config{cache_path=/home/moconnor/.cache/ttnn,model_cache_path=/home/moconnor/.cache/ttnn/models,tmp_dir=/tmp/ttnn,enable_model_cache=false,enable_fast_runtime_mode=true,throw_exception_on_fallback=false,enable_logging=false,enable_graph_report=false,enable_detailed_buffer_report=false,enable_detailed_tensor_report=false,enable_comparison_mode=false,comparison_mode_should_raise_exception=false,comparison_mode_pcc=0.9999,root_report_path=generated/ttnn/reports,report_name=std::nullopt,std::nullopt}
+Loading model module: /localdev/moconnor/ttnn_models/models/mistralai/Mistral-7B-Instruct-v0.3/t3000/functional/model.py
+Loading HuggingFace tokenizer...
+Loading HuggingFace reference model on CPU...
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards:  33%|███▎      | 1/3 [00:00<00:01,  1.21it/s]Loading checkpoint shards:  67%|██████▋   | 2/3 [00:01<00:00,  1.20it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:02<00:00,  1.25it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:02<00:00,  1.24it/s]
+2026-02-09 02:10:07.096 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-09 02:10:07.127 | info     |          Device | Opening user mode device driver (tt_cluster.cpp:223)
+2026-02-09 02:10:07.137 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-09 02:10:07.211 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-09 02:10:07.272 | info     |             UMD | Harvesting masks for chip 3 tensix: 0x202 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 02:10:07.332 | info     |             UMD | Harvesting masks for chip 2 tensix: 0x201 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 02:10:07.342 | info     |             UMD | Harvesting masks for chip 1 tensix: 0x220 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 02:10:07.351 | info     |             UMD | Harvesting masks for chip 0 tensix: 0x240 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 02:10:07.361 | info     |             UMD | Harvesting masks for chip 7 tensix: 0x280 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 02:10:07.374 | info     |             UMD | Harvesting masks for chip 6 tensix: 0x210 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 02:10:07.388 | info     |             UMD | Harvesting masks for chip 5 tensix: 0x210 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 02:10:07.401 | info     |             UMD | Harvesting masks for chip 4 tensix: 0x5 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 02:10:07.414 | info     |             UMD | Opening local chip ids/PCIe ids: {0, 1, 2, 3}/[0, 3, 1, 2] and remote chip ids {4, 5, 6, 7} (cluster.cpp:186)
+2026-02-09 02:10:07.414 | info     |             UMD | IOMMU: disabled (cluster.cpp:161)
+2026-02-09 02:10:07.414 | info     |             UMD | KMD version: 2.4.1 (cluster.cpp:164)
+2026-02-09 02:10:07.422 | info     |             UMD | Starting devices in cluster (cluster.cpp:965)
+2026-02-09 02:10:07.423 | info     |             UMD | Mapped hugepage 0x240000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 02:10:07.423 | info     |             UMD | Mapped hugepage 0x200000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 02:10:07.424 | info     |             UMD | Mapped hugepage 0x41c0000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 02:10:07.425 | info     |             UMD | Mapped hugepage 0x4180000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 02:10:07.426 | info     |             UMD | Mapped hugepage 0x300000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 02:10:07.426 | info     |             UMD | Mapped hugepage 0x2c0000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 02:10:07.427 | info     |             UMD | Mapped hugepage 0x42c0000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 02:10:07.428 | info     |             UMD | Mapped hugepage 0x4280000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 02:10:07.481 | info     |     Distributed | Using custom mesh graph descriptor: /proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/t3k_mesh_graph_descriptor.textproto (metal_context.cpp:822)
+2026-02-09 02:10:07.482 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=8, n_phys=8, log_deg_hist={2:4, 3:4}, phys_deg_hist={2:4, 3:4} (topology_mapper_utils.cpp:171)
+2026-02-09 02:10:07.487 | DEBUG    | ttnn.device:__init__:150 - Using default dispatch core type for this system: DispatchCoreType.ETH
+2026-02-09 02:10:07.487 | DEBUG    | ttnn.device:__init__:152 - Using default dispatch core axis for this system: DispatchCoreAxis.ROW
+2026-02-09 02:10:07.492 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 02:10:07.495 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 02:10:07.495 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 02:10:07.496 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 02:10:07.496 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 02:10:07.497 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 02:10:07.497 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 02:10:07.498 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 02:10:07.830 | warning  |           Metal | Got num_routing_planes: 1, which is less than current value: 255, ignoring the override (metal_context.cpp:719)
+2026-02-09 02:10:07.830 | info     |           Metal | Dispatch on FabricConfig::FABRIC_2D with 1 Command Queues
+ (device_manager.cpp:328)
+2026-02-09 02:10:07.841 | info     |           Metal | Initializing Fabric (device_manager.cpp:404)
+2026-02-09 02:10:08.028 | info     |           Metal | Fabric initialized on Device 0 (device.cpp:386)
+2026-02-09 02:10:08.029 | info     |           Metal | Fabric initialized on Device 1 (device.cpp:386)
+2026-02-09 02:10:08.074 | info     |           Metal | Fabric initialized on Device 2 (device.cpp:386)
+2026-02-09 02:10:08.074 | info     |           Metal | Fabric initialized on Device 3 (device.cpp:386)
+2026-02-09 02:10:08.077 | info     |           Metal | Fabric initialized on Device 4 (device.cpp:386)
+2026-02-09 02:10:08.083 | info     |           Metal | Fabric initialized on Device 5 (device.cpp:386)
+2026-02-09 02:10:08.086 | info     |           Metal | Fabric initialized on Device 6 (device.cpp:386)
+2026-02-09 02:10:08.092 | info     |           Metal | Fabric initialized on Device 7 (device.cpp:386)
+2026-02-09 02:10:08.092 | info     |           Metal | Fabric Initialized with config FabricConfig::FABRIC_2D (device_manager.cpp:409)
+2026-02-09 02:10:08.196 | info     |           Metal | Command Queue initialized on Device 6 (device_manager.cpp:500)
+2026-02-09 02:10:08.196 | info     |           Metal | Command Queue initialized on Device 5 (device_manager.cpp:500)
+2026-02-09 02:10:08.198 | info     |           Metal | Command Queue initialized on Device 7 (device_manager.cpp:500)
+2026-02-09 02:10:08.199 | info     |           Metal | Command Queue initialized on Device 4 (device_manager.cpp:500)
+2026-02-09 02:12:45.064 | error    |    BuildKernels | trisc0 compile failure -- cmd: cd /proj_sw/user_dev/moconnor/tt-metal-cache/tt-metal-cache07a0186786/1122223303392688457/kernels/pack_untilize_variable_num_blocks/5219050073499734444/trisc0/ && /proj_sw/user_dev/moconnor/tt-metal/runtime/sfpi/compiler/bin/riscv-tt-elf-g++ -O3 -std=c++17 -flto=auto -ffast-math -fno-exceptions -g -MMD -fno-use-cxa-atexit -Wall -Werror -Wno-unknown-pragmas -Wno-deprecated-declarations -Wno-error=multistatement-macros -Wno-error=parentheses -Wno-error=unused-but-set-variable -Wno-unused-variable -Wno-unused-function -mcpu=tt-wh-tensix -I. -I.. -I/proj_sw/user_dev/moconnor/tt-metal/ -I/proj_sw/user_dev/moconnor/tt-metal/ttnn -I/proj_sw/user_dev/moconnor/tt-metal/ttnn/cpp -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/include -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/inc -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hostdevcommon/api -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/inc/debug -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/api/ -I/proj_sw/user_dev/moconnor/tt-metal/runtime/sfpi/include -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/common -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/llk_io -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/inc/internal/tt-1xx -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/inc/internal/tt-1xx/wormhole -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/inc/internal/tt-1xx/wormhole/wormhole_b0_defines -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/inc/internal/tt-1xx/wormhole/noc -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/third_party/tt_llk/tt_llk_wormhole_b0/common/inc -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/third_party/tt_llk/tt_llk_wormhole_b0/llk_lib -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/llk_api -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/llk_api/llk_sfpu -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/firmware/src/tt-1xx -c -o trisck.o /proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/firmware/src/tt-1xx/trisck.cc -DIS_NOT_POW2_NUM_DRAM_BANKS=1 -DLOG_BASE_2_OF_NUM_L1_BANKS=6 -DNUM_DRAM_BANKS=12 -DNUM_L1_BANKS=64 -DPCIE_NOC_X=0 -DPCIE_NOC_Y=3 -DTENSIX_FIRMWARE -DLOCAL_MEM_EN=0 -DROUTING_FW_ENABLED -DPROCESSOR_INDEX=2 -DUCK_CHLKC_UNPACK -DNAMESPACE=chlkc_unpack -DCOMPILE_FOR_TRISC=0 -DARCH_WORMHOLE -DDISPATCH_MESSAGE_ADDR=4290052232 -DKERNEL_BUILD -DKERNEL_COMPILE_TIME_ARGS=128,0,16  (build.cpp:51)
+2026-02-09 02:12:45.068 | critical |          Always | TT_THROW: trisc0 build failed. Log: In file included from /proj_sw/user_dev/moconnor/tt-metal/tt_metal/include/compute_kernel_api/untilize.h:12,
+                 from /proj_sw/user_dev/moconnor/tt-metal/ttnn/cpp/ttnn/operations/data_movement/untilize/device/kernels/compute/pack_untilize_variable_num_blocks.cpp:7,
+                 from ../chlkc_unpack.cpp:3,
+                 from /proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/common/chlkc_list.h:37,
+                 from /proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/firmware/src/tt-1xx/trisck.cc:13:
+/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/llk_api/llk_unpack_untilize_api.h: In function 'void llk_unpack_untilize_init(uint32_t)':
+/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/llk_api/llk_unpack_untilize_api.h:19:31: error: too many arguments to function 'void _llk_unpack_untilize_init_(uint32_t, uint32_t, uint32_t)'
+   19 |     _llk_unpack_untilize_init_(
+      |     ~~~~~~~~~~~~~~~~~~~~~~~~~~^
+   20 |         unpack_dst_format[operand_id], get_local_cb_interface(operand_id).fifo_page_size, face_r_dim, true);
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/llk_api/llk_unpack_untilize_api.h:6:
+/proj_sw/user_dev/moconnor/tt-metal/tt_metal/third_party/tt_llk/tt_llk_wormhole_b0/llk_lib/llk_unpack_untilize.h:52:13: note: declared here
+   52 | inline void _llk_unpack_untilize_init_(const std::uint32_t unpack_dst_format, const std::uint32_t tile_size, const std::uint32_t face_r_dim = FACE_R_DIM)
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~
+ (assert.hpp:104)
+2026-02-09 02:12:45.071 | critical |          Always | TT_THROW: Failed to generate binaries for pack_untilize_variable_num_blocks TT_THROW @ /proj_sw/user_dev/moconnor/tt-metal/tt_metal/jit_build/build.cpp:55: tt::exception
+info:
+trisc0 build failed. Log: In file included from /proj_sw/user_dev/moconnor/tt-metal/tt_metal/include/compute_kernel_api/untilize.h:12,
+                 from /proj_sw/user_dev/moconnor/tt-metal/ttnn/cpp/ttnn/operations/data_movement/untilize/device/kernels/compute/pack_untilize_variable_num_blocks.cpp:7,
+                 from ../chlkc_unpack.cpp:3,
+                 from /proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/common/chlkc_list.h:37,
+                 from /proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/firmware/src/tt-1xx/trisck.cc:13:
+/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/llk_api/llk_unpack_untilize_api.h: In function 'void llk_unpack_untilize_init(uint32_t)':
+/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/llk_api/llk_unpack_untilize_api.h:19:31: error: too many arguments to function 'void _llk_unpack_untilize_init_(uint32_t, uint32_t, uint32_t)'
+   19 |     _llk_unpack_untilize_init_(
+      |     ~~~~~~~~~~~~~~~~~~~~~~~~~~^
+   20 |         unpack_dst_format[operand_id], get_local_cb_interface(operand_id).fifo_page_size, face_r_dim, true);
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/llk_api/llk_unpack_untilize_api.h:6:
+/proj_sw/user_dev/moconnor/tt-metal/tt_metal/third_party/tt_llk/tt_llk_wormhole_b0/llk_lib/llk_unpack_untilize.h:52:13: note: declared here
+   52 | inline void _llk_unpack_untilize_init_(const std::uint32_t unpack_dst_format, const std::uint32_t tile_size, const std::uint32_t face_r_dim = FACE_R_DIM)
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~
+
+backtrace:
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/_ttnncpp.so(+0x2f89b08) [0x7f1076247b08]
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x75e1dc) [0x7f1072d8e1dc]
+ --- tt::tt_metal::JitBuildState::compile_one(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, tt::tt_metal::JitBuildSettings const*, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x770d08) [0x7f1072da0d08]
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x770c82) [0x7f1072da0c82]
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x51060f) [0x7f1072b4060f]
+ --- /lib/x86_64-linux-gnu/libc.so.6(+0x99ee8) [0x7f10dff22ee8]
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x710759) [0x7f1072d40759]
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x770a8e) [0x7f1072da0a8e]
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x7142b5) [0x7f1072d442b5]
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x712eed) [0x7f1072d42eed]
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x712338) [0x7f1072d42338]
+ --- /lib/x86_64-linux-gnu/libstdc++.so.6(+0xdc253) [0x7f10ca5c5253]
+ --- /lib/x86_64-linux-gnu/libc.so.6(+0x94ac3) [0x7f10dff1dac3]
+ --- /lib/x86_64-linux-gnu/libc.so.6(+0x1268d0) [0x7f10dffaf8d0]
+ (assert.hpp:104)
+2026-02-09 02:12:45.085 | error    |    BuildKernels | trisc2 compile failure -- cmd: cd /proj_sw/user_dev/moconnor/tt-metal-cache/tt-metal-cache07a0186786/1122223303392688457/kernels/pack_untilize_variable_num_blocks/5219050073499734444/trisc2/ && /proj_sw/user_dev/moconnor/tt-metal/runtime/sfpi/compiler/bin/riscv-tt-elf-g++ -O3 -std=c++17 -flto=auto -ffast-math -fno-exceptions -g -MMD -fno-use-cxa-atexit -Wall -Werror -Wno-unknown-pragmas -Wno-deprecated-declarations -Wno-error=multistatement-macros -Wno-error=parentheses -Wno-error=unused-but-set-variable -Wno-unused-variable -Wno-unused-function -mcpu=tt-wh-tensix -I. -I.. -I/proj_sw/user_dev/moconnor/tt-metal/ -I/proj_sw/user_dev/moconnor/tt-metal/ttnn -I/proj_sw/user_dev/moconnor/tt-metal/ttnn/cpp -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/include -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/inc -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hostdevcommon/api -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/inc/debug -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/api/ -I/proj_sw/user_dev/moconnor/tt-metal/runtime/sfpi/include -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/common -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/llk_io -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/inc/internal/tt-1xx -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/inc/internal/tt-1xx/wormhole -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/inc/internal/tt-1xx/wormhole/wormhole_b0_defines -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/inc/internal/tt-1xx/wormhole/noc -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/third_party/tt_llk/tt_llk_wormhole_b0/common/inc -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/third_party/tt_llk/tt_llk_wormhole_b0/llk_lib -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/llk_api -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/llk_api/llk_sfpu -I/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/firmware/src/tt-1xx -c -o trisck.o /proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/firmware/src/tt-1xx/trisck.cc -DIS_NOT_POW2_NUM_DRAM_BANKS=1 -DLOG_BASE_2_OF_NUM_L1_BANKS=6 -DNUM_DRAM_BANKS=12 -DNUM_L1_BANKS=64 -DPCIE_NOC_X=0 -DPCIE_NOC_Y=3 -DTENSIX_FIRMWARE -DLOCAL_MEM_EN=0 -DROUTING_FW_ENABLED -DPROCESSOR_INDEX=4 -DUCK_CHLKC_PACK -DNAMESPACE=chlkc_pack -DCOMPILE_FOR_TRISC=2 -DARCH_WORMHOLE -DDISPATCH_MESSAGE_ADDR=4290052232 -DKERNEL_BUILD -DKERNEL_COMPILE_TIME_ARGS=128,0,16  (build.cpp:51)
+2026-02-09 02:12:45.086 | critical |          Always | TT_THROW: trisc2 build failed. Log: In file included from /proj_sw/user_dev/moconnor/tt-metal/tt_metal/include/compute_kernel_api/common_globals.h:24,
+                 from /proj_sw/user_dev/moconnor/tt-metal/tt_metal/include/compute_kernel_api/common.h:7,
+                 from /proj_sw/user_dev/moconnor/tt-metal/tt_metal/include/compute_kernel_api/untilize.h:7,
+                 from /proj_sw/user_dev/moconnor/tt-metal/ttnn/cpp/ttnn/operations/data_movement/untilize/device/kernels/compute/pack_untilize_variable_num_blocks.cpp:7,
+                 from ../chlkc_pack.cpp:3,
+                 from /proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/common/chlkc_list.h:29,
+                 from /proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/firmware/src/tt-1xx/trisck.cc:13:
+/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/llk_api/llk_pack_api.h: In function 'void llk_pack_fast_tilize_hw_configure(const llk_pack_params_t*)':
+/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/llk_api/llk_pack_api.h:292:5: error: '_llk_pack_fast_tilize_hw_configure_' was not declared in this scope; did you mean 'llk_pack_fast_tilize_hw_configure'? [-Wtemplate-body]
+  292 |     _llk_pack_fast_tilize_hw_configure_<is_fp32_dest_acc_en>(pack_src_format[output_id], pack_dst_format[output_id]);
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |     llk_pack_fast_tilize_hw_configure
+/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/llk_api/llk_pack_api.h: In instantiation of 'void llk_pack_init(uint32_t) [with bool untilize = false; bool zero_output = false; bool tilize = false; uint32_t = long unsigned int]':
+/proj_sw/user_dev/moconnor/tt-metal/tt_metal/include/compute_kernel_api/compute_kernel_hw_startup.h:46:5:   required from here
+   46 |     PACK((llk_pack_init<false /*untilize*/, false /*zero_output*/, false /*tilize*/>(ocb)));
+      |           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~
+/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/llk_api/llk_pack_api.h:124:43: error: no matching function for call to '_llk_pack_init_<false, false>(const unsigned char&, const unsigned char&, const uint32_t&, const uint32_t&, const bool&, const bool&, bool)'
+  124 |     _llk_pack_init_<untilize, zero_output>(
+      |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+  125 |         pack_dst_format[output_id], pack_src_format[output_id], face_r_dim, num_faces, partial_face, narrow_tile, true);
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/llk_api/llk_pack_api.h:124:43: note: there are 2 candidates
+In file included from /proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/llk_api/llk_pack_api.h:18:
+/proj_sw/user_dev/moconnor/tt-metal/tt_metal/third_party/tt_llk/tt_llk_wormhole_b0/llk_lib/llk_pack.h:142:13: note: candidate 1: 'template<bool untilize, bool zero_output> void _llk_pack_init_(uint32_t, uint32_t, uint32_t, bool, bool)'
+  142 | inline void _llk_pack_init_(
+      |             ^~~~~~~~~~~~~~~
+/proj_sw/user_dev/moconnor/tt-metal/tt_metal/third_party/tt_llk/tt_llk_wormhole_b0/llk_lib/llk_pack.h:142:13: note: candidate expects 5 arguments, 7 provided
+/proj_sw/user_dev/moconnor/tt-metal/tt_metal/third_party/tt_llk/tt_llk_wormhole_b0/llk_lib/llk_pack.h:161:13: note: candidate 2: 'template<bool untilize, bool zero_output> void _llk_pack_init_(uint32_t, uint32_t, uint32_t, uint32_t, bool, bool)'
+  161 | inline void _llk_pack_init_(
+      |             ^~~~~~~~~~~~~~~
+/proj_sw/user_dev/moconnor/tt-metal/tt_metal/third_party/tt_llk/tt_llk_wormhole_b0/llk_lib/llk_pack.h:161:13: note: candidate expects 6 arguments, 7 provided
+/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/llk_api/llk_pack_api.h: In instantiation of 'void llk_pack_untilize_init(uint32_t, uint32_t, uint32_t) [with long unsigned int block_ct_dim = 8; long unsigned int full_ct_dim = 128; bool diagonal = false; bool narrow_row = false; long unsigned int row_num_datums = 32; uint32_t = long unsigned int]':
+/proj_sw/user_dev/moconnor/tt-metal/tt_metal/include/compute_kernel_api/pack_untilize.h:69:5:   required from 'void ckernel::pack_untilize_dest_init(uint32_t, uint32_t, uint32_t) [with long unsigned int block_ct_dim = 8; long unsigned int full_ct_dim = 128; bool narrow_row = false; long unsigned int row_num_datums = 32; uint32_t = long unsigned int]'
+   69 |     PACK((llk_pack_untilize_init<block_ct_dim, full_ct_dim, false, narrow_row, row_num_datums>(
+      |          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+   70 |         ocb, face_r_dim, num_faces)));
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~                                                           
+/proj_sw/user_dev/moconnor/tt-metal/tt_metal/include/compute_kernel_api/pack_untilize.h:111:55:   required from 'void ckernel::pack_untilize_init(uint32_t, uint32_t) [with long unsigned int block_ct_dim = 8; long unsigned int full_ct_dim = 128; uint32_t = long unsigned int]'
+  111 |     pack_untilize_dest_init<block_ct_dim, full_ct_dim>(ocb);
+      |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~
+/proj_sw/user_dev/moconnor/tt-metal/ttnn/cpp/ttnn/operations/data_movement/untilize/device/kernels/compute/pack_untilize_variable_num_blocks.cpp:29:50:   required from here
+   29 |     pack_untilize_init<block_ct_dim, full_ct_dim>(src_cb_id, out_cb_id);
+      |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~
+/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/llk_api/llk_pack_api.h:188:94: error: no matching function for call to '_llk_pack_untilize_init_<8, 128, false, false, 32>(const unsigned char&, const uint32_t&, const uint32_t&, bool)'
+  188 |     _llk_pack_untilize_init_<block_ct_dim, full_ct_dim, diagonal, narrow_row, row_num_datums>(
+      |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+  189 |         pack_dst_format[output_id], face_r_dim, num_faces, true);
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                              
+/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/llk_api/llk_pack_api.h:188:94: note: there is 1 candidate
+In file included from /proj_sw/user_dev/moconnor/tt-metal/tt_metal/third_party/tt_llk/tt_llk_wormhole_b0/llk_lib/llk_pack.h:199:
+/proj_sw/user_dev/moconnor/tt-metal/tt_metal/third_party/tt_llk/tt_llk_wormhole_b0/llk_lib/llk_pack_untilize.h:135:13: note: candidate 1: 'template<long unsigned int block_ct_dim, long unsigned int full_ct_dim, bool diagonal, bool narrow_row, long unsigned int row_num_datums> void _llk_pack_untilize_init_(uint32_t, uint32_t, uint32_t)'
+  135 | inline void _llk_pack_untilize_init_(const std::uint32_t pack_dst_format, const std::uint32_t face_r_dim = FACE_R_DIM, const std::uint32_t num_faces = 4)
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~
+/proj_sw/user_dev/moconnor/tt-metal/tt_metal/third_party/tt_llk/tt_llk_wormhole_b0/llk_lib/llk_pack_untilize.h:135:13: note: candidate expects 3 arguments, 4 provided
+ (assert.hpp:104)
+Generating reference tokens...
+Opening device (2x4)...
+Loading ttnn model...
+  Loading embeddings...
+  Computing RoPE cache...
+  Loading 32 layers...
+Running teacher-forcing eval (100 tokens)...
+Traceback (most recent call last):
+  File "/localdev/moconnor/ttnn_models/eval.py", line 192, in <module>
+    main()
+  File "/localdev/moconnor/ttnn_models/eval.py", line 171, in main
+    top1, top5, total = evaluate(
+  File "/localdev/moconnor/ttnn_models/eval.py", line 45, in evaluate
+    outputs = tt_model(prompt_ids, past_key_values=past, use_cache=True)
+  File "/proj_sw/user_dev/moconnor/tt-metal/python_env/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/proj_sw/user_dev/moconnor/tt-metal/python_env/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/localdev/moconnor/ttnn_models/models/mistralai/Mistral-7B-Instruct-v0.3/t3000/functional/model.py", line 559, in forward
+    h = ttnn.embedding(tokens, self.embed, layout=ttnn.TILE_LAYOUT)
+  File "/proj_sw/user_dev/moconnor/tt-metal/ttnn/ttnn/decorators.py", line 447, in __call__
+    result = self.function(*function_args, **function_kwargs)
+RuntimeError: TT_THROW @ /proj_sw/user_dev/moconnor/tt-metal/tt_metal/impl/program/program.cpp:160: tt::exception
+info:
+Failed to generate binaries for pack_untilize_variable_num_blocks TT_THROW @ /proj_sw/user_dev/moconnor/tt-metal/tt_metal/jit_build/build.cpp:55: tt::exception
+info:
+trisc0 build failed. Log: In file included from /proj_sw/user_dev/moconnor/tt-metal/tt_metal/include/compute_kernel_api/untilize.h:12,
+                 from /proj_sw/user_dev/moconnor/tt-metal/ttnn/cpp/ttnn/operations/data_movement/untilize/device/kernels/compute/pack_untilize_variable_num_blocks.cpp:7,
+                 from ../chlkc_unpack.cpp:3,
+                 from /proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/common/chlkc_list.h:37,
+                 from /proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/firmware/src/tt-1xx/trisck.cc:13:
+/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/llk_api/llk_unpack_untilize_api.h: In function 'void llk_unpack_untilize_init(uint32_t)':
+/proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/llk_api/llk_unpack_untilize_api.h:19:31: error: too many arguments to function 'void _llk_unpack_untilize_init_(uint32_t, uint32_t, uint32_t)'
+   19 |     _llk_unpack_untilize_init_(
+      |     ~~~~~~~~~~~~~~~~~~~~~~~~~~^
+   20 |         unpack_dst_format[operand_id], get_local_cb_interface(operand_id).fifo_page_size, face_r_dim, true);
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /proj_sw/user_dev/moconnor/tt-metal/tt_metal/hw/ckernels/wormhole_b0/metal/llk_api/llk_unpack_untilize_api.h:6:
+/proj_sw/user_dev/moconnor/tt-metal/tt_metal/third_party/tt_llk/tt_llk_wormhole_b0/llk_lib/llk_unpack_untilize.h:52:13: note: declared here
+   52 | inline void _llk_unpack_untilize_init_(const std::uint32_t unpack_dst_format, const std::uint32_t tile_size, const std::uint32_t face_r_dim = FACE_R_DIM)
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~
+
+backtrace:
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/_ttnncpp.so(+0x2f89b08) [0x7f1076247b08]
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x75e1dc) [0x7f1072d8e1dc]
+ --- tt::tt_metal::JitBuildState::compile_one(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, tt::tt_metal::JitBuildSettings const*, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x770d08) [0x7f1072da0d08]
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x770c82) [0x7f1072da0c82]
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x51060f) [0x7f1072b4060f]
+ --- /lib/x86_64-linux-gnu/libc.so.6(+0x99ee8) [0x7f10dff22ee8]
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x710759) [0x7f1072d40759]
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x770a8e) [0x7f1072da0a8e]
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x7142b5) [0x7f1072d442b5]
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x712eed) [0x7f1072d42eed]
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x712338) [0x7f1072d42338]
+ --- /lib/x86_64-linux-gnu/libstdc++.so.6(+0xdc253) [0x7f10ca5c5253]
+ --- /lib/x86_64-linux-gnu/libc.so.6(+0x94ac3) [0x7f10dff1dac3]
+ --- /lib/x86_64-linux-gnu/libc.so.6(+0x1268d0) [0x7f10dffaf8d0]
+
+backtrace:
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x621308) [0x7f1072c51308]
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x5e2f32) [0x7f1072c12f32]
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x770d08) [0x7f1072da0d08]
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x770c82) [0x7f1072da0c82]
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x51060f) [0x7f1072b4060f]
+ --- /lib/x86_64-linux-gnu/libc.so.6(+0x99ee8) [0x7f10dff22ee8]
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x710759) [0x7f1072d40759]
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x770a8e) [0x7f1072da0a8e]
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x7142b5) [0x7f1072d442b5]
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x712eed) [0x7f1072d42eed]
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x712338) [0x7f1072d42338]
+ --- /lib/x86_64-linux-gnu/libstdc++.so.6(+0xdc253) [0x7f10ca5c5253]
+ --- /lib/x86_64-linux-gnu/libc.so.6(+0x94ac3) [0x7f10dff1dac3]
+ --- /lib/x86_64-linux-gnu/libc.so.6(+0x1268d0) [0x7f10dffaf8d0]
+
+2026-02-09 02:12:47.723 | info     |          Device | Closing user mode device drivers (tt_cluster.cpp:472)
+2026-02-09 02:12:47.723 | info     |             UMD | Closing devices in cluster (cluster.cpp:976)
