@@ -382,3 +382,15 @@
 
 - Local repo:
 - `git pull --ff-only` to sync `main` to the Falcon t3000 seq-len merge; MODELS.md now reflects Falcon t3000 seq len 32768.
+
+## 2026-02-09T18:57:55+01:00
+
+- In review triage/merges:
+- Merged PR #122 (Fixes #109) for gemma-3-4b-it t3000 seq-len increase to 40960 with updated demo/eval logs and MODELS.md row. #109 is now closed and in Done.
+
+- Project `yieldthought/projects/6` status: In review 0, In progress 2 (#105 Phi n300, #110 gemma n300), Ready 3 (#98 ALLaM n300, #102 Falcon n300, #111 Phi t3000), Backlog 0.
+
+- Runners:
+- `aus-wh-01` agent1: still stuck in repo sync retries (GitHub 500/502 on git pulls), blocking #105 progress until it recovers.
+- `aus-wh-10` agent4: running gemma n300 demo/eval work for #110 (target max_seq_len 40960).
+- `wh-lb-43` agent2: completed gemma t3000 (#109) and started work on Phi t3000 (#111); project status for #111 may lag until the next successful GitHub update.
