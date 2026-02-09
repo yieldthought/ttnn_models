@@ -275,11 +275,17 @@ def run_tt_demo(
     attention_mask = encoded.get("attention_mask")
 
     max_cache = getattr(model_module, "MAX_CACHE_SEQ_LEN", None)
-    if max_cache is not None:
+    max_total = max_seq_len
+    limit_name = "max_seq_len"
+    if max_total is None:
         max_total = max_cache
-        if input_ids.shape[1] + max_new_tokens > max_total:
-            max_new_tokens = max(0, max_total - input_ids.shape[1])
-            print(f"Adjusting max_new_tokens to {max_new_tokens} to fit MAX_CACHE_SEQ_LEN={max_cache}")
+        limit_name = "MAX_CACHE_SEQ_LEN"
+    elif max_cache is not None and max_cache < max_total:
+        max_total = max_cache
+        limit_name = "MAX_CACHE_SEQ_LEN"
+    if max_total is not None and input_ids.shape[1] + max_new_tokens > max_total:
+        max_new_tokens = max(0, max_total - input_ids.shape[1])
+        print(f"Adjusting max_new_tokens to {max_new_tokens} to fit {limit_name}={max_total}")
 
     if max_seq_len is None:
         max_seq_len = max(2048, input_ids.shape[1] + max_new_tokens)
