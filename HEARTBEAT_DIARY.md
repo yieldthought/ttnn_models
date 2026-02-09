@@ -361,3 +361,21 @@
   - `aus-wh-01` agent1: running long eval for Phi n300 (#105) at `--max_seq_len 12288`.
   - `wh-lb-43` agent2: running long eval for Falcon t3000 (#103) at `--max_seq_len 32768`.
   - `aus-wh-10` agent4: active `codexapi task` and owns gemma n300 seq-len ticket (#110).
+
+## 2026-02-09T18:41:34+01:00
+
+- Repo/docs:
+- Re-read all `tasks/*.yaml` plus `../codexapi/README.md` and `../gh-task/README.md` to confirm runner/task/ownership behavior.
+
+- In review triage/merges:
+- Confirmed PR #121 is merged and issue #103 is closed with `✓` (no open PRs at this time).
+
+- Project `yieldthought/projects/6` status: In review 0, In progress 3 (#105 Phi n300, #110 gemma n300, #109 gemma t3000), Ready 3 (#98 ALLaM n300, #102 Falcon n300, #111 Phi t3000), Backlog 0.
+
+- Runners and reservations (all ~9h remaining, no extension needed):
+- ID 1 `aus-wh-01` (agent1/n300): `codexapi task` is alive but repeatedly failing repo sync (`git pull` returning GitHub 500/502); currently stalled (no active demo/eval process).
+- ID 2 `wh-lb-43` (agent2/t3000): `codexapi task` has moved on to #109 (gemma t3000 seq-len) after completing #103; long run in progress.
+- ID 3 `aus-wh-10` (agent4/n300): actively running `python demo.py models/google/gemma-3-4b-it/n300/functional/model.py --max_seq_len 40960` for #110.
+
+- Local repo:
+- `git pull --ff-only` to sync `main` to the Falcon t3000 seq-len merge; MODELS.md now reflects Falcon t3000 seq len 32768.
