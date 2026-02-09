@@ -20,7 +20,7 @@ TILE_SIZE = 32
 WEIGHT_DTYPE = ttnn.bfloat8_b
 WEIGHT_LAYOUT = ttnn.TILE_LAYOUT
 MAX_CACHE_SEQ_LEN = 256
-MESH_SHAPE = (1, 2)
+MESH_SHAPE = (2, 1)
 MESH_TOPOLOGY = ttnn.Topology.Linear
 MESH_NUM_LINKS = 1
 
@@ -62,7 +62,8 @@ class ModelConfig:
     attention_bias: bool
     query_pre_attn_scalar: float
     sliding_window: int
-    sliding_window_pattern: int
+    sliding_window_pattern: Optional[int]
+    layer_types: Optional[list]
     tie_word_embeddings: bool
     final_logit_softcapping: Optional[float]
 
@@ -85,7 +86,8 @@ class ModelConfig:
             text_config.attention_bias,
             text_config.query_pre_attn_scalar,
             text_config.sliding_window,
-            text_config.sliding_window_pattern,
+            getattr(text_config, "sliding_window_pattern", None),
+            getattr(text_config, "layer_types", None),
             text_config.tie_word_embeddings,
             getattr(text_config, "final_logit_softcapping", None),
         )
@@ -177,7 +179,7 @@ class MLP:
     """Gated MLP (gelu) for Gemma3, with 1D tensor parallel."""
 
     def __init__(self, layer_idx: int, state_dict: dict, parallel: ParallelConfig):
-        p = f"language_model.model.layers.{layer_idx}.mlp."
+        p = f"model.language_model.layers.{layer_idx}.mlp."
         self.parallel = parallel
         self.gate_proj = self._load_weight(state_dict[f"{p}gate_proj.weight"], parallel.shard_width_mapper)
         self.up_proj = self._load_weight(state_dict[f"{p}up_proj.weight"], parallel.shard_width_mapper)
@@ -222,15 +224,18 @@ class Attention:
         self.n_local_kv_heads = self.n_kv_heads // parallel.num_devices
         self.head_dim = config.head_dim
         self.scale = 1.0 / math.sqrt(config.query_pre_attn_scalar)
-        self.is_sliding = bool((layer_idx + 1) % config.sliding_window_pattern)
-
+        if config.layer_types is not None:
+            self.is_sliding = config.layer_types[layer_idx] == "sliding_attention"
+        else:
+            pattern = config.sliding_window_pattern or 6
+            self.is_sliding = bool((layer_idx + 1) % pattern)
         if config.attention_bias:
             raise ValueError("attention_bias=True is not supported in this bringup")
 
         self.cos_cache = cos_cache_local if self.is_sliding else cos_cache_global
         self.sin_cache = sin_cache_local if self.is_sliding else sin_cache_global
 
-        p = f"language_model.model.layers.{layer_idx}.self_attn."
+        p = f"model.language_model.layers.{layer_idx}.self_attn."
         self.q_proj = self._load_weight(state_dict[f"{p}q_proj.weight"], parallel.shard_width_mapper)
         self.k_proj = self._load_weight(state_dict[f"{p}k_proj.weight"], parallel.shard_width_mapper)
         self.v_proj = self._load_weight(state_dict[f"{p}v_proj.weight"], parallel.shard_width_mapper)
@@ -389,7 +394,7 @@ class DecoderLayer:
         parallel: ParallelConfig,
         max_seq_len: int,
     ):
-        p = f"language_model.model.layers.{layer_idx}."
+        p = f"model.language_model.layers.{layer_idx}."
         self.attn_norm = RMSNorm(state_dict[f"{p}input_layernorm.weight"], config.rms_norm_eps, parallel)
         self.post_attn_norm = RMSNorm(state_dict[f"{p}post_attention_layernorm.weight"], config.rms_norm_eps, parallel)
         self.pre_ffn_norm = RMSNorm(state_dict[f"{p}pre_feedforward_layernorm.weight"], config.rms_norm_eps, parallel)
@@ -480,7 +485,7 @@ class TtnnGemma3ForCausalLM(torch.nn.Module, GenerationMixin):
 
         print("  Loading embeddings...")
         embed_scale = torch.tensor(self.tt_config.hidden_size**0.5, dtype=torch.bfloat16)
-        embed_weight = state_dict["language_model.model.embed_tokens.weight"].to(torch.bfloat16) * embed_scale
+        embed_weight = state_dict["model.language_model.embed_tokens.weight"].to(torch.bfloat16) * embed_scale
         self.embed = ttnn.as_tensor(
             embed_weight.unsqueeze(0).unsqueeze(0).contiguous(),
             dtype=WEIGHT_DTYPE,
@@ -552,10 +557,10 @@ class TtnnGemma3ForCausalLM(torch.nn.Module, GenerationMixin):
             for i in range(self.tt_config.num_hidden_layers)
         ]
 
-        self.norm = RMSNorm(state_dict["language_model.model.norm.weight"], self.tt_config.rms_norm_eps, self.parallel)
-        lm_head_weight = state_dict.get("language_model.lm_head.weight")
+        self.norm = RMSNorm(state_dict["model.language_model.norm.weight"], self.tt_config.rms_norm_eps, self.parallel)
+        lm_head_weight = state_dict.get("lm_head.weight")
         if lm_head_weight is None:
-            lm_head_weight = state_dict["language_model.model.embed_tokens.weight"]
+            lm_head_weight = state_dict["model.language_model.embed_tokens.weight"]
         self.lm_head = ttnn.as_tensor(
             lm_head_weight.T.unsqueeze(0).unsqueeze(0).to(torch.bfloat16).contiguous(),
             dtype=WEIGHT_DTYPE,
