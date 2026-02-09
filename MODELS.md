@@ -28,7 +28,7 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | Qwen/Qwen3-0.6B                     |   n300   | functional |   99% |  100% |  329ms |   5.2 |    2048 |
 | Qwen/Qwen3-0.6B                     |  t3000   | functional |   98% |  100% |  229ms |   6.2 |   40960 |
 | google/gemma-3-4b-it                |   n150   | functional |   92% |  100% |   98ms |  13.9 |   40960 |
-| google/gemma-3-4b-it                |   n300   | functional |   94% |  100% | 1342ms |   1.7 |     256 |
+| google/gemma-3-4b-it                |   n300   | functional |   94% |  100% |  523ms |   3.3 |     256 |
 | google/gemma-3-4b-it                |  t3000   | functional |   bad |   bad |   bad |   bad |     256 |
 | microsoft/Phi-3-mini-128k-instruct  |   n150   | functional |   84% |   98% |   82ms |  13.6 |   12288 |
 | microsoft/Phi-3-mini-128k-instruct  |   n300   | functional |   90% |  100% |  168ms |   7.6 |     256 |
