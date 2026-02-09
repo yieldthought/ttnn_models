@@ -249,6 +249,20 @@ class Attention:
         self.head_dim_half = self.head_dim // 2
         self.head_dim_half_padded = self.head_dim_padded // 2
         self.scale = 1.0 / math.sqrt(self.head_dim)
+        device_grid = self.parallel.mesh_device.core_grid
+        grid_x = device_grid.x
+        grid_y = device_grid.y
+        if grid_x * grid_y > TILE_SIZE:
+            grid_y = max(1, TILE_SIZE // grid_x)
+        self.decode_heads_grid = ttnn.CoreGrid(x=grid_x, y=grid_y)
+        padded_heads = pad_to_tile(self.n_local_heads)
+        self.decode_heads_memcfg = ttnn.create_sharded_memory_config(
+            (padded_heads, self.head_dim),
+            self.decode_heads_grid,
+            ttnn.ShardStrategy.HEIGHT,
+            ttnn.ShardOrientation.ROW_MAJOR,
+            use_height_and_width_as_shard_shape=True,
+        )
 
         self.cos_cache = cos_cache
         self.sin_cache = sin_cache
@@ -464,8 +478,12 @@ class Attention:
             attn_out = ttnn.transformer.scaled_dot_product_attention_decode(
                 q, self.k_cache, self.v_cache, cur_pos_tensor=cur_pos_tensor, scale=self.scale
             )
-            attn_out = ttnn.transpose(attn_out, 1, 2)
-            attn_out = ttnn.experimental.nlp_concat_heads(attn_out, memory_config=ttnn.DRAM_MEMORY_CONFIG)
+            attn_out = ttnn.to_memory_config(attn_out, self.decode_heads_memcfg)
+            attn_out = ttnn.experimental.nlp_concat_heads_decode(
+                attn_out,
+                num_heads=num_heads,
+                memory_config=ttnn.DRAM_MEMORY_CONFIG,
+            )
 
         expected_width = num_heads * self.head_dim
         if attn_out.shape[-1] != expected_width:
