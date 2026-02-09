@@ -372,6 +372,9 @@
 
 - Project `yieldthought/projects/6` status: In review 0, In progress 3 (#105 Phi n300, #110 gemma n300, #109 gemma t3000), Ready 3 (#98 ALLaM n300, #102 Falcon n300, #111 Phi t3000), Backlog 0.
 
+- Queue hygiene:
+- Removed stale `owner:` labels from Ready tickets (#98 had `owner: agent1`, #111 had `owner: agent2`) so runners can take them. #111 had also drifted into In progress without active work, so it was moved back to Ready.
+
 - Runners and reservations (all ~9h remaining, no extension needed):
 - ID 1 `aus-wh-01` (agent1/n300): `codexapi task` is alive but repeatedly failing repo sync (`git pull` returning GitHub 500/502); currently stalled (no active demo/eval process).
 - ID 2 `wh-lb-43` (agent2/t3000): `codexapi task` has moved on to #109 (gemma t3000 seq-len) after completing #103; long run in progress.
