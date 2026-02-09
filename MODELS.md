@@ -23,7 +23,7 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | mistralai/Mistral-7B-Instruct-v0.3  |  t3000   | functional |   97% |  100% |        |       |    1024 |
 | Qwen/Qwen3-0.6B                     |   n150   | functional |   99% |  100% |   52ms |  28.0 |   40960 |
 | Qwen/Qwen3-0.6B                     |   n300   | functional |   99% |  100% |        |       |         |
-| Qwen/Qwen3-0.6B                     |  t3000   | functional |   99% |  100% |        |       |         |
+| Qwen/Qwen3-0.6B                     |  t3000   | functional |   bad |   bad |   bad |   bad |         |
 | google/gemma-3-4b-it                |   n150   | functional |   92% |  100% |   98ms |  13.9 |   40960 |
 | google/gemma-3-4b-it                |   n300   | functional |   bad |   bad |  360ms |   4.6 |     256 |
 | google/gemma-3-4b-it                |  t3000   | functional |   91% |  100% |        |       |     256 |
