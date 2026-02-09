@@ -279,13 +279,37 @@ class Attention:
             )
             ttnn.deallocate(qkv)
 
-            q = ttnn.reshape(q, (1, 1, q.shape[1] * self.n_heads, self.head_dim))
+            q_batch = q.shape[1]
+            q_heads = q.shape[2]
+            q_bh = q_batch * q_heads
+            q_bh_padded = pad_to_tile(q_bh)
+            q = ttnn.reshape(
+                q,
+                (1, 1, q_bh, self.head_dim),
+                (1, 1, q_bh_padded, self.head_dim),
+            )
             q = ttnn.experimental.rotary_embedding(q, self.cos_cache, self.sin_cache, start_pos)
-            q = ttnn.reshape(q, (1, q.shape[2] // self.n_heads, self.n_heads, self.head_dim))
+            q = ttnn.reshape(
+                q,
+                (1, q_batch, q_heads, self.head_dim),
+                (1, q_batch, q_heads, self.head_dim),
+            )
 
-            k = ttnn.reshape(k, (1, 1, k.shape[1] * self.n_kv_heads, self.head_dim))
+            k_batch = k.shape[1]
+            k_heads = k.shape[2]
+            k_bh = k_batch * k_heads
+            k_bh_padded = pad_to_tile(k_bh)
+            k = ttnn.reshape(
+                k,
+                (1, 1, k_bh, self.head_dim),
+                (1, 1, k_bh_padded, self.head_dim),
+            )
             k = ttnn.experimental.rotary_embedding(k, self.cos_cache, self.sin_cache, start_pos)
-            k = ttnn.reshape(k, (1, k.shape[2] // self.n_kv_heads, self.n_kv_heads, self.head_dim))
+            k = ttnn.reshape(
+                k,
+                (1, k_batch, k_heads, self.head_dim),
+                (1, k_batch, k_heads, self.head_dim),
+            )
 
             ttnn.experimental.paged_update_cache(
                 self.k_cache,
@@ -320,14 +344,20 @@ class Attention:
                 (attn_out.shape[0], attn_out.shape[1], attn_out.shape[2], expected_width),
             )
 
-        return ttnn.linear(attn_out, self.o_proj)
+        return ttnn.linear(
+            attn_out,
+            self.o_proj,
+            dtype=ttnn.bfloat16,
+            compute_kernel_config=ATTN_KERNEL_CONFIG,
+        )
 
 
 class MLP:
     """SwiGLU MLP, fully on ttnn."""
 
-    def __init__(self, layer_idx: int, state_dict: dict, tt_device):
+    def __init__(self, layer_idx: int, state_dict: dict, tt_device, weight_dtype: ttnn.DataType):
         p = f"model.layers.{layer_idx}.mlp."
+        self.weight_dtype = weight_dtype
         self.gate_proj = self._load_weight(state_dict[f"{p}gate_proj.weight"], tt_device)
         self.up_proj = self._load_weight(state_dict[f"{p}up_proj.weight"], tt_device)
         self.down_proj = self._load_weight(state_dict[f"{p}down_proj.weight"], tt_device)
@@ -335,16 +365,33 @@ class MLP:
     def _load_weight(self, w: torch.Tensor, tt_device) -> ttnn.Tensor:
         return ttnn.as_tensor(
             w.T.unsqueeze(0).unsqueeze(0).to(torch.bfloat16).contiguous(),
-            dtype=MLP_WEIGHT_DTYPE,
+            dtype=self.weight_dtype,
             layout=WEIGHT_LAYOUT,
             device=tt_device,
             memory_config=ttnn.DRAM_MEMORY_CONFIG,
         )
 
     def __call__(self, x: ttnn.Tensor) -> ttnn.Tensor:
-        gate = ttnn.silu(ttnn.linear(x, self.gate_proj))
-        up = ttnn.linear(x, self.up_proj)
-        return ttnn.linear(ttnn.mul(gate, up), self.down_proj)
+        gate = ttnn.silu(
+            ttnn.linear(
+                x,
+                self.gate_proj,
+                dtype=ttnn.bfloat16,
+                compute_kernel_config=ATTN_KERNEL_CONFIG,
+            )
+        )
+        up = ttnn.linear(
+            x,
+            self.up_proj,
+            dtype=ttnn.bfloat16,
+            compute_kernel_config=ATTN_KERNEL_CONFIG,
+        )
+        return ttnn.linear(
+            ttnn.mul(gate, up),
+            self.down_proj,
+            dtype=ttnn.bfloat16,
+            compute_kernel_config=ATTN_KERNEL_CONFIG,
+        )
 
 
 class DecoderLayer:
@@ -367,7 +414,11 @@ class DecoderLayer:
             paged_attention_config,
             page_table,
         )
-        self.mlp = MLP(layer_idx, state_dict, tt_device)
+        # Keep tail MLPs in BF16 to hit long-eval accuracy on n150.
+        mlp_weight_dtype = MLP_WEIGHT_DTYPE
+        if layer_idx >= config.num_hidden_layers - 4:
+            mlp_weight_dtype = ttnn.bfloat16
+        self.mlp = MLP(layer_idx, state_dict, tt_device, weight_dtype=mlp_weight_dtype)
 
     def __call__(
         self,
@@ -415,7 +466,7 @@ class TtnnQwen2ForCausalLM(torch.nn.Module, GenerationMixin):
         self.embed = ttnn.as_tensor(
             state_dict["model.embed_tokens.weight"].unsqueeze(0).unsqueeze(0).to(torch.bfloat16),
             dtype=EMBED_DTYPE,
-            layout=WEIGHT_LAYOUT,
+            layout=ttnn.ROW_MAJOR_LAYOUT,
             device=tt_device,
             memory_config=ttnn.DRAM_MEMORY_CONFIG,
         )
@@ -536,7 +587,12 @@ class TtnnQwen2ForCausalLM(torch.nn.Module, GenerationMixin):
             h = layer(h, start_pos, seq_len, cur_pos_tensor=cur_pos_tensor)
 
         h = self.norm(h)
-        logits = ttnn.linear(h, self.lm_head)
+        logits = ttnn.linear(
+            h,
+            self.lm_head,
+            dtype=ttnn.bfloat16,
+            compute_kernel_config=ATTN_KERNEL_CONFIG,
+        )
 
         logits = ttnn.to_torch(logits).reshape(batch, padded_seq, -1)[:, :seq_len, :]
 

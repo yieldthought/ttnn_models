@@ -14,7 +14,7 @@ It is designed to be easy to read and to serve as a template for future bringups
 - The forward method returns `CausalLMOutputWithPast(logits=..., past_key_values=...)`.
 
 ## Parallelism strategy (N300)
-- Mesh shape: 1x2 (two devices), linear topology.
+- Mesh shape: 2x1 (two devices), linear topology.
 - Column-parallel: QKV, gate, up, and lm_head projections (weights sharded on dim=3).
 - Row-parallel: attention output projection and MLP down projection (weights sharded on dim=2) with `ttnn.all_reduce`.
 - KV cache is sharded across devices on dim=1 (KV heads).
@@ -41,7 +41,7 @@ It is designed to be easy to read and to serve as a template for future bringups
 - Q/K RMSNorm uses `(1 + weight)` (Gemma3RMSNorm).
 - Embeddings are scaled by `sqrt(hidden_size)` with bfloat16 rounding.
 - Global RoPE uses linear scaling (`rope_scaling.factor = 8`).
-- Sliding layers (pattern = 6) use local RoPE with `rope_local_base_freq`.
+- Sliding layers use local RoPE with `rope_local_base_freq` (from `layer_types` when available, otherwise pattern = 6).
 - Sliding-window masking is not implemented; it only matters for very long contexts.
 
 ## RoPE notes
@@ -69,10 +69,10 @@ Teacher-forcing accuracy is computed against the HF reference model.
 python eval.py models/google/gemma-3-4b-it/n300/functional/model.py --model google/gemma-3-4b-it
 ```
 
-On this N300 host, set the mesh to devices 0 and 2:
+If you need to pin devices on this host, use devices 0 and 1 (adjust as needed):
 
 ```
-TT_VISIBLE_DEVICES=0,2 python eval.py models/google/gemma-3-4b-it/n300/functional/model.py --model google/gemma-3-4b-it
+TT_VISIBLE_DEVICES=0,1 python eval.py models/google/gemma-3-4b-it/n300/functional/model.py --model google/gemma-3-4b-it
 ```
 
 If `/home` is full, redirect runtime artifacts to a writable location. On this host,
@@ -93,3 +93,9 @@ python scripts/run_eval.py --mode tt --hf-model google/gemma-3-4b-it
 - Start with small prefill/decode lengths (e.g. 16/8).
 - Compare TT outputs to HF outputs layer-by-layer if needed.
 - Reset hardware if needed: `tt-smi -r`.
+
+## 2026-02-09 Update
+- Fixed HF state_dict key paths (use `model.language_model.*` and `lm_head.weight` fallback).
+- Respect `layer_types` when selecting sliding vs global RoPE; default to pattern = 6.
+- Re-ran the long teacher-forcing eval with `prompts/bringup_eval_long.txt` (100 new tokens) and confirmed accuracy meets release thresholds.
+- Re-ran the TT demo; output is coherent.

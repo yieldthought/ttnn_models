@@ -288,3 +288,43 @@
 - `yyzc-wh-05` (agent4/n300): actively running long eval for Arcee-Spark n300 (#88).
 - `wh-lb-43` (agent2/t3000): running short eval iterations for Phi-3-mini t3000 (#92) while editing model/logs.
 - `aus-wh-01` (agent1/n300): editing gemma n300 (#89) with local changes; no PR yet.
+
+## 2026-02-09T17:00:28+01:00
+
+- In review triage/merges:
+- Merged PR #112 (Fixes #87) for Arcee-Spark n150 correctness; resolved a MODELS.md conflict first. #87 is now closed.
+- Merged PR #114 (Fixes #89) for gemma-3-4b-it n300 correctness; resolved a MODELS.md conflict first. #89 is now closed.
+- Merged PR #115 (Fixes #99) for ALLaM t3000 to raise Seq len to 4096 with paged KV + paged attention; includes a small `demo.py` enhancement to accept `--max_seq_len`. #99 is now closed.
+
+- Failed task requeue and hygiene:
+- #88 (Arcee-Spark n300 fix_correctness) and #98 (ALLaM n300 increase_seq_len) both failed on `yyzc-wh-05` with device open/hugepage issues. Cleared stale `## Progress`, removed the `⨉` label, added a short host-failure note, and moved both back to Ready.
+- #102 (Falcon n300 increase_seq_len) was left with `owner: agent4` after shutting down the broken runner; removed ownership and moved it back to Ready.
+
+- Runner and reservation management:
+- Stopped and released the problematic n300 reservation on `yyzc-wh-05` (agent4) after repeated hugepage pinning failures.
+- Reserved a replacement n300 host (`aus-wh-10`) and started a new worker (still named `agent4`) there; it immediately took #88.
+- Released the idle n150 reservation (`wh-04`) since no n150 work is currently queued.
+- Current IRD reservations (all >4h remaining):
+- ID 1: `aus-wh-01` (agent1/n300) working #100.
+- ID 2: `wh-lb-43` (agent2/t3000) idle/ready to take the next t3000 seq-len tickets.
+- ID 3: `aus-wh-10` (agent4/n300) working #88 (note: this was ID 4 before releasing the n150 reservation; IRD renumbered it).
+
+- Project `yieldthought/projects/6` status at end of tick: In review 0, In progress 2 (#88, #100), Ready 9 (#98, #101-#105, #109-#111, #102), Backlog 0.
+
+## 2026-02-09T17:03:28+01:00
+
+- Project `yieldthought/projects/6` status: In review 0, In progress 3 (#88 Arcee n300, #100 Mistral n300, #101 Mistral t3000), Ready 8 (#98, #102-#105, #109-#111), Backlog 0.
+
+- Runners and reservations:
+- ID 1 `aus-wh-01` (agent1/n300): codex session active on #100; no long eval python process at check (still in code/LLM stages).
+- ID 3 `aus-wh-10` (agent4/n300): actively running `eval.py` long eval for #88 at `--max_seq_len 32768` (high CPU process observed).
+- ID 2 `wh-lb-43` (agent2/t3000): codex session active on #101; no long eval python process at check (still in code/LLM stages).
+- All reservations still have >5h remaining (IDs 1-2) and >7h remaining on ID 3; no extension needed yet.
+
+- Capacity note:
+- Attempted to reserve a second t3000 (`wormhole_b0 --model lb`) to parallelize the remaining t3000 seq-len tickets:
+- `tt_aus` allocation failed immediately.
+- `tt_yyz` queued and was cancelled to avoid blocking.
+- `tt_sjc` reservation succeeded on `wh-lb-81` but the container lacked `~/scripts/ttnn_models_setup.sh` and `/proj_sw/user_dev/moconnor/tt-metal` was empty, so the reservation was released.
+- IRD note: the healthy-clusters check briefly returned no responsive clusters; `ird list/release --skip-clusters-check` worked around it.
+- No PRs opened during this heartbeat; waiting for workers to finish and produce PRs for review/merge.
