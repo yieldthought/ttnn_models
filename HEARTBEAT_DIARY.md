@@ -409,3 +409,16 @@
 - `aus-wh-01` agent1: running long eval for Phi n300 at `--max_seq_len 12288`.
 - `aus-wh-10` agent4: moved on to ALLaM n300 seq-len ticket (#98).
 - `wh-lb-43` agent2: working Phi t3000 (demo currently at `--max_seq_len 12288`).
+
+## 2026-02-09T19:37:28+01:00
+
+- Project `yieldthought/projects/6` status: In review 0, In progress 2 (#98 ALLaM n300, #102 Falcon n300), Ready 0, Backlog 0.
+
+- Queue hygiene:
+- Deleted a stale `Taking: agent1` comment on #102 that prevented the gh-task ownership protocol from completing; agent1 then successfully took #102 and it moved to In progress.
+
+- Runners and reservations (both n300, ~8h+ remaining):
+- ID 1 `aus-wh-01` (agent1/n300): owns #102 and is running `codexapi task` for `increase_seq_len_n300`.
+- ID 2 `aus-wh-10` (agent4/n300): owns #98 and is running `codexapi task` for `increase_seq_len_n300`.
+
+- Released idle t3000 reservations on `wh-lb-43` (no remaining t3000 tickets), leaving only n300 runners active.
