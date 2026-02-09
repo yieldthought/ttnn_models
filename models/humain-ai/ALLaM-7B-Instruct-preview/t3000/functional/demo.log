@@ -1,85 +1,78 @@
-TT_MESH_GRAPH_DESC_PATH=/proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/t3k_mesh_graph_descriptor.textproto TT_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 TT_METAL_CACHE=/tmp/tt-metal-cache TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-runtime-root python demo.py models/humain-ai/ALLaM-7B-Instruct-preview/t3000/functional/model.py
-
-/proj_sw/user_dev/moconnor/tt-metal/python_env/lib/python3.10/site-packages/transformers/utils/hub.py:111: FutureWarning: Using `TRANSFORMERS_CACHE` is deprecated and will be removed in v5 of Transformers. Use `HF_HOME` instead.
-  warnings.warn(
-2026-02-08 23:52:23.418 | DEBUG    | ttnn:<module>:77 - Initial ttnn.CONFIG:
+env TT_VISIBLE_DEVICES=0,1,2,3 TT_MESH_GRAPH_DESC_PATH=/proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/t3k_mesh_graph_descriptor.textproto TT_METAL_CACHE=/tmp/tt-metal-cache python /localdev/moconnor/ttnn_models/demo.py /localdev/moconnor/ttnn_models/models/humain-ai/ALLaM-7B-Instruct-preview/t3000/functional/model.py
+2026-02-09 11:28:11.300 | DEBUG    | ttnn:<module>:77 - Initial ttnn.CONFIG:
 Config{cache_path=/home/moconnor/.cache/ttnn,model_cache_path=/home/moconnor/.cache/ttnn/models,tmp_dir=/tmp/ttnn,enable_model_cache=false,enable_fast_runtime_mode=true,throw_exception_on_fallback=false,enable_logging=false,enable_graph_report=false,enable_detailed_buffer_report=false,enable_detailed_tensor_report=false,enable_comparison_mode=false,comparison_mode_should_raise_exception=false,comparison_mode_pcc=0.9999,root_report_path=generated/ttnn/reports,report_name=std::nullopt,std::nullopt}
-2026-02-08 23:52:25.028 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
-2026-02-08 23:52:25.028 | warning  |             UMD | Firmware bundle version mismatch for device 72059269369848033: expected 19.3.1, got 19.3.1 (topology_discovery.cpp:361)
-2026-02-08 23:52:25.028 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (9, 0, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.028 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (9, 0, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.028 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (1, 0, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.028 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (1, 0, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.028 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (8, 0, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.028 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (8, 0, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.028 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (2, 0, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.028 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (2, 0, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.028 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (7, 0, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.028 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (7, 0, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.028 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (3, 0, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.028 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (3, 0, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.028 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (6, 0, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.028 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (6, 0, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.028 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (4, 0, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.028 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (4, 0, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.028 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (9, 6, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.028 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (9, 6, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.028 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (1, 6, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.028 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (1, 6, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.028 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (8, 6, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.028 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (8, 6, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.028 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (2, 6, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.028 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (2, 6, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.028 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (7, 6, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.028 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (7, 6, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.028 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (3, 6, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.028 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (3, 6, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.028 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (6, 6, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.028 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (6, 6, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.028 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (4, 6, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.028 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (4, 6, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.029 | warning  |             UMD | Firmware bundle version mismatch for device 72059269369848157: expected 19.1.0, got 19.1.0 (topology_discovery.cpp:361)
-2026-02-08 23:52:25.029 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (9, 0, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.029 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (9, 0, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.029 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (1, 0, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.029 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (1, 0, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.029 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (8, 0, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.029 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (8, 0, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.029 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (2, 0, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.029 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (2, 0, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.029 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (7, 0, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.029 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (7, 0, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.029 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (3, 0, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.029 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (3, 0, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.029 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (6, 0, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.029 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (6, 0, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.029 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (4, 0, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.029 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (4, 0, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.029 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (9, 6, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.029 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (9, 6, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.029 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (1, 6, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.029 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (1, 6, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.029 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (8, 6, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.029 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (8, 6, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.029 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (2, 6, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.029 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (2, 6, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.029 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (7, 6, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.029 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (7, 6, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.029 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (3, 6, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.029 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (3, 6, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.029 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (6, 6, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.029 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (6, 6, ETH, NOC0) (topology_discovery.cpp:162)
-2026-02-08 23:52:25.029 | warning  |             UMD | ETH FW version mismatch for chip 0 ETH core CoreCoord: (4, 6, ETH, NOC0), found: 7.2.0. (topology_discovery_wormhole.cpp:345)
-2026-02-08 23:52:25.029 | warning  |             UMD | Skipping discovery from chip 0 ETH core CoreCoord: (4, 6, ETH, NOC0) (topology_discovery.cpp:162)
+2026-02-09 11:28:12.753 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-09 11:28:12.784 | info     |          Device | Opening user mode device driver (tt_cluster.cpp:223)
+2026-02-09 11:28:12.792 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-09 11:28:12.867 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-09 11:28:12.926 | info     |             UMD | Harvesting masks for chip 3 tensix: 0x202 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 11:28:12.981 | info     |             UMD | Harvesting masks for chip 2 tensix: 0x201 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 11:28:12.991 | info     |             UMD | Harvesting masks for chip 1 tensix: 0x220 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 11:28:13.001 | info     |             UMD | Harvesting masks for chip 0 tensix: 0x240 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 11:28:13.010 | info     |             UMD | Harvesting masks for chip 7 tensix: 0x280 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 11:28:13.024 | info     |             UMD | Harvesting masks for chip 6 tensix: 0x210 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 11:28:13.037 | info     |             UMD | Harvesting masks for chip 5 tensix: 0x210 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 11:28:13.049 | info     |             UMD | Harvesting masks for chip 4 tensix: 0x5 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 11:28:13.063 | info     |             UMD | Opening local chip ids/PCIe ids: {0, 1, 2, 3}/[0, 3, 1, 2] and remote chip ids {4, 5, 6, 7} (cluster.cpp:186)
+2026-02-09 11:28:13.063 | info     |             UMD | IOMMU: disabled (cluster.cpp:161)
+2026-02-09 11:28:13.063 | info     |             UMD | KMD version: 2.4.1 (cluster.cpp:164)
+2026-02-09 11:28:13.071 | info     |             UMD | Starting devices in cluster (cluster.cpp:965)
+2026-02-09 11:28:13.072 | info     |             UMD | Mapped hugepage 0x240000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 11:28:13.072 | info     |             UMD | Mapped hugepage 0x200000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 11:28:13.073 | info     |             UMD | Mapped hugepage 0x41c0000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 11:28:13.074 | info     |             UMD | Mapped hugepage 0x4180000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 11:28:13.075 | info     |             UMD | Mapped hugepage 0x300000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 11:28:13.076 | info     |             UMD | Mapped hugepage 0x2c0000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 11:28:13.077 | info     |             UMD | Mapped hugepage 0x42c0000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 11:28:13.077 | info     |             UMD | Mapped hugepage 0x4280000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 11:28:13.156 | info     |     Distributed | Using custom mesh graph descriptor: /proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/t3k_mesh_graph_descriptor.textproto (metal_context.cpp:822)
+2026-02-09 11:28:13.157 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=8, n_phys=8, log_deg_hist={2:4, 3:4}, phys_deg_hist={2:4, 3:4} (topology_mapper_utils.cpp:171)
+2026-02-09 11:28:13.162 | DEBUG    | ttnn.device:__init__:150 - Using default dispatch core type for this system: DispatchCoreType.ETH
+2026-02-09 11:28:13.163 | DEBUG    | ttnn.device:__init__:152 - Using default dispatch core axis for this system: DispatchCoreAxis.ROW
+2026-02-09 11:28:13.167 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 11:28:13.169 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 11:28:13.170 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 11:28:13.170 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 11:28:13.170 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 11:28:13.171 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 11:28:13.171 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 11:28:13.171 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 11:28:13.489 | warning  |           Metal | Got num_routing_planes: 1, which is less than current value: 255, ignoring the override (metal_context.cpp:719)
+2026-02-09 11:28:13.489 | info     |           Metal | Dispatch on FabricConfig::FABRIC_2D with 1 Command Queues
+ (device_manager.cpp:328)
+2026-02-09 11:28:13.505 | info     |           Metal | Initializing Fabric (device_manager.cpp:404)
+2026-02-09 11:28:13.683 | info     |           Metal | Fabric initialized on Device 0 (device.cpp:386)
+2026-02-09 11:28:13.683 | info     |           Metal | Fabric initialized on Device 1 (device.cpp:386)
+2026-02-09 11:28:13.684 | info     |           Metal | Fabric initialized on Device 2 (device.cpp:386)
+2026-02-09 11:28:13.684 | info     |           Metal | Fabric initialized on Device 3 (device.cpp:386)
+2026-02-09 11:28:13.687 | info     |           Metal | Fabric initialized on Device 4 (device.cpp:386)
+2026-02-09 11:28:13.694 | info     |           Metal | Fabric initialized on Device 5 (device.cpp:386)
+2026-02-09 11:28:13.697 | info     |           Metal | Fabric initialized on Device 6 (device.cpp:386)
+2026-02-09 11:28:13.703 | info     |           Metal | Fabric initialized on Device 7 (device.cpp:386)
+2026-02-09 11:28:13.703 | info     |           Metal | Fabric Initialized with config FabricConfig::FABRIC_2D (device_manager.cpp:409)
+2026-02-09 11:28:13.795 | info     |           Metal | Command Queue initialized on Device 7 (device_manager.cpp:500)
+2026-02-09 11:28:13.795 | info     |           Metal | Command Queue initialized on Device 6 (device_manager.cpp:500)
+2026-02-09 11:28:13.795 | info     |           Metal | Command Queue initialized on Device 5 (device_manager.cpp:500)
+2026-02-09 11:28:13.797 | info     |           Metal | Command Queue initialized on Device 4 (device_manager.cpp:500)
 Loading tokenizer: humain-ai/ALLaM-7B-Instruct-preview
 Opening TT device...
-Traceback (most recent call last):
-  File "/localdev/moconnor/ttnn_models/demo.py", line 374, in <module>
-    main()
-  File "/localdev/moconnor/ttnn_models/demo.py", line 353, in main
-    run_tt_demo(
-  File "/localdev/moconnor/ttnn_models/demo.py", line 292, in run_tt_demo
-    tt_device, is_mesh, fabric_config = open_tt_device(mesh_shape, device_id)
-  File "/localdev/moconnor/ttnn_models/device_utils.py", line 88, in open_tt_device
-    ttnn.set_fabric_config(fabric_config)
-IndexError: unordered_map::at
+Loading HuggingFace reference model on CPU: humain-ai/ALLaM-7B-Instruct-preview
+Fetching 3 files:   0%|          | 0/3 [00:00<?, ?it/s]Fetching 3 files:  33%|███▎      | 1/3 [00:16<00:32, 16.03s/it]Fetching 3 files: 100%|██████████| 3/3 [00:16<00:00,  5.34s/it]
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards:  33%|███▎      | 1/3 [00:05<00:11,  5.75s/it]Loading checkpoint shards:  67%|██████▋   | 2/3 [00:11<00:05,  5.71s/it]Loading checkpoint shards: 100%|██████████| 3/3 [00:16<00:00,  5.24s/it]Loading checkpoint shards: 100%|██████████| 3/3 [00:16<00:00,  5.37s/it]
+Building TT model...
+  Loading embeddings...
+  Computing RoPE cache...
+  Loading 32 layers...
+TT demo (t3000)
+Model: humain-ai/ALLaM-7B-Instruct-preview
+Mesh shape: 2x4
+Prompt tokens: 57 | Generated tokens: 84
+TTFT: 128 ms | Decode: 9.4 t/s/u (83 tokens)
+
+Prompt:
+Journal entry, 1957: Tonight a tiny sphere called Sputnik 1 crossed the sky, beeping like a metronome for a new era. The neighbors gathered on the roof, listening and arguing about what comes next. I wrote in my notebook that
+
+Output:
+I’m not afraid. What’s the next thing? A weapon? An attack on the planet? I wrote about how good the air smells tonight. I wrote about how bright it is, like a Christmas light, but greenish and strange instead of merry and bright. I went out on the roof and watched it fly over us, an alien light that we all welcomed into the night. 
+2026-02-09 11:34:06.912 | info     |          Device | Closing user mode device drivers (tt_cluster.cpp:472)
+2026-02-09 11:34:06.912 | info     |             UMD | Closing devices in cluster (cluster.cpp:976)
