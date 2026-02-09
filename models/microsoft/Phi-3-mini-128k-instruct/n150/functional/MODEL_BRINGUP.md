@@ -30,8 +30,12 @@ Phi-3 uses LongRoPE (`rope_scaling.type = longrope`). This bringup:
   `original_max_position_embeddings` (4096).
 - Pads the RoPE dimension to a multiple of 64 for TT rotary (then slices back).
 
-If you need a prompt that crosses 4096 after prefill, rerun with a `max_seq_len`
-large enough for that prompt so the long factors are used consistently.
+This bringup precomputes **both** short and long RoPE caches and selects between
+them per call:
+- Prefill uses the long cache only when `seq_len > original_max_position_embeddings`.
+- Decode switches to the long cache when `start_pos >= original_max_position_embeddings`.
+This matches HF’s dynamic LongRoPE behavior so sequences that cross 4096 during
+decode use the correct frequency factors.
 
 ## KV cache and tiling constraints
 - Cache tensors are paged: `[max_num_blocks, n_kv_heads, block_size, head_dim]` with `block_size=64`.
@@ -57,3 +61,10 @@ Automation wrapper (emits YT_METRICS JSON):
 ```
 python scripts/run_eval.py --mode tt --hf-model microsoft/Phi-3-mini-128k-instruct --system n150 --max-seq-len 12288
 ```
+
+## Latest results (2026-02-09)
+- Long eval (`prompts/bringup_eval_long.txt`, `--max_new_tokens 100`, `--max_seq_len 12288`): Top-1 92%, Top-5 99%.
+- Demo: TTFT 80 ms, decode 13.7 t/s/u.
+- Fix: compute both short/long RoPE caches and switch based on `seq_len` (prefill) or
+  `start_pos` (decode) to align with HF LongRoPE dynamic selection.
+- Note: `eval.py` enforces `--max_seq_len >= 2048`.

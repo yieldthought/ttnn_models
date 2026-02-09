@@ -98,7 +98,11 @@ def compute_attention_scaling(config: ModelConfig) -> float:
     return math.sqrt(1 + math.log(factor) / math.log(config.original_max_position_embeddings))
 
 
-def compute_rope_cache(config: ModelConfig, max_seq_len: int) -> tuple:
+def compute_rope_cache(
+    config: ModelConfig,
+    max_seq_len: int,
+    use_long: Optional[bool] = None,
+) -> tuple:
     """
     Precompute RoPE cos/sin cache in HuggingFace format.
     Returns cos, sin tensors of shape [1, 1, max_seq_len, head_dim].
@@ -117,10 +121,9 @@ def compute_rope_cache(config: ModelConfig, max_seq_len: int) -> tuple:
 
         long_factor = config.rope_scaling["long_factor"]
         short_factor = config.rope_scaling["short_factor"]
-        if max_seq_len > config.original_max_position_embeddings:
-            ext_factors = torch.tensor(long_factor, dtype=torch.float32)
-        else:
-            ext_factors = torch.tensor(short_factor, dtype=torch.float32)
+        if use_long is None:
+            use_long = max_seq_len > config.original_max_position_embeddings
+        ext_factors = torch.tensor(long_factor if use_long else short_factor, dtype=torch.float32)
 
         inv_freq = 1.0 / (
             ext_factors * (config.rope_theta ** (torch.arange(0, head_dim, 2).float() / head_dim))
@@ -193,8 +196,10 @@ class Attention:
         config: ModelConfig,
         layer_idx: int,
         state_dict: dict,
-        cos_cache: ttnn.Tensor,
-        sin_cache: ttnn.Tensor,
+        cos_cache_short: ttnn.Tensor,
+        sin_cache_short: ttnn.Tensor,
+        cos_cache_long: ttnn.Tensor,
+        sin_cache_long: ttnn.Tensor,
         tt_device,
         paged_attention_config: PagedAttentionConfig,
         page_table: ttnn.Tensor,
@@ -202,6 +207,7 @@ class Attention:
         self.tt_device = tt_device
         self.n_heads = config.num_attention_heads
         self.n_kv_heads = config.num_key_value_heads
+        self.original_max_position_embeddings = config.original_max_position_embeddings
         self.head_dim = config.head_dim
         self.head_dim_padded = pad_head_dim(self.head_dim)
         self.head_dim_half = self.head_dim // 2
@@ -210,8 +216,10 @@ class Attention:
         self.paged_attention_config = paged_attention_config
         self.page_table = page_table
 
-        self.cos_cache = cos_cache
-        self.sin_cache = sin_cache
+        self.cos_cache_short = cos_cache_short
+        self.sin_cache_short = sin_cache_short
+        self.cos_cache_long = cos_cache_long
+        self.sin_cache_long = sin_cache_long
 
         p = f"model.layers.{layer_idx}.self_attn."
         self.qkv_proj = self._load_weight(state_dict[f"{p}qkv_proj.weight"])
@@ -312,6 +320,13 @@ class Attention:
     ) -> ttnn.Tensor:
         is_prefill = seq_len > 1
         padded_seq = pad_to_tile(seq_len)
+        use_long = (
+            seq_len > self.original_max_position_embeddings
+            if is_prefill
+            else start_pos >= self.original_max_position_embeddings
+        )
+        cos_cache = self.cos_cache_long if use_long else self.cos_cache_short
+        sin_cache = self.sin_cache_long if use_long else self.sin_cache_short
 
         qkv = ttnn.linear(x, self.qkv_proj)
 
@@ -330,8 +345,8 @@ class Attention:
             q = ttnn.to_memory_config(q, ttnn.DRAM_MEMORY_CONFIG)
             k = ttnn.to_memory_config(k, ttnn.DRAM_MEMORY_CONFIG)
 
-            cos = self.cos_cache[:, :, :padded_seq, :]
-            sin = self.sin_cache[:, :, :padded_seq, :]
+            cos = cos_cache[:, :, :padded_seq, :]
+            sin = sin_cache[:, :, :padded_seq, :]
             q = self._slice_head_dim(ttnn.experimental.rotary_embedding(self._pad_head_dim(q), cos, sin))
             k = self._slice_head_dim(ttnn.experimental.rotary_embedding(self._pad_head_dim(k), cos, sin))
 
@@ -366,7 +381,7 @@ class Attention:
             q = ttnn.to_memory_config(q, ttnn.DRAM_MEMORY_CONFIG)
             q = self._slice_head_dim(
                 ttnn.experimental.rotary_embedding(
-                    self._pad_head_dim(q), self.cos_cache, self.sin_cache, start_pos
+                    self._pad_head_dim(q), cos_cache, sin_cache, start_pos
                 )
             )
             q = ttnn.reshape(q, (1, q.shape[2] // self.n_heads, self.n_heads, self.head_dim))
@@ -375,7 +390,7 @@ class Attention:
             k = ttnn.to_memory_config(k, ttnn.DRAM_MEMORY_CONFIG)
             k = self._slice_head_dim(
                 ttnn.experimental.rotary_embedding(
-                    self._pad_head_dim(k), self.cos_cache, self.sin_cache, start_pos
+                    self._pad_head_dim(k), cos_cache, sin_cache, start_pos
                 )
             )
             k = ttnn.reshape(k, (1, k.shape[2] // self.n_kv_heads, self.n_kv_heads, self.head_dim))
@@ -460,8 +475,10 @@ class DecoderLayer:
         config: ModelConfig,
         layer_idx: int,
         state_dict: dict,
-        cos_cache: ttnn.Tensor,
-        sin_cache: ttnn.Tensor,
+        cos_cache_short: ttnn.Tensor,
+        sin_cache_short: ttnn.Tensor,
+        cos_cache_long: ttnn.Tensor,
+        sin_cache_long: ttnn.Tensor,
         tt_device,
         paged_attention_config: PagedAttentionConfig,
         page_table: ttnn.Tensor,
@@ -473,8 +490,10 @@ class DecoderLayer:
             config,
             layer_idx,
             state_dict,
-            cos_cache,
-            sin_cache,
+            cos_cache_short,
+            sin_cache_short,
+            cos_cache_long,
+            sin_cache_long,
             tt_device,
             paged_attention_config,
             page_table,
@@ -535,16 +554,31 @@ class TtnnPhi3ForCausalLM(torch.nn.Module, GenerationMixin):
         )
 
         print("  Computing RoPE cache...")
-        cos, sin = compute_rope_cache(self.tt_config, self.max_seq_len)
-        self.cos_cache = ttnn.as_tensor(
-            cos,
+        cos_short, sin_short = compute_rope_cache(self.tt_config, self.max_seq_len, use_long=False)
+        cos_long, sin_long = compute_rope_cache(self.tt_config, self.max_seq_len, use_long=True)
+        self.cos_cache_short = ttnn.as_tensor(
+            cos_short,
             dtype=ttnn.bfloat16,
             layout=ttnn.TILE_LAYOUT,
             device=tt_device,
             memory_config=ttnn.DRAM_MEMORY_CONFIG,
         )
-        self.sin_cache = ttnn.as_tensor(
-            sin,
+        self.sin_cache_short = ttnn.as_tensor(
+            sin_short,
+            dtype=ttnn.bfloat16,
+            layout=ttnn.TILE_LAYOUT,
+            device=tt_device,
+            memory_config=ttnn.DRAM_MEMORY_CONFIG,
+        )
+        self.cos_cache_long = ttnn.as_tensor(
+            cos_long,
+            dtype=ttnn.bfloat16,
+            layout=ttnn.TILE_LAYOUT,
+            device=tt_device,
+            memory_config=ttnn.DRAM_MEMORY_CONFIG,
+        )
+        self.sin_cache_long = ttnn.as_tensor(
+            sin_long,
             dtype=ttnn.bfloat16,
             layout=ttnn.TILE_LAYOUT,
             device=tt_device,
@@ -567,8 +601,10 @@ class TtnnPhi3ForCausalLM(torch.nn.Module, GenerationMixin):
                 self.tt_config,
                 i,
                 state_dict,
-                self.cos_cache,
-                self.sin_cache,
+                self.cos_cache_short,
+                self.sin_cache_short,
+                self.cos_cache_long,
+                self.sin_cache_long,
                 tt_device,
                 self.paged_attention_config,
                 self.page_table,
