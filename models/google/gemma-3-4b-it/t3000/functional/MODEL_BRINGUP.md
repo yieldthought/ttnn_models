@@ -41,7 +41,9 @@ It is designed to be easy to read and to serve as a template for future bringups
 - Q/K RMSNorm uses `(1 + weight)` (Gemma3RMSNorm).
 - Embeddings are scaled by `sqrt(hidden_size)` with bfloat16 rounding.
 - Global RoPE uses linear scaling (`rope_scaling.factor = 8`).
-- Sliding layers (pattern = 6) use local RoPE with `rope_local_base_freq`.
+- Sliding layers use local RoPE with `rope_local_base_freq`. If `layer_types` is present,
+  it drives the sliding/global selection; otherwise the `sliding_window_pattern` (default 6)
+  is used as a fallback.
 - Sliding-window masking is not implemented; it only matters for very long contexts.
 
 ## RoPE notes
@@ -101,3 +103,15 @@ python scripts/run_eval.py --mode tt --hf-model google/gemma-3-4b-it
 - Start with small prefill/decode lengths (e.g. 16/8).
 - Compare TT outputs to HF outputs layer-by-layer if needed.
 - Reset hardware if needed: `tt-smi -r`.
+
+## Changes (2026-02-09)
+- Handle `sliding_window_pattern` when configs omit `layer_types` and supply a per-layer list,
+  preventing a `TypeError` during layer setup.
+- Re-ran demo and long teacher-forcing eval for the release thresholds.
+
+### Latest results (t3000 functional)
+- Top-1: 92%
+- Top-5: 100%
+- TTFT: 322 ms
+- Decode: 4.8 t/s/u
+- Seq len: 2048

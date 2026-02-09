@@ -64,7 +64,8 @@ class ModelConfig:
     attention_bias: bool
     query_pre_attn_scalar: float
     sliding_window: int
-    sliding_window_pattern: int
+    sliding_window_pattern: Optional[int]
+    layer_types: Optional[list]
     tie_word_embeddings: bool
     final_logit_softcapping: Optional[float]
 
@@ -91,6 +92,7 @@ class ModelConfig:
             text_config.query_pre_attn_scalar,
             text_config.sliding_window,
             sliding_window_pattern,
+            getattr(text_config, "layer_types", None),
             text_config.tie_word_embeddings,
             getattr(text_config, "final_logit_softcapping", None),
         )
@@ -241,7 +243,18 @@ class Attention:
         self.n_local_kv_heads = self.n_kv_heads // parallel.num_devices
         self.head_dim = config.head_dim
         self.scale = 1.0 / math.sqrt(config.query_pre_attn_scalar)
-        self.is_sliding = bool((layer_idx + 1) % config.sliding_window_pattern)
+        if config.layer_types is not None:
+            self.is_sliding = config.layer_types[layer_idx] == "sliding_attention"
+        else:
+            pattern = config.sliding_window_pattern
+            if isinstance(pattern, (list, tuple)):
+                if layer_idx >= len(pattern):
+                    raise ValueError("sliding_window_pattern is shorter than num_hidden_layers")
+                self.is_sliding = bool(pattern[layer_idx])
+            else:
+                if not pattern:
+                    pattern = 6
+                self.is_sliding = bool((layer_idx + 1) % pattern)
 
         if config.attention_bias:
             raise ValueError("attention_bias=True is not supported in this bringup")
