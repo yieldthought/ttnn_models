@@ -34,15 +34,18 @@ It mirrors the HuggingFace Llama-style architecture with GQA attention and a Swi
 - `ttnn.rms_norm` for RMSNorm
 - `ttnn.experimental.rotary_embedding` for RoPE
 - `ttnn.experimental.nlp_create_qkv_heads[_decode]` and `ttnn.experimental.nlp_concat_heads`
-- `ttnn.transformer.scaled_dot_product_attention[_decode]`
-- `ttnn.fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
+- `ttnn.transformer.scaled_dot_product_attention` (prefill)
+- `ttnn.transformer.paged_scaled_dot_product_attention_decode` (decode)
+- `ttnn.experimental.paged_fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
 
 ## KV cache and tiling constraints
-- Cache tensors are allocated as `[32, n_kv_heads, cache_seq_len, head_dim]`.
-- Cache length is capped to 1024 tokens in this bringup (`MAX_CACHE_SEQ_LEN`).
+- Cache tensors are allocated as `[max_num_blocks, n_kv_heads, block_size, head_dim]`.
+- Cache length is capped to 32768 tokens in this bringup (`MAX_CACHE_SEQ_LEN`).
+- `block_size` is 64 and `max_num_blocks = ceil(max_seq_len / 64)`.
+- Page table is `[32, max_num_blocks]` in row-major layout with identity mapping.
 - Batch dimension is tile-aligned to 32 for decode ops.
 - Inputs are padded to tile size (32) before embedding and trimmed at the end.
-- Prefill uses height-sharded KV inputs for `fill_cache` to avoid interleaved grid-size limits.
+- Decode uses `cur_pos_tensor` with `-1` entries to skip unused batch slots.
 
 ## Precision
 - Weights use `ttnn.bfloat8_b`, activations use `ttnn.bfloat16`.
@@ -52,14 +55,16 @@ Teacher-forcing accuracy against the HF reference:
 
 ```
 python eval.py models/tiiuae/Falcon3-7B-Instruct/n300/functional/model.py \
-  --model tiiuae/Falcon3-7B-Instruct
+  --model tiiuae/Falcon3-7B-Instruct \
+  --max_seq_len 32768
 ```
 
 On this N300 host, set the mesh to devices 0 and 2:
 
 ```
 TT_VISIBLE_DEVICES=0,2 python eval.py models/tiiuae/Falcon3-7B-Instruct/n300/functional/model.py \
-  --model tiiuae/Falcon3-7B-Instruct
+  --model tiiuae/Falcon3-7B-Instruct \
+  --max_seq_len 32768
 ```
 
 If `/home` is full, redirect runtime artifacts and HF caches to a writable location:
@@ -71,7 +76,8 @@ HF_HOME=/proj_sw/user_dev/moconnor/hf-cache TRANSFORMERS_CACHE=/proj_sw/user_dev
   TT_METAL_INSPECTOR_LOG_PATH=/tmp/tt-metal-inspector \
   TT_METAL_INSPECTOR_INITIALIZATION_IS_IMPORTANT=0 \
   python eval.py models/tiiuae/Falcon3-7B-Instruct/n300/functional/model.py \
-  --model tiiuae/Falcon3-7B-Instruct
+  --model tiiuae/Falcon3-7B-Instruct \
+  --max_seq_len 32768
 ```
 
 Automation wrapper (emits YT_METRICS JSON):
@@ -79,3 +85,8 @@ Automation wrapper (emits YT_METRICS JSON):
 ```
 python scripts/run_eval.py --mode tt --hf-model tiiuae/Falcon3-7B-Instruct
 ```
+
+## Latest validation (2026-02-09)
+- Max seq len: 32768 (paged KV cache, block size 64)
+- Demo: TTFT 661 ms, decode 5.6 t/s/u
+- Eval: Top-1 97%, Top-5 100%
