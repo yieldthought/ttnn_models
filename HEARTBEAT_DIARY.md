@@ -42,3 +42,4 @@
 - `agent3` (n150) remains idle (no `run_tests_n150` Ready issues) and continues periodic auto-stashing due to a dirty tree.
 - Learned `tt-smi -l` is "local chips" and launches the interactive UI; use `tt-smi -ls` to list boards and exit (killed a stray `tt-smi -l` I accidentally started during diagnosis).
 - Updated all `tasks/run_tests*.yaml` prompts to use `--max_new_tokens` (instead of the incorrect `--max-tokens`) and added short notes about always emitting demo/eval logs, mesh descriptor env vars for n300/t3000, and the TT metal cache/runtime-root gotcha.
+- Updated `scripts/worker.sh` to pass all task files matching `tasks/*_<system>.yaml` to `codexapi task` (so new per-system tasks can be added without changing the worker invocation).

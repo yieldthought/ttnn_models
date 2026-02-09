@@ -40,12 +40,21 @@ fi
 repo_root=$(cd "$(dirname "$0")/.." && pwd)
 cd "$repo_root" || exit 1
 
-task_file="tasks/run_tests_${system}.yaml"
-if [ ! -f "$task_file" ]; then
-    echo "[worker] ERROR: Missing task file: $task_file" >&2
+select_task_files() {
+    task_files=(tasks/*_"$system".yaml)
+    if [ ! -f "${task_files[0]}" ]; then
+        echo "[worker] ERROR: No task files found for system '$system' (expected tasks/*_${system}.yaml)" >&2
+        return 1
+    fi
+}
+
+if ! select_task_files; then
     exit 2
 fi
-echo "[worker] Starting $agent_name for $system using $task_file"
+echo "[worker] Starting $agent_name for $system using task files:"
+for f in "${task_files[@]}"; do
+    echo "[worker] - $f"
+done
 
 sync_repo() {
     if [ -n "$(git status --porcelain)" ]; then
@@ -62,6 +71,12 @@ while true; do
         sleep 60
         continue
     fi
-    codexapi task -p https://github.com/users/yieldthought/projects/6 -n "$agent_name" "$task_file"
+    # Refresh in case new tasks were added by the latest main pull.
+    if ! select_task_files; then
+        echo "[worker] Task file selection failed; sleeping 60s" >&2
+        sleep 60
+        continue
+    fi
+    codexapi task -p https://github.com/users/yieldthought/projects/6 -n "$agent_name" "${task_files[@]}"
     sleep 60
 done
