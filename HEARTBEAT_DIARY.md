@@ -322,5 +322,9 @@
 - All reservations still have >5h remaining (IDs 1-2) and >7h remaining on ID 3; no extension needed yet.
 
 - Capacity note:
-- Attempted to reserve a second t3000 (`wormhole_b0 --model lb`) to parallelize the remaining t3000 seq-len tickets; `tt_aus` allocation failed immediately and `tt_yyz` queued, then was cancelled to avoid blocking. Continuing with a single t3000 worker for now.
+- Attempted to reserve a second t3000 (`wormhole_b0 --model lb`) to parallelize the remaining t3000 seq-len tickets:
+- `tt_aus` allocation failed immediately.
+- `tt_yyz` queued and was cancelled to avoid blocking.
+- `tt_sjc` reservation succeeded on `wh-lb-81` but the container lacked `~/scripts/ttnn_models_setup.sh` and `/proj_sw/user_dev/moconnor/tt-metal` was empty, so the reservation was released.
+- IRD note: the healthy-clusters check briefly returned no responsive clusters; `ird list/release --skip-clusters-check` worked around it.
 - No PRs opened during this heartbeat; waiting for workers to finish and produce PRs for review/merge.
