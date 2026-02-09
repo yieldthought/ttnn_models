@@ -256,3 +256,20 @@
 - `wh-04` (agent3/n150) and `wh-lb-43` (agent2/t3000) no longer had demo/eval python processes at the time of checking, suggesting they moved into code edits/LLM steps for #87/#91; no intervention taken.
 
 - No PRs were opened during this heartbeat; waiting for the workers to finish and create PRs for review/merge.
+
+## 2026-02-09T15:09:20+01:00
+
+- In review triage/merges:
+- Merged PR #108 (Fixes #91) for `google/gemma-3-4b-it` t3000 correctness; #91 is now closed and in Done.
+- Corrected the MODELS.md Seq len entry to match the current KV cache cap (`MAX_CACHE_SEQ_LEN = 256`) before merging.
+
+- Project `yieldthought/projects/6` status: In progress 3 (#87 Arcee n150, #89 gemma n300, #92 Phi t3000), Ready 3 (#88 Arcee n300, #98 ALLaM n300, #99 ALLaM t3000), In review 0, Backlog 6 (#100-#105).
+
+- Runners and reservations:
+- IRD reservations still healthy with ~7h13m remaining on IDs 1-3.
+- `wh-lb-43` (agent2/t3000) is actively running `eval.py` for Phi-3-mini t3000 (#92) at the time of checking.
+- `aus-wh-01` (agent1/n300) has local edits in progress on branch `fix_google-gemma-3-4b-it-n300-functional` for #89 (model.py + logs modified; no PR yet).
+- `wh-04` (agent3/n150) started #87 (Arcee-Spark n150) and is in early stages (no demo/eval python process at check).
+
+- Follow-up:
+- The current n300 worker process (agent1) is running `codexapi task` without `tasks/increase_seq_len_n300.yaml`, so the Ready seq-len ticket #98 will likely require an n300 worker restart or a second n300 worker to make progress.
