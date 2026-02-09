@@ -47,3 +47,6 @@ python scripts/run_eval.py --mode tt --hf-model arcee-ai/Arcee-Spark --system n1
 Note: 30080+ (including the HF max 32768) OOMs during embeddings on n150.
 
 Note: `--force-prefill`/`--prefill_decode` was a hack and has been removed from the eval scripts.
+
+## Updates
+- 2026-02-09: Store embedding weights in row-major layout to avoid a large internal untilize buffer during `ttnn.embedding` at `max_seq_len=29952`. This fixes DRAM OOM on the long eval without changing cache behavior or precision.
