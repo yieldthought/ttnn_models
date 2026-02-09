@@ -10,18 +10,19 @@ The code is intentionally simple and mirrors the n150 functional model while sha
 
 ## Parallelism strategy (T3000)
 - Mesh shape: 2x4 (eight devices), linear topology.
-- Column-parallel: QKV, gate, and up projections (weights sharded on dim=3).
-- Row-parallel: attention output projection and MLP down projection (weights sharded on dim=2) with `ttnn.all_reduce` across the full mesh.
-- KV cache is sharded across devices on dim=1 (KV heads).
+- Tensor-parallel is along the mesh columns (4-way TP); mesh rows are replicated.
+- Column-parallel: QKV, gate, and up projections (weights sharded on dim=3) across mesh columns.
+- Row-parallel: attention output projection and MLP down projection (weights sharded on dim=2) across mesh columns with `ttnn.all_reduce` on the TP axis.
+- KV cache is sharded across mesh columns on dim=1 (KV heads).
 - LM head is column-parallel (vocab sharded on dim=3) and concatenated to host.
 
 ## Parallelization summary
 - Replicated tensors: token embeddings, RMSNorm weights, RoPE caches, input tokens.
-- Column-parallel (weight width sharding, dim=3): `q_proj`, `k_proj`, `v_proj`, `mlp.gate_proj`, `mlp.up_proj`, `lm_head`.
-- Row-parallel (weight height sharding, dim=2): `o_proj`, `mlp.down_proj`.
-- KV cache: sharded by KV heads (dim=1) across devices.
-- CCL ops: `ttnn.all_reduce` after `o_proj` and after `mlp.down_proj` to sum partials.
-- Output composition: `ttnn.to_torch(..., mesh_composer=ConcatMeshToTensor)` to gather vocab shards on host.
+- Column-parallel (weight width sharding, dim=3) across mesh columns: `q_proj`, `k_proj`, `v_proj`, `mlp.gate_proj`, `mlp.up_proj`, `lm_head`.
+- Row-parallel (weight height sharding, dim=2) across mesh columns: `o_proj`, `mlp.down_proj`.
+- KV cache: sharded by KV heads (dim=1) across mesh columns.
+- CCL ops: `ttnn.all_reduce` after `o_proj` and after `mlp.down_proj` to sum partials on the TP axis.
+- Output composition: `ttnn.to_torch(..., mesh_composer=ConcatMesh2dToTensor)` to gather vocab shards on host.
 
 ## Model API contract
 - The model exposes a `build_model(hf_model, tt_device, max_seq_len)` function.
@@ -34,8 +35,8 @@ The code is intentionally simple and mirrors the n150 functional model while sha
 - `ttnn.rms_norm` for RMSNorm
 - `ttnn.experimental.rotary_embedding` for HuggingFace-format RoPE
 - `ttnn.experimental.nlp_create_qkv_heads[_decode]` and `ttnn.experimental.nlp_concat_heads`
-- `ttnn.transformer.scaled_dot_product_attention[_decode]`
-- `ttnn.fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
+- `ttnn.transformer.scaled_dot_product_attention` and `ttnn.transformer.paged_scaled_dot_product_attention_decode`
+- `ttnn.experimental.paged_fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
 - `ttnn.all_reduce` for row-parallel attention/MLP accumulation
 
 ## RoPE notes
@@ -85,3 +86,6 @@ python scripts/run_eval.py --mode tt --hf-model meta-llama/Llama-3.2-1B
 - Start with small prefill/decode lengths (e.g. 16/8).
 - Compare TT outputs to HF outputs layer-by-layer if needed.
 - Reset hardware if needed: `tt-smi -r`.
+
+## Updates
+- 2026-02-09: Re-ran demo and long teacher-forcing eval (`prompts/bringup_eval_long.txt`, `--max_new_tokens 100`, `--max_seq_len 131072`). Accuracy met thresholds (Top-1 92%, Top-5 100%). Code state already includes paged KV cache (page table + paged fill/update), paged SDPA decode path, and 2D mesh sharding with 4-way TP across mesh columns (rows replicated). Decode now uses a position tensor with `-1` padding except the active slot, and logits are reshaped to account for mesh rows. Logs and metrics refreshed.
