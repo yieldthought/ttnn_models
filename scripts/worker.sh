@@ -57,6 +57,18 @@ for f in "${task_files[@]}"; do
 done
 
 sync_repo() {
+    # Many runner environments have GH_TOKEN but no SSH keys. If origin is an SSH
+    # remote, switch to https and let `gh auth setup-git` provide credentials.
+    origin_url=$(git remote get-url origin 2>/dev/null || true)
+    if [[ "$origin_url" == git@github.com:* ]]; then
+        https_url="https://github.com/${origin_url#git@github.com:}"
+        echo "[worker] Switching origin remote to https: $https_url"
+        git remote set-url origin "$https_url" || return 1
+    fi
+    if command -v gh >/dev/null 2>&1; then
+        gh auth setup-git >/dev/null 2>&1 || true
+    fi
+
     if [ -n "$(git status --porcelain)" ]; then
         echo "[worker] Working tree dirty; stashing before sync"
         git stash push -u -m "worker auto-stash $(date -Is)" >/dev/null || return 1
