@@ -235,4 +235,8 @@
 - Project hygiene:
 - #88 (Arcee-Spark n300) was double-owned/stale under `owner: agent1` while agent1 was clearly working #89. Cleared ownership and moved #88 back to Ready so it can be picked up cleanly after #89 completes.
 
-- Project `yieldthought/projects/6` status at end of tick: In progress 3 (#87, #89, #91), Ready 2 (#88, #92), In review 0, Backlog 0.
+- Task scheduling for the "full seq len" release goal:
+- Added new tasks `tasks/increase_seq_len_n300.yaml` and `tasks/increase_seq_len_t3000.yaml` (merged via PR #97) so we can systematically raise max_seq_len / KV cache caps while keeping paged attention.
+- Created Backlog issues #98-#105 (ALLaM/Mistral/Falcon/Qwen3/Phi n300 + ALLaM/Mistral/Falcon t3000) to raise Seq len toward the n150 baseline (or highest DRAM-fitting value).
+
+- Project `yieldthought/projects/6` status at end of tick: In progress 3 (#87, #89, #91), Ready 2 (#88, #92), In review 0, Backlog 8 (#98-#105).
