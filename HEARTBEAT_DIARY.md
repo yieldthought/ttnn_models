@@ -218,3 +218,21 @@
   - `wh-lb-43` agent2: running `demo.py` for Llama-3.2-1B t3000 correctness work.
   - `wh-04` agent3: running `demo.py` for Phi-3-mini n150 correctness work.
 - No intervention required; waiting for the workers to finish and open PRs for review/merge.
+
+## 2026-02-09T13:59:34+01:00
+
+- In review triage/merges:
+- Created PR #95 from local branch `pr72_arcee_spark_n300_logs` (Fixes #72) and merged it; #72 is now closed and in Done. MODELS.md Arcee-Spark n300 refreshed to TTFT 329ms / 4.9 t/s/u (Top-1 88%, Top-5 100%).
+- Merged PR #94 (Fixes #90) for Llama-3.2-1B t3000 correctness; #90 is now closed and in Done. MODELS.md Llama t3000 is now Top-1 92%, Top-5 100%.
+
+- Runners and reservations:
+- Extended IRD timeouts for IDs 1-3 back to 8h to maintain the >4h buffer.
+- Verified active workloads:
+- ID 3 (`wh-04`, agent3/n150) is running `eval.py` for Arcee-Spark n150 (#87).
+- ID 1 (`aus-wh-01`, agent1/n300) is actively editing `models/google/gemma-3-4b-it/n300/functional/model.py` (fixing stale state_dict prefixes) for #89.
+- ID 2 (`wh-lb-43`, agent2/t3000) is running `demo.py` for gemma t3000 (#91).
+
+- Project hygiene:
+- #88 (Arcee-Spark n300) was double-owned/stale under `owner: agent1` while agent1 was clearly working #89. Cleared ownership and moved #88 back to Ready so it can be picked up cleanly after #89 completes.
+
+- Project `yieldthought/projects/6` status at end of tick: In progress 3 (#87, #89, #91), Ready 2 (#88, #92), In review 0, Backlog 0.
