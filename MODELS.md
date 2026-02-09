@@ -12,24 +12,24 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | arcee-ai/Arcee-Spark                |  t3000   | functional |   88% |  100% |   94ms |  12.3 |   32768 |
 | arcee-ai/AFM-4.5B                   |   n150   | functional |   98% |  100% |   72ms |  17.2 |   65536 |
 | humain-ai/ALLaM-7B-Instruct-preview |   n150   | functional |   97% |  100% |   76ms |  14.9 |    4096 |
-| humain-ai/ALLaM-7B-Instruct-preview |   n300   | functional |   98% |  100% |        |       |     256 |
+| humain-ai/ALLaM-7B-Instruct-preview |   n300   | functional |   bad |   bad |   bad |   bad |     256 |
 | humain-ai/ALLaM-7B-Instruct-preview |  t3000   | functional |   bad |   bad |   bad |   bad |     256 |
 | meta-llama/Llama-3.2-1B             |   n150   | functional |   92% |  100% |   34ms |  39.5 |  131072 |
 | meta-llama/Llama-3.2-1B             |   n150   | optimized  |   79% |   99% |   26ms |  58.0 |    1024 |
 | meta-llama/Llama-3.2-1B             |   n300   | functional |   bad |   bad |   bad |   bad |    2048 |
-| meta-llama/Llama-3.2-1B             |  t3000   | functional |   87% |  100% |        |       |         |
+| meta-llama/Llama-3.2-1B             |  t3000   | functional |   bad |   bad |   bad |   bad |    2048 |
 | mistralai/Mistral-7B-Instruct-v0.3  |   n150   | functional |   93% |  100% |  105ms |  16.5 |   32768 |
 | mistralai/Mistral-7B-Instruct-v0.3  |   n300   | functional |   96% |  100% |        |       |    1024 |
-| mistralai/Mistral-7B-Instruct-v0.3  |  t3000   | functional |   97% |  100% |        |       |    1024 |
+| mistralai/Mistral-7B-Instruct-v0.3  |  t3000   | functional |   bad |   bad |   bad |   bad |    1024 |
 | Qwen/Qwen3-0.6B                     |   n150   | functional |   99% |  100% |   52ms |  28.0 |   40960 |
 | Qwen/Qwen3-0.6B                     |   n300   | functional |   99% |  100% |        |       |         |
-| Qwen/Qwen3-0.6B                     |  t3000   | functional |   99% |  100% |        |       |         |
+| Qwen/Qwen3-0.6B                     |  t3000   | functional |   bad |   bad |   bad |   bad |         |
 | google/gemma-3-4b-it                |   n150   | functional |   92% |  100% |   98ms |  13.9 |   40960 |
 | google/gemma-3-4b-it                |   n300   | functional |   bad |   bad |  360ms |   4.6 |     256 |
 | google/gemma-3-4b-it                |  t3000   | functional |   91% |  100% |        |       |     256 |
 | microsoft/Phi-3-mini-128k-instruct  |   n150   | functional |   84% |   98% |   80ms |  13.7 |   12288 |
 | microsoft/Phi-3-mini-128k-instruct  |   n300   | functional |   90% |  100% |  168ms |   7.6 |     256 |
-| microsoft/Phi-3-mini-128k-instruct  |  t3000   | functional |   92% |  100% |        |       |     256 |
+| microsoft/Phi-3-mini-128k-instruct  |  t3000   | functional |   bad |   bad |   bad |   bad |     256 |
 | tiiuae/Falcon3-7B-Instruct          |   n150   | functional |   97% |  100% |  144ms |  13.4 |   32768 |
 | tiiuae/Falcon3-7B-Instruct          |   n300   | functional |   97% |  100% |        |       |    1024 |
-| tiiuae/Falcon3-7B-Instruct          |  t3000   | functional |   98% |  100% |        |       |    1024 |
+| tiiuae/Falcon3-7B-Instruct          |  t3000   | functional |   bad |   bad |   bad |   bad |    1024 |

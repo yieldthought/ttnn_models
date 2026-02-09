@@ -5,7 +5,7 @@ prompt: |
   Notes:
   - Always produce demo.log and eval.log, even if the command fails (capture stdout/stderr, then continue).
   - If mesh device init fails, set `TT_MESH_GRAPH_DESC_PATH=/proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/t3k_mesh_graph_descriptor.textproto`.
-  - If `TT_VISIBLE_DEVICES` is unset, set it to the 8-device slice you want (often `0,1,2,3,4,5,6,7` on a dedicated T3000 host).
+  - If `TT_VISIBLE_DEVICES` is unset, set it from `tt-smi -ls`. On Loudbox t3k hosts this is often the 4 PCI Dev IDs for the n300 boards (example: `0,1,2,3`); do not assume `0-7`.
   - If you see `cannot map elf file into memory: No space left on device`, rerun with `TT_METAL_CACHE=/tmp/tt-metal-cache` and `TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-runtime-root`.
 
   This task is for t3000 issues only (the issue title should include '/t3000/').
@@ -19,7 +19,7 @@ set_up: |
   If there are any unsaved changes, stash them and be sure to mention it in your output.
   Create and switch to a new branch named test_<sanitized_title>, where <sanitized_title> is the issue title with the leading 'models/' stripped and slashes replaced by dashes: {{item}}
   Run 'tt-smi -r' to reset the device.
-  Run 'tt-smi -ls' and set TT_VISIBLE_DEVICES to the eight PCI Dev IDs listed before running demo/eval (example: export TT_VISIBLE_DEVICES=0,1,2,3,4,5,6,7).
+  Run 'tt-smi -ls' and set TT_VISIBLE_DEVICES to the PCI Dev IDs listed before running demo/eval (example: export TT_VISIBLE_DEVICES=0,1,2,3).
 on_success: |
   Add, commit and push MODELS.md and the demo and eval log files, remove anything in generated/, then use 'gh' to open a PR and link it back to the issue {{item}}.
 on_failure: |
