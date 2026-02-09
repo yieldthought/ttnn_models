@@ -4,7 +4,8 @@
 """
 Arcee AFM-4.5B implementation in ttnn for T3000.
 
-This version uses 1D tensor parallel across a 2x4 mesh (flattened across 8 devices):
+This version uses 1D tensor parallel across a 2x4 mesh (flattened across 8 devices).
+Paged attention + paged KV cache match the n150 reference.
 - QKV and up projections are column-parallel (width sharded).
 - Output and down projections are row-parallel (height sharded) followed by all-reduce.
 
@@ -28,9 +29,9 @@ TILE_SIZE = 32
 MESH_SHAPE = (2, 4)
 MESH_TOPOLOGY = ttnn.Topology.Linear
 MESH_NUM_LINKS = 1
+PAGED_BLOCK_SIZE = 64
 WEIGHT_DTYPE = ttnn.bfloat8_b
 WEIGHT_LAYOUT = ttnn.TILE_LAYOUT
-MAX_CACHE_SEQ_LEN = 256
 
 
 def pad_to_tile(x: int) -> int:
@@ -196,6 +197,7 @@ class Attention:
         state_dict: dict,
         cos_cache: ttnn.Tensor,
         sin_cache: ttnn.Tensor,
+        page_table: ttnn.Tensor,
         parallel: ParallelConfig,
         max_seq_len: int,
         padded_num_heads: int,
@@ -214,6 +216,7 @@ class Attention:
 
         self.cos_cache = cos_cache
         self.sin_cache = sin_cache
+        self.page_table = page_table
 
         p = f"model.layers.{layer_idx}.self_attn."
         q_weight = self._pad_out_features(state_dict[f"{p}q_proj.weight"], self.n_heads * self.head_dim)
@@ -226,7 +229,8 @@ class Attention:
         self.v_proj = self._load_weight(v_weight, parallel.shard_width_mapper)
         self.o_proj = self._load_weight(o_weight, parallel.shard_height_mapper)
 
-        cache_shape = (TILE_SIZE, self.n_kv_heads, max_seq_len, self.head_dim)
+        max_num_blocks = math.ceil(max_seq_len / PAGED_BLOCK_SIZE)
+        cache_shape = (max_num_blocks, self.n_kv_heads, PAGED_BLOCK_SIZE, self.head_dim)
         self.k_cache = ttnn.as_tensor(
             torch.zeros(cache_shape, dtype=torch.bfloat16),
             dtype=ttnn.bfloat16,
@@ -305,27 +309,8 @@ class Attention:
             q = ttnn.experimental.rotary_embedding(q, cos, sin)
             k = ttnn.experimental.rotary_embedding(k, cos, sin)
 
-            grid = self.parallel.mesh_device.core_grid
-            grid_x = min(grid.x, num_kv_heads)
-            while grid_x > 1 and num_kv_heads % grid_x != 0:
-                grid_x -= 1
-            if num_kv_heads % grid_x != 0:
-                raise ValueError("num_kv_heads must divide evenly across the shard grid")
-            shard_grid = ttnn.CoreGrid(x=grid_x, y=num_kv_heads // grid_x)
-            if shard_grid.y > grid.y:
-                raise ValueError("shard grid exceeds device core grid")
-            shard_mem_config = ttnn.create_sharded_memory_config(
-                k.shape,
-                shard_grid,
-                ttnn.ShardStrategy.HEIGHT,
-                ttnn.ShardOrientation.ROW_MAJOR,
-            )
-            k_sharded = ttnn.to_memory_config(k, shard_mem_config)
-            v_sharded = ttnn.to_memory_config(v, shard_mem_config)
-            ttnn.fill_cache(self.k_cache, k_sharded, batch_idx=0)
-            ttnn.fill_cache(self.v_cache, v_sharded, batch_idx=0)
-            ttnn.deallocate(k_sharded)
-            ttnn.deallocate(v_sharded)
+            ttnn.experimental.paged_fill_cache(self.k_cache, k, self.page_table, batch_idx=0)
+            ttnn.experimental.paged_fill_cache(self.v_cache, v, self.page_table, batch_idx=0)
 
             attn_out = ttnn.transformer.scaled_dot_product_attention(
                 q, k, v, is_causal=True, scale=self.scale
@@ -351,11 +336,20 @@ class Attention:
             k = ttnn.experimental.rotary_embedding(k, self.cos_cache, self.sin_cache, start_pos)
             k = ttnn.reshape(k, (1, k.shape[2] // num_kv_heads, num_kv_heads, self.head_dim))
 
-            ttnn.experimental.paged_update_cache(self.k_cache, k, update_idxs_tensor=cur_pos_tensor)
-            ttnn.experimental.paged_update_cache(self.v_cache, v, update_idxs_tensor=cur_pos_tensor)
+            ttnn.experimental.paged_update_cache(
+                self.k_cache, k, update_idxs_tensor=cur_pos_tensor, page_table=self.page_table
+            )
+            ttnn.experimental.paged_update_cache(
+                self.v_cache, v, update_idxs_tensor=cur_pos_tensor, page_table=self.page_table
+            )
 
-            attn_out = ttnn.transformer.scaled_dot_product_attention_decode(
-                q, self.k_cache, self.v_cache, cur_pos_tensor=cur_pos_tensor, scale=self.scale
+            attn_out = ttnn.transformer.paged_scaled_dot_product_attention_decode(
+                q,
+                self.k_cache,
+                self.v_cache,
+                page_table_tensor=self.page_table,
+                cur_pos_tensor=cur_pos_tensor,
+                scale=self.scale,
             )
             attn_out = ttnn.transpose(attn_out, 1, 2)
             attn_out = ttnn.experimental.nlp_concat_heads(attn_out, memory_config=ttnn.DRAM_MEMORY_CONFIG)
@@ -414,6 +408,7 @@ class DecoderLayer:
         state_dict: dict,
         cos_cache: ttnn.Tensor,
         sin_cache: ttnn.Tensor,
+        page_table: ttnn.Tensor,
         parallel: ParallelConfig,
         max_seq_len: int,
         padded_num_heads: int,
@@ -428,6 +423,7 @@ class DecoderLayer:
             state_dict,
             cos_cache,
             sin_cache,
+            page_table,
             parallel,
             max_seq_len,
             padded_num_heads,
@@ -462,7 +458,6 @@ class TtnnArceeForCausalLM(torch.nn.Module, GenerationMixin):
         if max_seq_len is None:
             max_seq_len = self.tt_config.max_position_embeddings
         self.max_seq_len = max_seq_len
-        self.cache_seq_len = min(max_seq_len, MAX_CACHE_SEQ_LEN)
         self._pos = 0
         self.vocab_size = self.tt_config.vocab_size
 
@@ -517,7 +512,7 @@ class TtnnArceeForCausalLM(torch.nn.Module, GenerationMixin):
         )
 
         print("  Computing RoPE cache...")
-        cos, sin = compute_rope_cache(self.tt_config, self.cache_seq_len)
+        cos, sin = compute_rope_cache(self.tt_config, self.max_seq_len)
         self.cos_cache = ttnn.as_tensor(
             cos,
             dtype=ttnn.bfloat16,
@@ -535,6 +530,17 @@ class TtnnArceeForCausalLM(torch.nn.Module, GenerationMixin):
             mesh_mapper=self.parallel.replicate_mapper,
         )
 
+        max_num_blocks = math.ceil(self.max_seq_len / PAGED_BLOCK_SIZE)
+        page_table = torch.arange(max_num_blocks, dtype=torch.int32).repeat(TILE_SIZE, 1)
+        self.page_table = ttnn.as_tensor(
+            page_table,
+            dtype=ttnn.int32,
+            layout=ttnn.ROW_MAJOR_LAYOUT,
+            device=self.tt_device,
+            memory_config=ttnn.DRAM_MEMORY_CONFIG,
+            mesh_mapper=self.parallel.replicate_mapper,
+        )
+
         print(f"  Loading {self.tt_config.num_hidden_layers} layers...")
         self.layers = [
             DecoderLayer(
@@ -543,8 +549,9 @@ class TtnnArceeForCausalLM(torch.nn.Module, GenerationMixin):
                 state_dict,
                 self.cos_cache,
                 self.sin_cache,
+                self.page_table,
                 self.parallel,
-                self.cache_seq_len,
+                self.max_seq_len,
                 self.padded_num_heads,
                 self.padded_num_kv_heads,
             )
@@ -604,16 +611,17 @@ class TtnnArceeForCausalLM(torch.nn.Module, GenerationMixin):
                 raise ValueError("Only 1-token decode supported when using cache")
 
         start_pos = self._pos
-        if start_pos + seq_len > self.cache_seq_len:
+        if start_pos + seq_len > self.max_seq_len:
             raise ValueError(
-                f"sequence length {start_pos + seq_len} exceeds cache length {self.cache_seq_len}; "
-                "increase MAX_CACHE_SEQ_LEN if memory allows"
+                f"sequence length {start_pos + seq_len} exceeds max_seq_len {self.max_seq_len}"
             )
 
         cur_pos_tensor = None
         if seq_len == 1:
+            cur_pos = torch.full((TILE_SIZE,), -1, dtype=torch.int32)
+            cur_pos[0] = start_pos
             cur_pos_tensor = ttnn.from_torch(
-                torch.full((TILE_SIZE,), start_pos, dtype=torch.int32),
+                cur_pos,
                 dtype=ttnn.int32,
                 device=self.tt_device,
                 mesh_mapper=self.parallel.replicate_mapper,
