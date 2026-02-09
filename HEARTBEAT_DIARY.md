@@ -422,3 +422,11 @@
 - ID 2 `aus-wh-10` (agent4/n300): owns #98 and is running `codexapi task` for `increase_seq_len_n300`.
 
 - Released idle t3000 reservations on `wh-lb-43` (no remaining t3000 tickets), leaving only n300 runners active.
+
+## 2026-02-09T19:41:34+01:00
+
+- Project `yieldthought/projects/6` status: In review 0, In progress 2 (#98 ALLaM n300, #102 Falcon n300), Ready 0, Backlog 0.
+
+- Runners:
+- `aus-wh-10` agent4: #98 shows a ✅ verifier result for max_seq_len 4096 but no PR yet; `codexapi task` is still running with active codex processes.
+- `aus-wh-01` agent1: running long eval for Falcon n300 at `--max_seq_len 32768` (eval.log shows checkpoint shards loading and progressing).
