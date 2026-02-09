@@ -132,3 +132,34 @@
 - Stopped and released the idle n150 runner/reservation (`aus-wh-09`), leaving active n300 + t3000 runners only.
 - Scheduled follow-up validation:
 - Created issue #56 (`models/Qwen/Qwen3-0.6B/t3000/functional`) labeled `run_tests_t3000` to rerun t3000 demo/eval now that the t3k `tt-metal` submodules are fixed.
+
+## 2026-02-09T11:46:27+01:00
+
+- Merged t3000 run_tests work that was blocked by merge conflicts:
+- Recreated and merged PR #64 for issue #31 (Llama-3.2-1B t3000) and closed conflicted PR #63.
+- Recreated and merged PR #73 for issue #35 (Mistral t3000) and closed conflicted PR #65.
+- Updated local main to include the merges; MODELS.md now has:
+- Llama-3.2-1B t3000: 89%/100%, TTFT 155ms, 9.9 t/s/u, seq 131072 (still below Top-1>=90 target).
+- Mistral t3000: 100%/100%, TTFT 110ms, 10.6 t/s/u, seq 1024.
+
+- Runners and reservations:
+- Extended IRD ID 1 (`aus-wh-01`) timeout back to 8h (it had dropped below 4h).
+- Restarted the n300 worker on `aus-wh-01` with the setup environment so PATH/GH tooling is exported correctly.
+- Reserved a new AUS wormhole_b0 host (`wh-04`) as IRD ID 3 and started an n150 worker (`agent3`). The repo there was far behind and had untracked files blocking pull; stashed and fast-forwarded to main before starting the worker.
+
+- Current runner state:
+- ID 1 `aus-wh-01` -> `agent1` (n300) is working on issue #30 (Llama-3.2-1B n300 run_tests).
+- ID 2 `wh-lb-43` -> `agent2` (t3000) is working on issue #37 (Falcon3 t3000 run_tests).
+- ID 3 `wh-04` -> `agent3` (n150) is working on issue #66 (Arcee-Spark n150 run_tests).
+
+- Project scheduling:
+- Moved #28 (ALLaM n300) back to Ready and clarified TT_VISIBLE_DEVICES guidance in the issue body.
+- Created and queued new run_tests issues so workers won't go idle after current work:
+- #66 Arcee-Spark n150
+- #67 Phi-3-mini n150
+- #68 ALLaM t3000
+- #69 gemma-3-4b-it n300
+- #70 gemma-3-4b-it t3000
+- #71 Phi-3-mini t3000
+- #72 Arcee-Spark n300
+
