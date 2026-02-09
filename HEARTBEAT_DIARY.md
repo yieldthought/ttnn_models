@@ -186,3 +186,23 @@
 
 - Project `yieldthought/projects/6` status at end of tick: In review 0, In progress 3 (#28 ALLaM n300, #67 Phi n150, #70 gemma t3000), Ready 3 (#69 gemma n300, #71 Phi t3000, #72 Arcee-Spark n300).
 - Runners: all IRD reservations healthy with >5h remaining; workers active on separate hosts (no shared /localdev interference).
+
+## 2026-02-09T12:59:34+01:00
+
+- In review cleanup:
+- Closed PR #84 (ALLaM n300) since it was an empty placeholder (0 changed files) and the actual MODELS/log updates were already on main (commit aa8752d).
+- Moved and closed completed run_tests issues from In review to Done: #28 (ALLaM n300), #67 (Phi n150), #70 (gemma t3000), #69 (gemma n300), #71 (Phi t3000). For #69/#71, added comments linking follow-up fix_correctness tickets.
+
+- Task scheduling improvements:
+- Added new generic correctness-fix tasks: `tasks/fix_correctness_n150.yaml`, `tasks/fix_correctness_n300.yaml`, `tasks/fix_correctness_t3000.yaml`.
+- Updated the n300/t3000 fix tasks with the known `tt-metal` submodule recovery command for `llk_*` JIT header mismatches (`git submodule update --init --recursive`).
+
+- Queued correctness work to keep runners busy:
+- Created issues #86-#92 (fix_correctness) and put them in Ready. Active work started immediately:
+- #72 (run_tests n300, owner: agent1) in progress on `aus-wh-01`.
+- #86 (Phi n150 fix_correctness, owner: agent3) in progress on `wh-04`.
+- #90 (Llama t3000 fix_correctness, owner: agent2) in progress on `wh-lb-43`.
+
+- Runner health:
+- IRD reservations still healthy with >5h remaining: ID 1 `aus-wh-01:42857` (n300), ID 2 `wh-lb-43:42857` (t3000), ID 3 `wh-04:42857` (n150).
+- Verified each host has an active `codexapi task` process and is currently executing demo runs for its in-progress issue.
