@@ -240,3 +240,19 @@
 - Created Backlog issues #98-#105 (ALLaM/Mistral/Falcon/Qwen3/Phi n300 + ALLaM/Mistral/Falcon t3000) to raise Seq len toward the n150 baseline (or highest DRAM-fitting value).
 
 - Project `yieldthought/projects/6` status at end of tick: In progress 3 (#87, #89, #91), Ready 2 (#88, #92), In review 0, Backlog 8 (#98-#105).
+
+## 2026-02-09T14:39:20+01:00
+
+- Project `yieldthought/projects/6` status: In progress 3 (#87 Arcee n150, #89 gemma n300, #91 gemma t3000), In review 0.
+- Ready queue topped up for the next worker cycles:
+- Moved #98 (ALLaM n300 increase_seq_len) and #99 (ALLaM t3000 increase_seq_len) from Backlog to Ready so n300/t3000 workers won't go idle after #88/#92.
+- Ready now: #88 (Arcee n300 fix_correctness), #92 (Phi t3000 fix_correctness), #98 (ALLaM n300 increase_seq_len), #99 (ALLaM t3000 increase_seq_len).
+- Backlog remaining: #100-#105 (Mistral/Falcon/Qwen3/Phi n300 + Mistral/Falcon t3000 increase_seq_len).
+
+- Runners and reservations:
+- IRD reservations still healthy with ~7h45m remaining on all three hosts (IDs 1-3).
+- Verified active device work:
+- `aus-wh-01` (agent1/n300) running `eval.py` for gemma n300 (issue #89) under TT_VISIBLE_DEVICES=0.
+- `wh-04` (agent3/n150) and `wh-lb-43` (agent2/t3000) no longer had demo/eval python processes at the time of checking, suggesting they moved into code edits/LLM steps for #87/#91; no intervention taken.
+
+- No PRs were opened during this heartbeat; waiting for the workers to finish and create PRs for review/merge.
