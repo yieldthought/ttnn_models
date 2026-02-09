@@ -34,15 +34,17 @@ It mirrors the HuggingFace architecture with GQA attention and a SwiGLU MLP.
 - `ttnn.rms_norm` for RMSNorm
 - `ttnn.experimental.rotary_embedding` for RoPE
 - `ttnn.experimental.nlp_create_qkv_heads[_decode]` and `ttnn.experimental.nlp_concat_heads`
-- `ttnn.transformer.scaled_dot_product_attention[_decode]`
-- `ttnn.fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
+- `ttnn.transformer.scaled_dot_product_attention` and `ttnn.transformer.paged_scaled_dot_product_attention_decode`
+- `ttnn.experimental.paged_fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
 
 ## KV cache and tiling constraints
-- Cache tensors are allocated as `[32, n_kv_heads, cache_seq_len, head_dim]`.
-- Cache length is capped to 1024 tokens in this bringup (`MAX_CACHE_SEQ_LEN`).
+- Cache tensors use a paged layout: `[max_num_blocks, n_kv_heads, block_size, head_dim]`.
+- Block size is 64 tokens (`PAGED_BLOCK_SIZE=64`).
+- `max_num_blocks = ceil(max_seq_len / 64)`, so `max_seq_len=32768` allocates 512 blocks.
+- Target max sequence length is 32768 to match the HF max position embeddings and the n150 bringup row.
 - Batch dimension is tile-aligned to 32 for decode ops.
 - Inputs are padded to tile size (32) before embedding and trimmed at the end.
-- Prefill uses height-sharded KV inputs for `fill_cache` to avoid interleaved grid-size limits.
+- Prefill uses `paged_fill_cache` to populate the KV cache.
 
 ## Precision
 - Weights use `ttnn.bfloat8_b`, activations use `ttnn.bfloat16`.
@@ -52,7 +54,8 @@ Teacher-forcing accuracy against the HF reference:
 
 ```
 python eval.py models/mistralai/Mistral-7B-Instruct-v0.3/t3000/functional/model.py \
-  --model mistralai/Mistral-7B-Instruct-v0.3
+  --model mistralai/Mistral-7B-Instruct-v0.3 \
+  --max_seq_len 32768
 ```
 
 On this T3000 host, set the mesh graph descriptor and use all 8 devices:
@@ -61,7 +64,8 @@ On this T3000 host, set the mesh graph descriptor and use all 8 devices:
 TT_MESH_GRAPH_DESC_PATH=/home/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/t3k_mesh_graph_descriptor.textproto \
 TT_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 \
 python eval.py models/mistralai/Mistral-7B-Instruct-v0.3/t3000/functional/model.py \
-  --model mistralai/Mistral-7B-Instruct-v0.3
+  --model mistralai/Mistral-7B-Instruct-v0.3 \
+  --max_seq_len 32768
 ```
 
 If `/home` is full, redirect runtime artifacts and HF caches to a writable location:
