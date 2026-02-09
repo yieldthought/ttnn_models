@@ -8,7 +8,7 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 
 | Model                               | Hardware |  Variant   | Top-1 | Top-5 |   TTFT | t/s/u | Seq len |
 | ----------------------------------- | :------: | :--------: | ----: | ----: | -----: | ----: | ------: |
-| arcee-ai/Arcee-Spark                |   n150   | functional |   86% |  100% |   94ms |  12.3 |   29952 |
+| arcee-ai/Arcee-Spark                |   n150   | functional |   92% |  100% |   99ms |  13.9 |   29952 |
 | arcee-ai/Arcee-Spark                |   n300   | functional |   88% |  100% |  329ms |   4.9 |   32768 |
 | arcee-ai/Arcee-Spark                |  t3000   | functional |   90% |  100% |  343ms |   4.9 |   32768 |
 | arcee-ai/AFM-4.5B                   |  t3000   | functional |   98% |  100% |  181ms |   7.1 |   65536 |
