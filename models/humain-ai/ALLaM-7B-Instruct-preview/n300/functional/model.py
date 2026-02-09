@@ -149,22 +149,6 @@ def compute_rope_cache(config: ModelConfig, max_seq_len: int) -> tuple:
     return cos, sin
 
 
-def resolve_max_seq_len(hf_config, max_seq_len: Optional[int]) -> int:
-    """Resolve max sequence length from HF config when not provided."""
-    config_max = getattr(hf_config, "max_position_embeddings", None)
-    if config_max is None:
-        config_max = getattr(hf_config, "seq_length", None)
-    if config_max is None:
-        config_max = getattr(hf_config, "max_seq_len", None)
-    if max_seq_len is None:
-        if config_max is None:
-            raise ValueError("max_seq_len is required when config has no max_position_embeddings")
-        return config_max
-    if config_max is not None and max_seq_len > config_max:
-        raise ValueError(f"max_seq_len {max_seq_len} exceeds config max {config_max}")
-    return max_seq_len
-
-
 class RMSNorm:
     """RMSNorm layer."""
 
@@ -438,7 +422,17 @@ class TtnnALLaMForCausalLM(torch.nn.Module, GenerationMixin):
         self.tt_device = tt_device
         self.hf_config = hf_model.config
         self.tt_config = ModelConfig.from_hf(hf_model.config)
-        self.max_seq_len = resolve_max_seq_len(self.hf_config, max_seq_len)
+        if max_seq_len is None:
+            max_seq_len = getattr(self.hf_config, "max_position_embeddings", None)
+            if max_seq_len is None:
+                raise ValueError("max_seq_len is required when max_position_embeddings is missing")
+        else:
+            max_position_embeddings = getattr(self.hf_config, "max_position_embeddings", None)
+            if max_position_embeddings is not None and max_seq_len > max_position_embeddings:
+                raise ValueError(
+                    f"max_seq_len {max_seq_len} exceeds max_position_embeddings {max_position_embeddings}"
+                )
+        self.max_seq_len = max_seq_len
         self._pos = 0
 
         if self.tt_config.hidden_act != "silu":
