@@ -84,3 +84,13 @@
 - `agent2` (n300) still actively running issue #32 (Phi n300); process `codexapi task` is alive and working.
 - `agent4` (t3000) still actively running issue #35 (Mistral t3000); process `codexapi task` is alive and working.
 - `agent3` (n150) idle (no `run_tests_n150` Ready issues).
+
+## 2026-02-09T03:39:53+01:00
+
+- Project `yieldthought/projects/6` status: Done 23, In progress 1 (#36 n300), Ready 1 (#38 n300), Backlog 3 (#22/#23/#24).
+- Merged PR `yieldthought/ttnn_models#51` (Mistral-7B-Instruct-v0.3 n300) after bringing the branch up to date with `main` to resolve a `MODELS.md` merge conflict; issue #34 is now Done.
+- IRD reservations still healthy with >6h remaining on all three runners (IDs 1-3).
+- Runners:
+- ID 1 `agent4` (t3000) idle; no `run_tests_t3000` Ready issues.
+- ID 2 `agent2` (n300) actively running issue #36 (Falcon3 n300); log `/tmp/agent2.log` on `aus-wh-01:42857`.
+- ID 3 `agent3` (n150) idle; no `run_tests_n150` Ready issues.
