@@ -328,3 +328,17 @@
 - `tt_sjc` reservation succeeded on `wh-lb-81` but the container lacked `~/scripts/ttnn_models_setup.sh` and `/proj_sw/user_dev/moconnor/tt-metal` was empty, so the reservation was released.
 - IRD note: the healthy-clusters check briefly returned no responsive clusters; `ird list/release --skip-clusters-check` worked around it.
 - No PRs opened during this heartbeat; waiting for workers to finish and produce PRs for review/merge.
+
+## 2026-02-09T18:05:17+01:00
+
+- In review triage/merges:
+- Merged PR #118 (Fixes #104) to raise Qwen/Qwen3-0.6B n300 max_seq_len to 40960 with paged KV cache + paged SDPA decode. Issue #104 is now closed and in Done.
+
+- Project `yieldthought/projects/6` status: In review 0, In progress 1 (#88 Arcee-Spark n300 fix_correctness), Ready 7 (#98, #102-#103, #105, #109-#111), Backlog 0.
+
+- Runners and reservations:
+- Extended IRD timeouts for IDs 1-2 to restore the >4h buffer (IDs 1-2 now ~10h remaining).
+- ID 3 `aus-wh-10` (agent4/n300): active `codexapi task` on #88 and currently running `python demo.py ...` (high CPU).
+- ID 1 `aus-wh-01` (agent1/n300): worker loop running but stuck in repo sync retries due to GitHub `git pull` returning 500/502 (no active `codexapi task` process).
+- ID 2 `wh-lb-43` (agent2/t3000): worker loop running but stuck in repo sync retries due to GitHub `git pull` returning 500 (no active `codexapi task` process).
+- Next: wait for #88 PR to open; once GitHub stabilizes for git pulls, workers should resume and take the remaining seq-len tickets.
