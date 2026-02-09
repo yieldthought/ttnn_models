@@ -13,6 +13,8 @@ prompt: |
   Work plan:
   1. Create the directory: models/arcee-ai/<MODEL>/n300/functional/ (if missing).
   2. Implement models/arcee-ai/<MODEL>/n300/functional/model.py with 1D tensor parallel over a 1x2 mesh.
+     Keep the n150 reference behavior for attention/cache:
+     - The n150 implementation uses paged attention + paged KV cache. Keep that in the n300 port (do not switch to a non-paged cache).
      Use existing working n300 models as templates for the parallelism patterns:
      - For arcee-ai/AFM-4.5B:
        - Start from models/arcee-ai/AFM-4.5B/n150/functional/model.py for the architecture details (Yarn RoPE + relu2).
@@ -39,6 +41,9 @@ prompt: |
   - If mesh device init fails, set `TT_MESH_GRAPH_DESC_PATH=/proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/n300_mesh_graph_descriptor.textproto`.
   - If `TT_VISIBLE_DEVICES` is unset and you suspect the wrong chips are being used, run `tt-smi -ls` and set `TT_VISIBLE_DEVICES` to the two PCI indices that form the n300.
   - If you see `cannot map elf file into memory: No space left on device`, rerun with `TT_METAL_CACHE=/tmp/tt-metal-cache` and `TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-runtime-root`.
+  - If you see TT JIT compile errors in `llk_*` headers (e.g. `_llk_unpack_untilize_init_` arg mismatch), run:
+    `cd /proj_sw/user_dev/moconnor/tt-metal && git submodule update --init --recursive`
+    and then rerun demo/eval.
 
   Deliverables:
   - models/arcee-ai/<MODEL>/n300/functional/model.py
@@ -55,7 +60,8 @@ set_up: |
   - If the host exposes 2 single-chip boards for n300, use both IDs (example: export TT_VISIBLE_DEVICES=4,5).
   - If the host exposes a single 2-chip n300 board, use that one ID (example: export TT_VISIBLE_DEVICES=0).
 on_success: |
-  Add, commit and push MODELS.md, MODEL_BRINGUP.md, model.py and the demo/eval log files, remove anything in generated/, then use 'gh' to open a PR and link it back to the issue {{item}}.
+  Add, commit and push MODELS.md, MODEL_BRINGUP.md, model.py and the demo/eval log files, remove anything in generated/.
+  If a PR already exists for this branch, update it (push new commits). Otherwise use 'gh' to open a PR and link it back to the issue {{item}}.
 on_failure: |
   Add, commit and push MODELS.md, MODEL_BRINGUP.md, model.py and the demo/eval log files
 tear_down: |
