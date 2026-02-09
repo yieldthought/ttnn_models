@@ -31,5 +31,5 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | microsoft/Phi-3-mini-128k-instruct  |   n300   | functional |   90% |  100% |  168ms |   7.6 |     256 |
 | microsoft/Phi-3-mini-128k-instruct  |  t3000   | functional |   bad |   bad |   bad |   bad |     256 |
 | tiiuae/Falcon3-7B-Instruct          |   n150   | functional |   97% |  100% |  144ms |  13.4 |   32768 |
-| tiiuae/Falcon3-7B-Instruct          |   n300   | functional |   97% |  100% |        |       |    1024 |
+| tiiuae/Falcon3-7B-Instruct          |   n300   | functional |   97% |  100% |  659ms |   5.7 |    1024 |
 | tiiuae/Falcon3-7B-Instruct          |  t3000   | functional |   bad |   bad |   bad |   bad |    1024 |
