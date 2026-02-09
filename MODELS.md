@@ -30,7 +30,7 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | google/gemma-3-4b-it                |   n150   | functional |   92% |  100% |   98ms |  13.9 |   40960 |
 | google/gemma-3-4b-it                |   n300   | functional |   bad |   bad |  360ms |   4.6 |     256 |
 | google/gemma-3-4b-it                |  t3000   | functional |   bad |   bad |   bad |   bad |     256 |
-| microsoft/Phi-3-mini-128k-instruct  |   n150   | functional |   84% |   98% |   82ms |  13.6 |   12288 |
+| microsoft/Phi-3-mini-128k-instruct  |   n150   | functional |   92% |   99% |   80ms |  13.7 |   12288 |
 | microsoft/Phi-3-mini-128k-instruct  |   n300   | functional |   90% |  100% |  168ms |   7.6 |     256 |
 | microsoft/Phi-3-mini-128k-instruct  |  t3000   | functional |   bad |   bad |   bad |   bad |     256 |
 | tiiuae/Falcon3-7B-Instruct          |   n150   | functional |   97% |  100% |  144ms |  13.4 |   32768 |
