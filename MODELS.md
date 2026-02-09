@@ -23,7 +23,7 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | meta-llama/Llama-3.2-1B             |  t3000   | functional |   89% |  100% |  155ms |   9.9 |  131072 |
 | mistralai/Mistral-7B-Instruct-v0.3  |   n150   | functional |   93% |  100% |  105ms |  16.5 |   32768 |
 | mistralai/Mistral-7B-Instruct-v0.3  |   n300   | functional |   96% |  100% |  116ms |  11.2 |    1024 |
-| mistralai/Mistral-7B-Instruct-v0.3  |  t3000   | functional |   bad |   bad |   bad |   bad |    1024 |
+| mistralai/Mistral-7B-Instruct-v0.3  |  t3000   | functional |  100% |  100% |  110ms |  10.6 |    1024 |
 | Qwen/Qwen3-0.6B                     |   n150   | functional |   99% |  100% |   52ms |  28.0 |   40960 |
 | Qwen/Qwen3-0.6B                     |   n300   | functional |   99% |  100% |  329ms |   5.2 |    2048 |
 | Qwen/Qwen3-0.6B                     |  t3000   | functional |   98% |  100% |  229ms |   6.2 |   40960 |
