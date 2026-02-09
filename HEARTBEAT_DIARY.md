@@ -288,3 +288,25 @@
 - `yyzc-wh-05` (agent4/n300): actively running long eval for Arcee-Spark n300 (#88).
 - `wh-lb-43` (agent2/t3000): running short eval iterations for Phi-3-mini t3000 (#92) while editing model/logs.
 - `aus-wh-01` (agent1/n300): editing gemma n300 (#89) with local changes; no PR yet.
+
+## 2026-02-09T17:00:28+01:00
+
+- In review triage/merges:
+- Merged PR #112 (Fixes #87) for Arcee-Spark n150 correctness; resolved a MODELS.md conflict first. #87 is now closed.
+- Merged PR #114 (Fixes #89) for gemma-3-4b-it n300 correctness; resolved a MODELS.md conflict first. #89 is now closed.
+- Merged PR #115 (Fixes #99) for ALLaM t3000 to raise Seq len to 4096 with paged KV + paged attention; includes a small `demo.py` enhancement to accept `--max_seq_len`. #99 is now closed.
+
+- Failed task requeue and hygiene:
+- #88 (Arcee-Spark n300 fix_correctness) and #98 (ALLaM n300 increase_seq_len) both failed on `yyzc-wh-05` with device open/hugepage issues. Cleared stale `## Progress`, removed the `⨉` label, added a short host-failure note, and moved both back to Ready.
+- #102 (Falcon n300 increase_seq_len) was left with `owner: agent4` after shutting down the broken runner; removed ownership and moved it back to Ready.
+
+- Runner and reservation management:
+- Stopped and released the problematic n300 reservation on `yyzc-wh-05` (agent4) after repeated hugepage pinning failures.
+- Reserved a replacement n300 host (`aus-wh-10`) and started a new worker (still named `agent4`) there; it immediately took #88.
+- Released the idle n150 reservation (`wh-04`) since no n150 work is currently queued.
+- Current IRD reservations (all >4h remaining):
+- ID 1: `aus-wh-01` (agent1/n300) working #100.
+- ID 2: `wh-lb-43` (agent2/t3000) idle/ready to take the next t3000 seq-len tickets.
+- ID 3: `aus-wh-10` (agent4/n300) working #88 (note: this was ID 4 before releasing the n150 reservation; IRD renumbered it).
+
+- Project `yieldthought/projects/6` status at end of tick: In review 0, In progress 2 (#88, #100), Ready 9 (#98, #101-#105, #109-#111, #102), Backlog 0.
