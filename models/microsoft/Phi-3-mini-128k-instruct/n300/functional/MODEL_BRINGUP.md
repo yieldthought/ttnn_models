@@ -34,26 +34,32 @@ It mirrors the HuggingFace architecture with LongRoPE and a gated MLP.
 - `ttnn.rms_norm` for RMSNorm
 - `ttnn.experimental.rotary_embedding` for RoPE
 - `ttnn.experimental.nlp_create_qkv_heads[_decode]` and `ttnn.experimental.nlp_concat_heads`
-- `ttnn.transformer.scaled_dot_product_attention[_decode]`
-- `ttnn.fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
+- `ttnn.transformer.scaled_dot_product_attention` and `ttnn.transformer.paged_scaled_dot_product_attention_decode`
+- `ttnn.experimental.paged_fill_cache` and `ttnn.experimental.paged_update_cache`
 
 ## RoPE notes
 Phi-3 uses LongRoPE (`rope_scaling.type = longrope`). This bringup:
 - Applies the attention scaling factor used by HF.
-- Uses the short or long frequency factors based on `max_seq_len` vs
-  `original_max_position_embeddings` (4096).
 - Pads the RoPE dimension to a multiple of 64 for TT rotary (then slices back).
 
-If you need a prompt that crosses 4096 after prefill, rerun with a `max_seq_len`
-large enough for that prompt so the long factors are used consistently.
+This bringup precomputes **both** short and long RoPE caches and selects between
+them per call:
+- Prefill uses the long cache only when `seq_len > original_max_position_embeddings`.
+- Decode switches to the long cache when `start_pos >= original_max_position_embeddings`.
+This matches HF’s dynamic LongRoPE behavior so sequences that cross 4096 during
+decode use the correct frequency factors.
 
 ## KV cache and tiling constraints
-- Cache tensors are allocated as `[32, n_kv_heads, cache_seq_len, head_dim]`.
-- Cache length is capped to 256 tokens in this bringup (`MAX_CACHE_SEQ_LEN`) to fit on device.
+- Cache tensors are allocated as `[max_num_blocks, n_kv_heads, block_size, head_dim]`.
+- Cache length is capped to 12288 tokens in this bringup (`MAX_CACHE_SEQ_LEN`) with a block size of 64.
+- Page table is an identity mapping of shape `[32, max_num_blocks]` (int32, row-major).
 - Batch dimension is tile-aligned to 32 for decode ops.
+- Set unused decode positions to `-1` in `cur_pos_tensor` so paged ops skip them.
 - Inputs are padded to tile size (32) before embedding and trimmed at the end.
-- Prefill uses height-sharded KV inputs for `fill_cache` to avoid interleaved grid-size limits.
-- Sharded prefill requires `n_kv_heads` to be divisible by the device grid x-dimension.
+
+## Validated max sequence length
+- Target `max_seq_len` is 12288 to match the n150 row and stay within N300 DRAM.
+- Demo and eval logs in this directory were run with `--max_seq_len 12288`.
 
 ## Precision
 - Weights and activations use `ttnn.bfloat16`.
@@ -63,14 +69,14 @@ Teacher-forcing accuracy against the HF reference:
 
 ```
 python eval.py models/microsoft/Phi-3-mini-128k-instruct/n300/functional/model.py \
-  --model microsoft/Phi-3-mini-128k-instruct
+  --model microsoft/Phi-3-mini-128k-instruct --max_seq_len 12288
 ```
 
-On this N300 host, set the mesh to devices 0 and 2:
+On this N300 host, set the mesh to device 0:
 
 ```
-TT_VISIBLE_DEVICES=0,2 python eval.py models/microsoft/Phi-3-mini-128k-instruct/n300/functional/model.py \
-  --model microsoft/Phi-3-mini-128k-instruct
+TT_VISIBLE_DEVICES=0 python eval.py models/microsoft/Phi-3-mini-128k-instruct/n300/functional/model.py \
+  --model microsoft/Phi-3-mini-128k-instruct --max_seq_len 12288
 ```
 
 If `/home` is full, redirect runtime artifacts to a writable location. On this host,
@@ -78,7 +84,7 @@ If `/home` is full, redirect runtime artifacts to a writable location. On this h
 `ttnn`, and `runtime` from the installed package):
 
 ```
-TT_VISIBLE_DEVICES=0,2 TT_METAL_CACHE=/tmp/tt-metal-cache TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-runtime-root TT_METAL_INSPECTOR_LOG_PATH=/tmp/tt-metal-inspector TT_METAL_INSPECTOR_INITIALIZATION_IS_IMPORTANT=0 python eval.py models/microsoft/Phi-3-mini-128k-instruct/n300/functional/model.py --model microsoft/Phi-3-mini-128k-instruct
+TT_VISIBLE_DEVICES=0 TT_METAL_CACHE=/tmp/tt-metal-cache TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-runtime-root TT_METAL_INSPECTOR_LOG_PATH=/tmp/tt-metal-inspector TT_METAL_INSPECTOR_INITIALIZATION_IS_IMPORTANT=0 python eval.py models/microsoft/Phi-3-mini-128k-instruct/n300/functional/model.py --model microsoft/Phi-3-mini-128k-instruct --max_seq_len 12288
 ```
 
 Automation wrapper (emits YT_METRICS JSON):

@@ -31,7 +31,7 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | google/gemma-3-4b-it                |   n300   | functional |   94% |  100% |  535ms |   3.2 |   40960 |
 | google/gemma-3-4b-it                |  t3000   | functional |   92% |  100% |  330ms |   4.7 |   40960 |
 | microsoft/Phi-3-mini-128k-instruct  |   n150   | functional |   92% |   99% |   80ms |  13.7 |   12288 |
-| microsoft/Phi-3-mini-128k-instruct  |   n300   | functional |   90% |  100% |  168ms |   7.6 |     256 |
+| microsoft/Phi-3-mini-128k-instruct  |   n300   | functional |   90% |  100% |  193ms |   6.7 |   12288 |
 | microsoft/Phi-3-mini-128k-instruct  |  t3000   | functional |   90% |  100% |  145ms |   7.3 |     256 |
 | tiiuae/Falcon3-7B-Instruct          |   n150   | functional |   97% |  100% |  144ms |  13.4 |   32768 |
 | tiiuae/Falcon3-7B-Instruct          |   n300   | functional |   97% |  100% |  659ms |   5.7 |    1024 |
