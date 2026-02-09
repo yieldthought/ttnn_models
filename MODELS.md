@@ -20,7 +20,7 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | meta-llama/Llama-3.2-1B             |   n150   | functional |   92% |  100% |   34ms |  39.5 |  131072 |
 | meta-llama/Llama-3.2-1B             |   n150   | optimized  |   79% |   99% |   26ms |  58.0 |    1024 |
 | meta-llama/Llama-3.2-1B             |   n300   | functional |   bad |   bad |   bad |   bad |    2048 |
-| meta-llama/Llama-3.2-1B             |  t3000   | functional |   bad |   bad |   bad |   bad |    2048 |
+| meta-llama/Llama-3.2-1B             |  t3000   | functional |   89% |  100% |  155ms |   9.9 |  131072 |
 | mistralai/Mistral-7B-Instruct-v0.3  |   n150   | functional |   93% |  100% |  105ms |  16.5 |   32768 |
 | mistralai/Mistral-7B-Instruct-v0.3  |   n300   | functional |   96% |  100% |  116ms |  11.2 |    1024 |
 | mistralai/Mistral-7B-Instruct-v0.3  |  t3000   | functional |   bad |   bad |   bad |   bad |    1024 |
