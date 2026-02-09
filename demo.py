@@ -255,6 +255,7 @@ def run_tt_demo(
     top_k: int,
     cache_dir: Optional[str],
     device_id: int,
+    max_seq_len: Optional[int],
 ):
     """Run TT model generation with timing."""
     import ttnn
@@ -274,13 +275,25 @@ def run_tt_demo(
     attention_mask = encoded.get("attention_mask")
 
     max_cache = getattr(model_module, "MAX_CACHE_SEQ_LEN", None)
-    if max_cache is not None:
+    max_total = max_seq_len
+    limit_name = "max_seq_len"
+    if max_total is None:
         max_total = max_cache
-        if input_ids.shape[1] + max_new_tokens > max_total:
-            max_new_tokens = max(0, max_total - input_ids.shape[1])
-            print(f"Adjusting max_new_tokens to {max_new_tokens} to fit MAX_CACHE_SEQ_LEN={max_cache}")
+        limit_name = "MAX_CACHE_SEQ_LEN"
+    elif max_cache is not None and max_cache < max_total:
+        max_total = max_cache
+        limit_name = "MAX_CACHE_SEQ_LEN"
+    if max_total is not None and input_ids.shape[1] + max_new_tokens > max_total:
+        max_new_tokens = max(0, max_total - input_ids.shape[1])
+        print(f"Adjusting max_new_tokens to {max_new_tokens} to fit {limit_name}={max_total}")
 
-    max_seq_len = max(2048, input_ids.shape[1] + max_new_tokens)
+    if max_seq_len is None:
+        max_seq_len = max(2048, input_ids.shape[1] + max_new_tokens)
+    elif max_seq_len < input_ids.shape[1] + max_new_tokens:
+        print(
+            "Warning: max_seq_len is smaller than prompt + max_new_tokens; "
+            "generation may fail if cache limits are exceeded."
+        )
 
     print("Opening TT device...")
     ttnn.CONFIG.throw_exception_on_fallback = True
@@ -338,6 +351,7 @@ def main():
     parser.add_argument("--prompt", default=None)
     parser.add_argument("--prompt-file", type=pathlib.Path, default=None)
     parser.add_argument("--max-new-tokens", type=int, default=128)
+    parser.add_argument("--max_seq_len", type=int, default=None)
     parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("--top-k", type=int, default=50)
     parser.add_argument("--seed", type=int, default=0)
@@ -358,6 +372,7 @@ def main():
             args.top_k,
             args.cache_dir,
             args.device_id,
+            args.max_seq_len,
         )
     else:
         run_hf_demo(
