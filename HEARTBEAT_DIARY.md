@@ -75,3 +75,12 @@
 - Re-established an idle n150 runner on a separate AUS host:
 - Reserved `aus-wh-09` and started `agent3` (n150); log `/tmp/agent3.log` (still idle, no n150 Ready issues).
 - T3000 runner `agent4` on Loudbox `wh-lb-43:42857` is healthy and moved on to issue #35 after completing #33; log `/tmp/agent4.log`.
+
+## 2026-02-09T03:09:53+01:00
+
+- Project `yieldthought/projects/6` status unchanged: Done 17, In progress 2 (#32 n300, #35 t3000), Ready 6, Backlog 3. No items in "In review" and no open PRs.
+- IRD reservations still healthy with >7h remaining on all runners (IDs 1-3).
+- Runners:
+- `agent2` (n300) still actively running issue #32 (Phi n300); process `codexapi task` is alive and working.
+- `agent4` (t3000) still actively running issue #35 (Mistral t3000); process `codexapi task` is alive and working.
+- `agent3` (n150) idle (no `run_tests_n150` Ready issues).
