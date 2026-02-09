@@ -1,64 +1,63 @@
-NOTE: KV cache is currently capped at 256 tokens by MAX_CACHE_SEQ_LEN in model.py; passing --max_seq_len > 256 does not increase cache capacity.
-COMMAND: python eval.py models/microsoft/Phi-3-mini-128k-instruct/t3000/functional/model.py --model microsoft/Phi-3-mini-128k-instruct --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100 --max_seq_len 2048
-2026-02-09 14:48:31.858 | DEBUG    | ttnn:<module>:77 - Initial ttnn.CONFIG:
+COMMAND: TT_MESH_GRAPH_DESC_PATH=/proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/t3k_mesh_graph_descriptor.textproto TT_VISIBLE_DEVICES=0,1,2,3 TT_METAL_CACHE=/tmp/tt-metal-cache python eval.py models/microsoft/Phi-3-mini-128k-instruct/t3000/functional/model.py --model microsoft/Phi-3-mini-128k-instruct --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100 --max_seq_len 12288
+2026-02-09 18:04:06.047 | DEBUG    | ttnn:<module>:77 - Initial ttnn.CONFIG:
 Config{cache_path=/home/moconnor/.cache/ttnn,model_cache_path=/home/moconnor/.cache/ttnn/models,tmp_dir=/tmp/ttnn,enable_model_cache=false,enable_fast_runtime_mode=true,throw_exception_on_fallback=false,enable_logging=false,enable_graph_report=false,enable_detailed_buffer_report=false,enable_detailed_tensor_report=false,enable_comparison_mode=false,comparison_mode_should_raise_exception=false,comparison_mode_pcc=0.9999,root_report_path=generated/ttnn/reports,report_name=std::nullopt,std::nullopt}
 Loading model module: /localdev/moconnor/ttnn_models/models/microsoft/Phi-3-mini-128k-instruct/t3000/functional/model.py
 Loading HuggingFace tokenizer...
 Loading HuggingFace reference model on CPU...
-Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:00<00:00,  1.29it/s]Loading checkpoint shards: 100%|██████████| 2/2 [00:01<00:00,  1.84it/s]Loading checkpoint shards: 100%|██████████| 2/2 [00:01<00:00,  1.73it/s]
-2026-02-09 14:49:19.898 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
-2026-02-09 14:49:19.929 | info     |          Device | Opening user mode device driver (tt_cluster.cpp:223)
-2026-02-09 14:49:19.938 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
-2026-02-09 14:49:20.013 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
-2026-02-09 14:49:20.073 | info     |             UMD | Harvesting masks for chip 3 tensix: 0x202 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
-2026-02-09 14:49:20.130 | info     |             UMD | Harvesting masks for chip 2 tensix: 0x201 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
-2026-02-09 14:49:20.140 | info     |             UMD | Harvesting masks for chip 1 tensix: 0x220 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
-2026-02-09 14:49:20.150 | info     |             UMD | Harvesting masks for chip 0 tensix: 0x240 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
-2026-02-09 14:49:20.161 | info     |             UMD | Harvesting masks for chip 7 tensix: 0x280 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
-2026-02-09 14:49:20.174 | info     |             UMD | Harvesting masks for chip 6 tensix: 0x210 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
-2026-02-09 14:49:20.188 | info     |             UMD | Harvesting masks for chip 5 tensix: 0x210 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
-2026-02-09 14:49:20.201 | info     |             UMD | Harvesting masks for chip 4 tensix: 0x5 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
-2026-02-09 14:49:20.215 | info     |             UMD | Opening local chip ids/PCIe ids: {0, 1, 2, 3}/[0, 3, 1, 2] and remote chip ids {4, 5, 6, 7} (cluster.cpp:186)
-2026-02-09 14:49:20.215 | info     |             UMD | IOMMU: disabled (cluster.cpp:161)
-2026-02-09 14:49:20.215 | info     |             UMD | KMD version: 2.4.1 (cluster.cpp:164)
-2026-02-09 14:49:20.224 | info     |             UMD | Starting devices in cluster (cluster.cpp:965)
-2026-02-09 14:49:20.225 | info     |             UMD | Mapped hugepage 0x240000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
-2026-02-09 14:49:20.225 | info     |             UMD | Mapped hugepage 0x200000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
-2026-02-09 14:49:20.226 | info     |             UMD | Mapped hugepage 0x41c0000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
-2026-02-09 14:49:20.227 | info     |             UMD | Mapped hugepage 0x4180000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
-2026-02-09 14:49:20.228 | info     |             UMD | Mapped hugepage 0x300000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
-2026-02-09 14:49:20.229 | info     |             UMD | Mapped hugepage 0x2c0000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
-2026-02-09 14:49:20.230 | info     |             UMD | Mapped hugepage 0x42c0000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
-2026-02-09 14:49:20.230 | info     |             UMD | Mapped hugepage 0x4280000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
-2026-02-09 14:49:20.289 | info     |     Distributed | Using custom mesh graph descriptor: /proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/t3k_mesh_graph_descriptor.textproto (metal_context.cpp:822)
-2026-02-09 14:49:20.290 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=8, n_phys=8, log_deg_hist={2:4, 3:4}, phys_deg_hist={2:4, 3:4} (topology_mapper_utils.cpp:171)
-2026-02-09 14:49:20.295 | DEBUG    | ttnn.device:__init__:150 - Using default dispatch core type for this system: DispatchCoreType.ETH
-2026-02-09 14:49:20.296 | DEBUG    | ttnn.device:__init__:152 - Using default dispatch core axis for this system: DispatchCoreAxis.ROW
-2026-02-09 14:49:20.306 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
-2026-02-09 14:49:20.309 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
-2026-02-09 14:49:20.310 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
-2026-02-09 14:49:20.310 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
-2026-02-09 14:49:20.312 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
-2026-02-09 14:49:20.312 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
-2026-02-09 14:49:20.313 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
-2026-02-09 14:49:20.314 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
-2026-02-09 14:49:20.665 | warning  |           Metal | Got num_routing_planes: 1, which is less than current value: 255, ignoring the override (metal_context.cpp:719)
-2026-02-09 14:49:20.665 | info     |           Metal | Dispatch on FabricConfig::FABRIC_2D with 1 Command Queues
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:00<00:00,  1.30it/s]Loading checkpoint shards: 100%|██████████| 2/2 [00:01<00:00,  1.85it/s]Loading checkpoint shards: 100%|██████████| 2/2 [00:01<00:00,  1.74it/s]
+2026-02-09 18:04:54.471 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-09 18:04:54.502 | info     |          Device | Opening user mode device driver (tt_cluster.cpp:223)
+2026-02-09 18:04:54.512 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-09 18:04:54.585 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-09 18:04:54.646 | info     |             UMD | Harvesting masks for chip 3 tensix: 0x202 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 18:04:54.702 | info     |             UMD | Harvesting masks for chip 2 tensix: 0x201 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 18:04:54.712 | info     |             UMD | Harvesting masks for chip 1 tensix: 0x220 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 18:04:54.723 | info     |             UMD | Harvesting masks for chip 0 tensix: 0x240 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 18:04:54.733 | info     |             UMD | Harvesting masks for chip 7 tensix: 0x280 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 18:04:54.747 | info     |             UMD | Harvesting masks for chip 6 tensix: 0x210 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 18:04:54.760 | info     |             UMD | Harvesting masks for chip 5 tensix: 0x210 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 18:04:54.773 | info     |             UMD | Harvesting masks for chip 4 tensix: 0x5 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 18:04:54.787 | info     |             UMD | Opening local chip ids/PCIe ids: {0, 1, 2, 3}/[0, 3, 1, 2] and remote chip ids {4, 5, 6, 7} (cluster.cpp:186)
+2026-02-09 18:04:54.787 | info     |             UMD | IOMMU: disabled (cluster.cpp:161)
+2026-02-09 18:04:54.787 | info     |             UMD | KMD version: 2.4.1 (cluster.cpp:164)
+2026-02-09 18:04:54.796 | info     |             UMD | Starting devices in cluster (cluster.cpp:965)
+2026-02-09 18:04:54.797 | info     |             UMD | Mapped hugepage 0x240000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 18:04:54.798 | info     |             UMD | Mapped hugepage 0x200000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 18:04:54.799 | info     |             UMD | Mapped hugepage 0x41c0000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 18:04:54.799 | info     |             UMD | Mapped hugepage 0x4180000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 18:04:54.800 | info     |             UMD | Mapped hugepage 0x300000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 18:04:54.801 | info     |             UMD | Mapped hugepage 0x2c0000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 18:04:54.802 | info     |             UMD | Mapped hugepage 0x42c0000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 18:04:54.803 | info     |             UMD | Mapped hugepage 0x4280000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 18:04:54.861 | info     |     Distributed | Using custom mesh graph descriptor: /proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/t3k_mesh_graph_descriptor.textproto (metal_context.cpp:822)
+2026-02-09 18:04:54.862 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=8, n_phys=8, log_deg_hist={2:4, 3:4}, phys_deg_hist={2:4, 3:4} (topology_mapper_utils.cpp:171)
+2026-02-09 18:04:54.866 | DEBUG    | ttnn.device:__init__:150 - Using default dispatch core type for this system: DispatchCoreType.ETH
+2026-02-09 18:04:54.867 | DEBUG    | ttnn.device:__init__:152 - Using default dispatch core axis for this system: DispatchCoreAxis.ROW
+2026-02-09 18:04:54.879 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 18:04:54.881 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 18:04:54.882 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 18:04:54.882 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 18:04:54.882 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 18:04:54.882 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 18:04:54.883 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 18:04:54.883 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 18:04:55.201 | warning  |           Metal | Got num_routing_planes: 1, which is less than current value: 255, ignoring the override (metal_context.cpp:719)
+2026-02-09 18:04:55.201 | info     |           Metal | Dispatch on FabricConfig::FABRIC_2D with 1 Command Queues
  (device_manager.cpp:328)
-2026-02-09 14:49:20.676 | info     |           Metal | Initializing Fabric (device_manager.cpp:404)
-2026-02-09 14:49:20.894 | info     |           Metal | Fabric initialized on Device 0 (device.cpp:386)
-2026-02-09 14:49:20.894 | info     |           Metal | Fabric initialized on Device 1 (device.cpp:386)
-2026-02-09 14:49:20.953 | info     |           Metal | Fabric initialized on Device 2 (device.cpp:386)
-2026-02-09 14:49:20.954 | info     |           Metal | Fabric initialized on Device 3 (device.cpp:386)
-2026-02-09 14:49:20.957 | info     |           Metal | Fabric initialized on Device 4 (device.cpp:386)
-2026-02-09 14:49:20.963 | info     |           Metal | Fabric initialized on Device 5 (device.cpp:386)
-2026-02-09 14:49:20.966 | info     |           Metal | Fabric initialized on Device 6 (device.cpp:386)
-2026-02-09 14:49:20.972 | info     |           Metal | Fabric initialized on Device 7 (device.cpp:386)
-2026-02-09 14:49:20.972 | info     |           Metal | Fabric Initialized with config FabricConfig::FABRIC_2D (device_manager.cpp:409)
-2026-02-09 14:49:21.093 | info     |           Metal | Command Queue initialized on Device 4 (device_manager.cpp:500)
-2026-02-09 14:49:21.093 | info     |           Metal | Command Queue initialized on Device 6 (device_manager.cpp:500)
-2026-02-09 14:49:21.094 | info     |           Metal | Command Queue initialized on Device 5 (device_manager.cpp:500)
-2026-02-09 14:49:21.096 | info     |           Metal | Command Queue initialized on Device 7 (device_manager.cpp:500)
+2026-02-09 18:04:55.213 | info     |           Metal | Initializing Fabric (device_manager.cpp:404)
+2026-02-09 18:04:55.397 | info     |           Metal | Fabric initialized on Device 0 (device.cpp:386)
+2026-02-09 18:04:55.398 | info     |           Metal | Fabric initialized on Device 1 (device.cpp:386)
+2026-02-09 18:04:55.398 | info     |           Metal | Fabric initialized on Device 2 (device.cpp:386)
+2026-02-09 18:04:55.399 | info     |           Metal | Fabric initialized on Device 3 (device.cpp:386)
+2026-02-09 18:04:55.402 | info     |           Metal | Fabric initialized on Device 4 (device.cpp:386)
+2026-02-09 18:04:55.408 | info     |           Metal | Fabric initialized on Device 5 (device.cpp:386)
+2026-02-09 18:04:55.411 | info     |           Metal | Fabric initialized on Device 6 (device.cpp:386)
+2026-02-09 18:04:55.417 | info     |           Metal | Fabric initialized on Device 7 (device.cpp:386)
+2026-02-09 18:04:55.417 | info     |           Metal | Fabric Initialized with config FabricConfig::FABRIC_2D (device_manager.cpp:409)
+2026-02-09 18:04:55.502 | info     |           Metal | Command Queue initialized on Device 4 (device_manager.cpp:500)
+2026-02-09 18:04:55.504 | info     |           Metal | Command Queue initialized on Device 5 (device_manager.cpp:500)
+2026-02-09 18:04:55.504 | info     |           Metal | Command Queue initialized on Device 7 (device_manager.cpp:500)
+2026-02-09 18:04:55.506 | info     |           Metal | Command Queue initialized on Device 6 (device_manager.cpp:500)
 Generating reference tokens...
 Opening device (2x4)...
 Loading ttnn model...
@@ -68,5 +67,5 @@ Loading ttnn model...
 Running teacher-forcing eval (100 tokens)...
 Top-1 accuracy: 90.00% (0.9000)
 Top-5 accuracy: 100.00% (1.0000)
-2026-02-09 14:50:14.331 | info     |          Device | Closing user mode device drivers (tt_cluster.cpp:472)
-2026-02-09 14:50:14.331 | info     |             UMD | Closing devices in cluster (cluster.cpp:976)
+2026-02-09 18:06:43.887 | info     |          Device | Closing user mode device drivers (tt_cluster.cpp:472)
+2026-02-09 18:06:43.887 | info     |             UMD | Closing devices in cluster (cluster.cpp:976)

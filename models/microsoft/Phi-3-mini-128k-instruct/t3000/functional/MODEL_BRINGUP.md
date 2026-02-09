@@ -35,26 +35,27 @@ It mirrors the HuggingFace architecture with LongRoPE and a gated MLP.
 - `ttnn.experimental.rotary_embedding` for RoPE
 - `ttnn.experimental.nlp_create_qkv_heads[_decode]` and `ttnn.experimental.nlp_concat_heads`
 - `ttnn.experimental.nlp_concat_heads_decode` (decode path, after sharding the attention output)
-- `ttnn.transformer.scaled_dot_product_attention[_decode]`
-- `ttnn.fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
+- `ttnn.transformer.scaled_dot_product_attention` (prefill) and `ttnn.transformer.paged_scaled_dot_product_attention_decode` (decode)
+- `ttnn.experimental.paged_fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
 
 ## RoPE notes
 Phi-3 uses LongRoPE (`rope_scaling.type = longrope`). This bringup:
 - Applies the attention scaling factor used by HF.
-- Uses the short or long frequency factors based on `max_seq_len` vs
-  `original_max_position_embeddings` (4096).
+- Uses short factors for prefill at or below `original_max_position_embeddings` (4096) and long factors
+  for longer prefill or decode positions beyond 4096.
 - Pads the RoPE dimension to a multiple of 64 for TT rotary (then slices back).
 
-If you need a prompt that crosses 4096 after prefill, rerun with a `max_seq_len`
-large enough for that prompt so the long factors are used consistently.
+If you need a prompt that crosses 4096 after prefill, run with a `max_seq_len` large enough to
+cover the prompt so the long cache is available when decoding past 4096.
 
 ## KV cache and tiling constraints
-- Cache tensors are allocated as `[32, n_kv_heads, cache_seq_len, head_dim]`.
-- Cache length is capped to 256 tokens in this bringup (`MAX_CACHE_SEQ_LEN`) to fit on device.
+- Cache tensors are paged: `[max_num_blocks, n_kv_heads, block_size, head_dim]` with `block_size=64`.
+- Cache capacity is `max_seq_len` (converted to `max_num_blocks`).
 - Batch dimension is tile-aligned to 32 for decode ops.
 - Inputs are padded to tile size (32) before embedding and trimmed at the end.
-- Prefill uses height-sharded KV inputs for `fill_cache` to avoid interleaved grid-size limits.
-- Sharded prefill requires `n_kv_heads` to be divisible by the device grid x-dimension.
+
+## Max sequence length
+- Validated `max_seq_len=12288` on T3000. Higher values were not tested in this bringup.
 
 ## Precision
 - Weights and activations use `ttnn.bfloat16`.
@@ -69,7 +70,7 @@ python eval.py models/microsoft/Phi-3-mini-128k-instruct/t3000/functional/model.
   --model microsoft/Phi-3-mini-128k-instruct \
   --prompt_file prompts/bringup_eval_long.txt \
   --max_new_tokens 100 \
-  --max_seq_len 256
+  --max_seq_len 12288
 ```
 
 ## Correctness fix (2026-02-09)
@@ -91,7 +92,7 @@ python eval.py models/microsoft/Phi-3-mini-128k-instruct/t3000/functional/model.
   --model microsoft/Phi-3-mini-128k-instruct \
   --prompt_file prompts/bringup_eval_long.txt \
   --max_new_tokens 100 \
-  --max_seq_len 256
+  --max_seq_len 12288
 ```
 
 Automation wrapper (emits YT_METRICS JSON):
