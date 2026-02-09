@@ -430,3 +430,24 @@
 - Runners:
 - `aus-wh-10` agent4: #98 shows a ✅ verifier result for max_seq_len 4096 but no PR yet; `codexapi task` is still running with active codex processes.
 - `aus-wh-01` agent1: running long eval for Falcon n300 at `--max_seq_len 32768` (eval.log shows checkpoint shards loading and progressing).
+
+## 2026-02-09T20:11:34+01:00
+
+- Project `yieldthought/projects/6` status: In review 0, In progress 0, Ready 0, Backlog 0 (all items Done).
+
+- In review triage/merges:
+- Merged PR #127 (Fixes #102) for Falcon3 n300 max_seq_len increase to 32768 with updated demo/eval logs and MODELS.md row.
+- Merged PR #128 (Closes #98) for ALLaM n300 max_seq_len increase to 4096 with paged KV cache/attention decode, updated logs, and MODELS.md row.
+
+- Queue hygiene:
+- Removed stale `owner: agent4` label from #98 (leftover from a GitHub 502 during automated release).
+- Closed the conflicted/overscoped PR #126 after opening the clean replacement PR #128.
+
+- Runners:
+- Stopped `scripts/worker.sh` on `aus-wh-01` and `aus-wh-10` and released both IRD reservations; `ird list` now shows no active reservations.
+
+- Notifications:
+- Sent a Pushover notification that Project 6 is complete and runners are released.
+
+- Local repo:
+- Fast-forwarded `main` to the merged state (HEAD: `238f1bb`).
