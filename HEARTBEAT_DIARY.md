@@ -372,6 +372,9 @@
 
 - Project `yieldthought/projects/6` status: In review 0, In progress 3 (#105 Phi n300, #110 gemma n300, #109 gemma t3000), Ready 3 (#98 ALLaM n300, #102 Falcon n300, #111 Phi t3000), Backlog 0.
 
+- Queue hygiene:
+- Removed stale `owner:` labels from Ready tickets (#98 had `owner: agent1`, #111 had `owner: agent2`) so runners can take them. #111 had also drifted into In progress without active work, so it was moved back to Ready.
+
 - Runners and reservations (all ~9h remaining, no extension needed):
 - ID 1 `aus-wh-01` (agent1/n300): `codexapi task` is alive but repeatedly failing repo sync (`git pull` returning GitHub 500/502); currently stalled (no active demo/eval process).
 - ID 2 `wh-lb-43` (agent2/t3000): `codexapi task` has moved on to #109 (gemma t3000 seq-len) after completing #103; long run in progress.
@@ -379,3 +382,30 @@
 
 - Local repo:
 - `git pull --ff-only` to sync `main` to the Falcon t3000 seq-len merge; MODELS.md now reflects Falcon t3000 seq len 32768.
+
+## 2026-02-09T18:57:55+01:00
+
+- In review triage/merges:
+- Merged PR #122 (Fixes #109) for gemma-3-4b-it t3000 seq-len increase to 40960 with updated demo/eval logs and MODELS.md row. #109 is now closed and in Done.
+
+- Project `yieldthought/projects/6` status: In review 0, In progress 2 (#105 Phi n300, #110 gemma n300), Ready 3 (#98 ALLaM n300, #102 Falcon n300, #111 Phi t3000), Backlog 0.
+
+- Runners:
+- `aus-wh-01` agent1: still stuck in repo sync retries (GitHub 500/502 on git pulls), blocking #105 progress until it recovers.
+- `aus-wh-10` agent4: running gemma n300 demo/eval work for #110 (target max_seq_len 40960).
+- `wh-lb-43` agent2: completed gemma t3000 (#109) and started work on Phi t3000 (#111); project status for #111 may lag until the next successful GitHub update.
+
+## 2026-02-09T19:02:44+01:00
+
+- In review triage/merges:
+- Merged PR #123 (Fixes #110) for gemma-3-4b-it n300 seq-len increase to 40960. Resolved a MODELS.md conflict by keeping both:
+  - gemma n300 row from PR (#123)
+  - gemma t3000 row already on main (from PR #122)
+  #110 is now closed and in Done.
+
+- Project `yieldthought/projects/6` status: In review 0, In progress 2 (#98 ALLaM n300, #105 Phi n300), Ready 2 (#102 Falcon n300, #111 Phi t3000), Backlog 0.
+
+- Runners:
+- `aus-wh-01` agent1: running long eval for Phi n300 at `--max_seq_len 12288`.
+- `aus-wh-10` agent4: moved on to ALLaM n300 seq-len ticket (#98).
+- `wh-lb-43` agent2: working Phi t3000 (demo currently at `--max_seq_len 12288`).
