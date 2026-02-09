@@ -310,3 +310,17 @@
 - ID 3: `aus-wh-10` (agent4/n300) working #88 (note: this was ID 4 before releasing the n150 reservation; IRD renumbered it).
 
 - Project `yieldthought/projects/6` status at end of tick: In review 0, In progress 2 (#88, #100), Ready 9 (#98, #101-#105, #109-#111, #102), Backlog 0.
+
+## 2026-02-09T17:03:28+01:00
+
+- Project `yieldthought/projects/6` status: In review 0, In progress 3 (#88 Arcee n300, #100 Mistral n300, #101 Mistral t3000), Ready 8 (#98, #102-#105, #109-#111), Backlog 0.
+
+- Runners and reservations:
+- ID 1 `aus-wh-01` (agent1/n300): codex session active on #100; no long eval python process at check (still in code/LLM stages).
+- ID 3 `aus-wh-10` (agent4/n300): actively running `eval.py` long eval for #88 at `--max_seq_len 32768` (high CPU process observed).
+- ID 2 `wh-lb-43` (agent2/t3000): codex session active on #101; no long eval python process at check (still in code/LLM stages).
+- All reservations still have >5h remaining (IDs 1-2) and >7h remaining on ID 3; no extension needed yet.
+
+- Capacity note:
+- Attempted to reserve a second t3000 (`wormhole_b0 --model lb`) to parallelize the remaining t3000 seq-len tickets; `tt_aus` allocation failed immediately and `tt_yyz` queued, then was cancelled to avoid blocking. Continuing with a single t3000 worker for now.
+- No PRs opened during this heartbeat; waiting for workers to finish and produce PRs for review/merge.
