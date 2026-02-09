@@ -114,4 +114,4 @@ python scripts/run_eval.py --mode tt --hf-model google/gemma-3-4b-it
 - Top-5: 100%
 - TTFT: 322 ms
 - Decode: 4.8 t/s/u
-- Seq len: 2048
+- Seq len: 256 (MAX_CACHE_SEQ_LEN)
