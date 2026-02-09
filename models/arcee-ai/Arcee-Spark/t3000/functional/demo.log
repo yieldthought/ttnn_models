@@ -1,75 +1,75 @@
-TT_VISIBLE_DEVICES=0,4 python demo.py models/arcee-ai/Arcee-Spark/t3000/functional/model.py
-2026-01-27 20:25:57.569 | DEBUG    | ttnn:<module>:77 - Initial ttnn.CONFIG:
-Config{cache_path=/home/moconnor/.cache/ttnn,model_cache_path=/home/moconnor/.cache/ttnn/models,tmp_dir=/tmp/ttnn,enable_model_cache=false,enable_fast_runtime_mode=true,throw_exception_on_fallback=false,enable_logging=false,enable_graph_report=false,enable_detailed_buffer_report=false,enable_detailed_tensor_report=false,enable_comparison_mode=false,comparison_mode_should_raise_exception=false,comparison_mode_pcc=0.9999,root_report_path=generated/ttnn/reports,report_name=std::nullopt,std::nullopt}
-2026-01-27 20:25:58.248 | info     |             UMD | Established firmware bundle version: 19.4.0 (topology_discovery.cpp:368)
-2026-01-27 20:25:58.254 | info     |          Device | Opening user mode device driver (tt_cluster.cpp:223)
-2026-01-27 20:25:58.257 | info     |             UMD | Established firmware bundle version: 19.4.0 (topology_discovery.cpp:368)
-2026-01-27 20:25:58.275 | info     |             UMD | Established firmware bundle version: 19.4.0 (topology_discovery.cpp:368)
-2026-01-27 20:25:58.290 | info     |             UMD | Harvesting masks for chip 0 tensix: 0x220 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
-2026-01-27 20:25:58.346 | info     |             UMD | Harvesting masks for chip 1 tensix: 0x240 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
-2026-01-27 20:25:58.360 | info     |             UMD | Opening local chip ids/PCIe ids: {0}/[0] and remote chip ids {1} (cluster.cpp:186)
-2026-01-27 20:25:58.360 | info     |             UMD | IOMMU: disabled (cluster.cpp:161)
-2026-01-27 20:25:58.360 | info     |             UMD | KMD version: 2.4.1 (cluster.cpp:164)
-2026-01-27 20:25:58.362 | info     |             UMD | Starting devices in cluster (cluster.cpp:965)
-2026-01-27 20:25:58.363 | info     |             UMD | Mapped hugepage 0x2c0000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
-2026-01-27 20:25:58.364 | info     |             UMD | Mapped hugepage 0x280000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
-2026-01-27 20:25:58.405 | info     |     Distributed | Using auto discovery to generate mesh graph. (metal_context.cpp:863)
-2026-01-27 20:25:58.405 | info     |     Distributed | Constructing control plane using auto-discovery (no mesh graph descriptor). (metal_context.cpp:840)
-2026-01-27 20:25:58.405 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=2, n_phys=2, log_deg_hist={1:2}, phys_deg_hist={1:2} (topology_mapper_utils.cpp:171)
-2026-01-27 20:25:58.405 | info     |          Fabric | Fast-path path-graph mapping succeeded for mesh 0 (topology_mapper_utils.cpp:401)
-2026-01-27 20:25:58.405 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=2, n_phys=2, log_deg_hist={1:2}, phys_deg_hist={1:2} (topology_mapper_utils.cpp:171)
-2026-01-27 20:25:58.405 | info     |          Fabric | Fast-path path-graph mapping succeeded for mesh 0 (topology_mapper_utils.cpp:401)
-2026-01-27 20:25:58.410 | DEBUG    | ttnn.device:__init__:150 - Using default dispatch core type for this system: DispatchCoreType.ETH
-2026-01-27 20:25:58.410 | DEBUG    | ttnn.device:__init__:152 - Using default dispatch core axis for this system: DispatchCoreAxis.ROW
-2026-01-27 20:25:58.549 | warning  |           Metal | Got num_routing_planes: 1, which is less than current value: 255, ignoring the override (metal_context.cpp:748)
-2026-01-27 20:25:58.549 | info     |           Metal | Dispatch on FabricConfig::FABRIC_1D with 1 Command Queues
- (device_manager.cpp:331)
-2026-01-27 20:25:58.553 | info     |           Metal | Initializing Fabric (device_manager.cpp:409)
-2026-01-27 20:25:58.647 | info     |           Metal | Fabric initialized on Device 0 (device.cpp:392)
-2026-01-27 20:25:58.650 | info     |           Metal | Fabric initialized on Device 1 (device.cpp:392)
-2026-01-27 20:25:58.650 | info     |           Metal | Fabric Initialized with config FabricConfig::FABRIC_1D (device_manager.cpp:414)
-2026-01-27 20:25:58.797 | info     |           Metal | Command Queue initialized on Device 1 (device_manager.cpp:510)
+env TT_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 /proj_sw/user_dev/moconnor/tt-metal/python_env/bin/python demo.py models/arcee-ai/Arcee-Spark/t3000/functional/model.py
+2026-02-09 05:20:33.071 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-09 05:20:33.102 | info     |          Device | Opening user mode device driver (tt_cluster.cpp:223)
+2026-02-09 05:20:33.112 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-09 05:20:33.186 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-09 05:20:33.248 | info     |             UMD | Harvesting masks for chip 3 tensix: 0x202 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 05:20:33.306 | info     |             UMD | Harvesting masks for chip 2 tensix: 0x201 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 05:20:33.316 | info     |             UMD | Harvesting masks for chip 1 tensix: 0x220 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 05:20:33.326 | info     |             UMD | Harvesting masks for chip 0 tensix: 0x240 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 05:20:33.337 | info     |             UMD | Harvesting masks for chip 7 tensix: 0x280 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 05:20:33.350 | info     |             UMD | Harvesting masks for chip 6 tensix: 0x210 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 05:20:33.363 | info     |             UMD | Harvesting masks for chip 5 tensix: 0x210 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 05:20:33.376 | info     |             UMD | Harvesting masks for chip 4 tensix: 0x5 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 05:20:33.390 | info     |             UMD | Opening local chip ids/PCIe ids: {0, 1, 2, 3}/[0, 3, 1, 2] and remote chip ids {4, 5, 6, 7} (cluster.cpp:186)
+2026-02-09 05:20:33.390 | info     |             UMD | IOMMU: disabled (cluster.cpp:161)
+2026-02-09 05:20:33.390 | info     |             UMD | KMD version: 2.4.1 (cluster.cpp:164)
+2026-02-09 05:20:33.400 | info     |             UMD | Starting devices in cluster (cluster.cpp:965)
+2026-02-09 05:20:33.401 | info     |             UMD | Mapped hugepage 0x240000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 05:20:33.401 | info     |             UMD | Mapped hugepage 0x200000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 05:20:33.402 | info     |             UMD | Mapped hugepage 0x41c0000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 05:20:33.403 | info     |             UMD | Mapped hugepage 0x4180000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 05:20:33.404 | info     |             UMD | Mapped hugepage 0x300000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 05:20:33.405 | info     |             UMD | Mapped hugepage 0x2c0000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 05:20:33.406 | info     |             UMD | Mapped hugepage 0x42c0000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 05:20:33.406 | info     |             UMD | Mapped hugepage 0x4280000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 05:20:33.474 | info     |     Distributed | Using auto discovery to generate mesh graph. (metal_context.cpp:827)
+2026-02-09 05:20:33.474 | info     |     Distributed | Constructing control plane using auto-discovery (no mesh graph descriptor). (metal_context.cpp:804)
+2026-02-09 05:20:33.474 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=8, n_phys=8, log_deg_hist={2:4, 3:4}, phys_deg_hist={2:4, 3:4} (topology_mapper_utils.cpp:171)
+2026-02-09 05:20:33.474 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=8, n_phys=8, log_deg_hist={2:4, 3:4}, phys_deg_hist={2:4, 3:4} (topology_mapper_utils.cpp:171)
+2026-02-09 05:20:33.486 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 05:20:33.489 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 05:20:33.490 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 05:20:33.490 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 05:20:33.491 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 05:20:33.491 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 05:20:33.492 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 05:20:33.492 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 05:20:33.840 | warning  |           Metal | Got num_routing_planes: 1, which is less than current value: 255, ignoring the override (metal_context.cpp:719)
+2026-02-09 05:20:33.840 | info     |           Metal | Dispatch on FabricConfig::FABRIC_2D with 1 Command Queues
+ (device_manager.cpp:328)
+2026-02-09 05:20:33.862 | info     |           Metal | Initializing Fabric (device_manager.cpp:404)
+2026-02-09 05:20:34.083 | info     |           Metal | Fabric initialized on Device 0 (device.cpp:386)
+2026-02-09 05:20:34.084 | info     |           Metal | Fabric initialized on Device 1 (device.cpp:386)
+2026-02-09 05:20:34.092 | info     |           Metal | Fabric initialized on Device 2 (device.cpp:386)
+2026-02-09 05:20:34.093 | info     |           Metal | Fabric initialized on Device 3 (device.cpp:386)
+2026-02-09 05:20:34.096 | info     |           Metal | Fabric initialized on Device 4 (device.cpp:386)
+2026-02-09 05:20:34.102 | info     |           Metal | Fabric initialized on Device 5 (device.cpp:386)
+2026-02-09 05:20:34.105 | info     |           Metal | Fabric initialized on Device 6 (device.cpp:386)
+2026-02-09 05:20:34.111 | info     |           Metal | Fabric initialized on Device 7 (device.cpp:386)
+2026-02-09 05:20:34.111 | info     |           Metal | Fabric Initialized with config FabricConfig::FABRIC_2D (device_manager.cpp:409)
+2026-02-09 05:20:34.228 | info     |           Metal | Command Queue initialized on Device 7 (device_manager.cpp:500)
+2026-02-09 05:20:34.228 | info     |           Metal | Command Queue initialized on Device 6 (device_manager.cpp:500)
+2026-02-09 05:20:34.229 | info     |           Metal | Command Queue initialized on Device 4 (device_manager.cpp:500)
+2026-02-09 05:20:34.230 | info     |           Metal | Command Queue initialized on Device 5 (device_manager.cpp:500)
 Loading tokenizer: arcee-ai/Arcee-Spark
 Opening TT device...
 Loading HuggingFace reference model on CPU: arcee-ai/Arcee-Spark
-Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards:  25%|██▌       | 1/4 [00:00<00:01,  1.57it/s]Loading checkpoint shards:  50%|█████     | 2/4 [00:01<00:01,  1.54it/s]Loading checkpoint shards:  75%|███████▌  | 3/4 [00:01<00:00,  1.61it/s]Loading checkpoint shards: 100%|██████████| 4/4 [00:02<00:00,  2.30it/s]Loading checkpoint shards: 100%|██████████| 4/4 [00:02<00:00,  1.97it/s]
-2026-01-27 20:28:08.321 | warning  |    BuildKernels | Compute kernel 'pack_untilize_variable_num_blocks/1946668303481953098/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
-2026-01-27 20:28:08.465 | warning  |    BuildKernels | Compute kernel 'tilize/16710459033883627519/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
-2026-01-27 20:28:08.573 | warning  |    BuildKernels | Compute kernel 'layernorm/10542101839200362021/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
-2026-01-27 20:28:08.726 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/14220951170979319150/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
-2026-01-27 20:28:08.825 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/16965186647696393185/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
-2026-01-27 20:28:09.089 | warning  |    BuildKernels | Compute kernel 'rotary_embedding/9827946993736593312/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
-2026-01-27 20:28:09.245 | warning  |    BuildKernels | Compute kernel 'sdpa/7378373573970552943/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
-2026-01-27 20:28:09.473 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/9174652762317802549/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
-2026-01-27 20:28:09.702 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/141240683337089748/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
-2026-01-27 20:28:10.062 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/17135988170932787320/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
-2026-01-27 20:28:10.211 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/7200709927159232562/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
-2026-01-27 20:28:14.334 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/15811924707268673188/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
-2026-01-27 20:28:18.900 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/15786952279964970039/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
-2026-01-27 20:28:40.569 | warning  |    BuildKernels | Compute kernel 'rotary_embedding/3491980988751689818/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
-2026-01-27 20:29:01.871 | warning  |    BuildKernels | Compute kernel 'update_cache/13663830719674033366/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
-2026-01-27 20:29:06.307 | warning  |    BuildKernels | Compute kernel 'sdpa_flash_decode/9748328213368455350/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
-2026-01-27 20:29:19.601 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/5742304306150748195/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
-2026-01-27 20:29:24.086 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/10742716820358565438/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
-2026-01-27 20:29:32.788 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/6826004906424898304/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
-2026-01-27 20:29:37.381 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/10672242177152680308/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
 Building TT model...
   Loading embeddings...
   Computing RoPE cache...
   Loading 28 layers...
 TT demo (t3000)
 Model: arcee-ai/Arcee-Spark
-Mesh shape: 2x1
+Mesh shape: 2x4
 Prompt tokens: 56 | Generated tokens: 128
-TTFT: 94 ms | Decode: 12.3 t/s/u (127 tokens)
+TTFT: 343 ms | Decode: 4.9 t/s/u (127 tokens)
 
 Prompt:
 Journal entry, 1957: Tonight a tiny sphere called Sputnik 1 crossed the sky, beeping like a metronome for a new era. The neighbors gathered on the roof, listening and arguing about what comes next. I wrote in my notebook that
 
 Output:
- the space age had arrived, and I believed it was the beginning of the end of my father’s world. I knew my generation would never go to war, that we would be the space people, and we would sail the solar system, sending radio signals out to the stars. I would visit Jupiter.
-“Have you ever seen a real star?” asked my father as if he expected me not to know.
-“I thought the stars were just an effect of the fire,” I told him, as if I were saying, I thought the stars were just my mother’s wedding dress. It.
-He didn’t correct me. He only said,
-2026-01-27 20:29:54.687 | info     |          Device | Closing user mode device drivers (tt_cluster.cpp:472)
-2026-01-27 20:29:54.687 | info     |             UMD | Closing devices in cluster (cluster.cpp:976)
+ this event would change everything. But I was just a boy, so I didn't realize then that it would change us, too.
+The author, in her first novel for middle grade readers, writes a story of a boy named Max whose twin brother, who was supposed to be the only boy his family could have, disappears. Max's family lives in an apartment on the top floor of an apartment building in the Netherlands, and is a typical Dutch family. Max's father works at a hospital, his mother is a nurse, and his older sister Elke is his constant companion as her twin brother disappears. The author's use of poetic
+2026-02-09 05:23:36.287 | info     |          Device | Closing user mode device drivers (tt_cluster.cpp:472)
+2026-02-09 05:23:36.287 | info     |             UMD | Closing devices in cluster (cluster.cpp:976)
