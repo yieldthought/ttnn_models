@@ -34,8 +34,8 @@ It is designed to be easy to read and to serve as a template for future bringups
 - `ttnn.rms_norm` for RMSNorm
 - `ttnn.experimental.rotary_embedding` for HuggingFace-format RoPE
 - `ttnn.experimental.nlp_create_qkv_heads[_decode]` and `ttnn.experimental.nlp_concat_heads`
-- `ttnn.transformer.scaled_dot_product_attention[_decode]`
-- `ttnn.fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
+- `ttnn.transformer.scaled_dot_product_attention` and `ttnn.transformer.paged_scaled_dot_product_attention_decode`
+- `ttnn.experimental.paged_fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
 
 ## RoPE notes
 Decode path detail:
@@ -44,9 +44,10 @@ Decode path detail:
   RoPE, then reshape back to `[1, B, heads, head_dim]`.
 
 ## KV cache and tiling constraints
-- Cache tensors are `[32, n_kv_heads, max_seq_len, head_dim]`.
-- `MAX_CACHE_SEQ_LEN` is set to 256 to cap memory usage; increase if needed.
-- Prefill uses a height-sharded K/V path to avoid `fill_cache` grid limits when sequence length grows.
+- Cache tensors use paged layout: `[max_num_blocks, n_kv_heads, block_size, head_dim]` with `block_size=64`.
+- `max_num_blocks = ceil(max_seq_len / block_size)`; this bringup targets `max_seq_len=4096`.
+- Prefill uses `ttnn.experimental.paged_fill_cache`, decode uses `ttnn.experimental.paged_update_cache`
+  and `ttnn.transformer.paged_scaled_dot_product_attention_decode`.
 
 ## Precision
 - Weights use `ttnn.bfloat8_b`.
@@ -82,6 +83,11 @@ Automation wrapper (emits YT_METRICS JSON):
 ```
 python scripts/run_eval.py --mode tt --hf-model humain-ai/ALLaM-7B-Instruct-preview
 ```
+
+## Latest run status
+- Demo and eval were executed with `--max_seq_len 4096`, but device init failed with
+  `Broadcasts not available without system memory` during TT mesh setup. See `demo.log`
+  and `eval.log` for the full traceback.
 
 ## Debugging tips
 - Start with small prefill/decode lengths (e.g. 16/8).
