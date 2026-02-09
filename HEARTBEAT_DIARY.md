@@ -394,3 +394,18 @@
 - `aus-wh-01` agent1: still stuck in repo sync retries (GitHub 500/502 on git pulls), blocking #105 progress until it recovers.
 - `aus-wh-10` agent4: running gemma n300 demo/eval work for #110 (target max_seq_len 40960).
 - `wh-lb-43` agent2: completed gemma t3000 (#109) and started work on Phi t3000 (#111); project status for #111 may lag until the next successful GitHub update.
+
+## 2026-02-09T19:02:44+01:00
+
+- In review triage/merges:
+- Merged PR #123 (Fixes #110) for gemma-3-4b-it n300 seq-len increase to 40960. Resolved a MODELS.md conflict by keeping both:
+  - gemma n300 row from PR (#123)
+  - gemma t3000 row already on main (from PR #122)
+  #110 is now closed and in Done.
+
+- Project `yieldthought/projects/6` status: In review 0, In progress 2 (#98 ALLaM n300, #105 Phi n300), Ready 2 (#102 Falcon n300, #111 Phi t3000), Backlog 0.
+
+- Runners:
+- `aus-wh-01` agent1: running long eval for Phi n300 at `--max_seq_len 12288`.
+- `aus-wh-10` agent4: moved on to ALLaM n300 seq-len ticket (#98).
+- `wh-lb-43` agent2: working Phi t3000 (demo currently at `--max_seq_len 12288`).
