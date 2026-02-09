@@ -31,3 +31,14 @@
 - ID 2 `agent2` (n300) still on issue #30; agent is actively running demo/eval with an explicit n300 mesh graph descriptor and is generating demo/eval logs (plus a small `eval.py` CLI alias tweak for `--max-tokens`).
 - ID 3 `agent3` (n150) still idle; keeps creating `worker auto-stash` entries due to periodic dirty working tree (needs cleanup/limits if this runs for days).
 - Found a repo correctness gap: `models/arcee-ai/Arcee-Spark/t3000/functional/` has logs but no `model.py` in git even though the logged commands reference it (likely requires a follow-up bringup/fix ticket).
+
+## 2026-02-09T01:29:57+01:00
+
+- Project `yieldthought/projects/6` status unchanged: Done 13, In progress 2 (#30 n300, #31 t3000), Ready 10, Backlog 3. No items in "In review" and no open PRs.
+- IRD reservations still healthy with >6h remaining on all three runners (IDs 1-3).
+- Agent status:
+- `agent1` (t3000) is still working on issue #31; last public progress notes report device discovery failure, but Codex session logs show active investigation in tt-metal fabric/mesh config.
+- `agent2` (n300) is still working on issue #30; earlier verifier checks found missing logs/updates, and the agent is now investigating why demo/eval logs appear to disappear between steps.
+- `agent3` (n150) remains idle (no `run_tests_n150` Ready issues) and continues periodic auto-stashing due to a dirty tree.
+- Learned `tt-smi -l` is "local chips" and launches the interactive UI; use `tt-smi -ls` to list boards and exit (killed a stray `tt-smi -l` I accidentally started during diagnosis).
+- Updated all `tasks/run_tests*.yaml` prompts to use `--max_new_tokens` (instead of the incorrect `--max-tokens`) and added short notes about always emitting demo/eval logs, mesh descriptor env vars for n300/t3000, and the TT metal cache/runtime-root gotcha.
