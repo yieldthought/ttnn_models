@@ -34,15 +34,15 @@ It mirrors the HuggingFace architecture with GQA attention and a SwiGLU MLP.
 - `ttnn.rms_norm` for RMSNorm
 - `ttnn.experimental.rotary_embedding` for RoPE
 - `ttnn.experimental.nlp_create_qkv_heads[_decode]` and `ttnn.experimental.nlp_concat_heads`
-- `ttnn.transformer.scaled_dot_product_attention[_decode]`
-- `ttnn.fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
+- `ttnn.transformer.scaled_dot_product_attention` and `ttnn.transformer.paged_scaled_dot_product_attention_decode`
+- `ttnn.experimental.paged_fill_cache` and `ttnn.experimental.paged_update_cache`
 
 ## KV cache and tiling constraints
-- Cache tensors are allocated as `[32, n_kv_heads, cache_seq_len, head_dim]`.
-- Cache length is capped to 1024 tokens in this bringup (`MAX_CACHE_SEQ_LEN`).
+- Cache tensors are allocated as `[max_num_blocks, n_kv_heads, block_size, head_dim]` with `block_size=64`.
+- Cache length is controlled by `--max_seq_len` (defaults to HF `max_position_embeddings`).
+- Page table is `[32, max_num_blocks]` int32, identity mapping.
 - Batch dimension is tile-aligned to 32 for decode ops.
 - Inputs are padded to tile size (32) before embedding and trimmed at the end.
-- Prefill uses height-sharded KV inputs for `fill_cache` to avoid interleaved grid-size limits.
 
 ## Precision
 - Weights use `ttnn.bfloat8_b`, activations use `ttnn.bfloat16`.
@@ -52,26 +52,29 @@ Teacher-forcing accuracy against the HF reference:
 
 ```
 python eval.py models/mistralai/Mistral-7B-Instruct-v0.3/n300/functional/model.py \
-  --model mistralai/Mistral-7B-Instruct-v0.3
+  --model mistralai/Mistral-7B-Instruct-v0.3 \
+  --max_seq_len 32768
 ```
 
-On this N300 host, set the mesh to devices 0 and 2:
+On this N300 host, set the mesh to device 0:
 
 ```
-TT_VISIBLE_DEVICES=0,2 python eval.py models/mistralai/Mistral-7B-Instruct-v0.3/n300/functional/model.py \
-  --model mistralai/Mistral-7B-Instruct-v0.3
+TT_VISIBLE_DEVICES=0 python eval.py models/mistralai/Mistral-7B-Instruct-v0.3/n300/functional/model.py \
+  --model mistralai/Mistral-7B-Instruct-v0.3 \
+  --max_seq_len 32768
 ```
 
 If `/home` is full, redirect runtime artifacts and HF caches to a writable location:
 
 ```
 HF_HOME=/proj_sw/user_dev/moconnor/hf-cache TRANSFORMERS_CACHE=/proj_sw/user_dev/moconnor/hf-cache \
-  HF_HUB_CACHE=/proj_sw/user_dev/moconnor/hf-cache/hub TT_VISIBLE_DEVICES=0,2 \
+  HF_HUB_CACHE=/proj_sw/user_dev/moconnor/hf-cache/hub TT_VISIBLE_DEVICES=0 \
   TT_METAL_CACHE=/tmp/tt-metal-cache TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-runtime-root \
   TT_METAL_INSPECTOR_LOG_PATH=/tmp/tt-metal-inspector \
   TT_METAL_INSPECTOR_INITIALIZATION_IS_IMPORTANT=0 \
   python eval.py models/mistralai/Mistral-7B-Instruct-v0.3/n300/functional/model.py \
-  --model mistralai/Mistral-7B-Instruct-v0.3
+  --model mistralai/Mistral-7B-Instruct-v0.3 \
+  --max_seq_len 32768
 ```
 
 Automation wrapper (emits YT_METRICS JSON):

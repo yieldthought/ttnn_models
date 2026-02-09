@@ -251,6 +251,7 @@ def run_tt_demo(
     model_path: pathlib.Path,
     prompt: str,
     max_new_tokens: int,
+    max_seq_len: Optional[int],
     temperature: float,
     top_k: int,
     cache_dir: Optional[str],
@@ -274,13 +275,18 @@ def run_tt_demo(
     attention_mask = encoded.get("attention_mask")
 
     max_cache = getattr(model_module, "MAX_CACHE_SEQ_LEN", None)
-    if max_cache is not None:
+    max_total = max_seq_len
+    if max_total is None:
         max_total = max_cache
-        if input_ids.shape[1] + max_new_tokens > max_total:
-            max_new_tokens = max(0, max_total - input_ids.shape[1])
-            print(f"Adjusting max_new_tokens to {max_new_tokens} to fit MAX_CACHE_SEQ_LEN={max_cache}")
+    if max_total is not None and input_ids.shape[1] + max_new_tokens > max_total:
+        max_new_tokens = max(0, max_total - input_ids.shape[1])
+        if max_seq_len is None:
+            print(f"Adjusting max_new_tokens to {max_new_tokens} to fit MAX_CACHE_SEQ_LEN={max_total}")
+        else:
+            print(f"Adjusting max_new_tokens to {max_new_tokens} to fit max_seq_len={max_total}")
 
-    max_seq_len = max(2048, input_ids.shape[1] + max_new_tokens)
+    if max_seq_len is None:
+        max_seq_len = max(2048, input_ids.shape[1] + max_new_tokens)
 
     print("Opening TT device...")
     ttnn.CONFIG.throw_exception_on_fallback = True
@@ -338,6 +344,7 @@ def main():
     parser.add_argument("--prompt", default=None)
     parser.add_argument("--prompt-file", type=pathlib.Path, default=None)
     parser.add_argument("--max-new-tokens", type=int, default=128)
+    parser.add_argument("--max_seq_len", type=int, default=None)
     parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("--top-k", type=int, default=50)
     parser.add_argument("--seed", type=int, default=0)
@@ -354,6 +361,7 @@ def main():
             model_path,
             prompt,
             args.max_new_tokens,
+            args.max_seq_len,
             args.temperature,
             args.top_k,
             args.cache_dir,
