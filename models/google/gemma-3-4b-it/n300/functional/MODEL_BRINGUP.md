@@ -10,6 +10,7 @@ It is designed to be easy to read and to serve as a template for future bringups
 
 ## Model API contract
 - The model exposes a `build_model(hf_model, tt_device, max_seq_len)` function.
+- `max_seq_len` defaults to the HF config value when not provided.
 - The returned class subclasses `torch.nn.Module` and `GenerationMixin` so HF `generate()` works.
 - The forward method returns `CausalLMOutputWithPast(logits=..., past_key_values=...)`.
 
@@ -34,8 +35,9 @@ It is designed to be easy to read and to serve as a template for future bringups
 - `ttnn.rms_norm` for RMSNorm and Q/K head norm
 - `ttnn.experimental.rotary_embedding` for HuggingFace-format RoPE
 - `ttnn.experimental.nlp_create_qkv_heads[_decode]` and `ttnn.experimental.nlp_concat_heads`
-- `ttnn.transformer.scaled_dot_product_attention[_decode]`
-- `ttnn.fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
+- `ttnn.transformer.scaled_dot_product_attention` (prefill)
+- `ttnn.transformer.paged_scaled_dot_product_attention_decode` (decode)
+- `ttnn.experimental.paged_fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
 
 ## Gemma3 specifics
 - Q/K RMSNorm uses `(1 + weight)` (Gemma3RMSNorm).
@@ -51,8 +53,8 @@ Decode path detail:
   RoPE, then reshape back to `[1, B, heads, head_dim]`.
 
 ## KV cache and tiling constraints
-- Cache tensors are `[32, n_kv_heads, max_seq_len, head_dim]`.
-- `MAX_CACHE_SEQ_LEN` is set to 256 to cap memory usage; increase if needed.
+- Cache tensors are `[max_num_blocks, n_kv_heads, block_size, head_dim]`.
+- `block_size = 64` and `max_num_blocks = ceil(max_seq_len / block_size)`.
 
 ## Precision
 - Weights use `ttnn.bfloat8_b`.
@@ -66,13 +68,13 @@ Decode trims padded head width after concatenating heads.
 Teacher-forcing accuracy is computed against the HF reference model.
 
 ```
-python eval.py models/google/gemma-3-4b-it/n300/functional/model.py --model google/gemma-3-4b-it
+python eval.py models/google/gemma-3-4b-it/n300/functional/model.py --model google/gemma-3-4b-it --max_seq_len 40960
 ```
 
-If you need to pin devices on this host, use devices 0 and 1 (adjust as needed):
+If you need to pin devices on this host, use PCI Dev ID 1 (single 2-chip N300 board):
 
 ```
-TT_VISIBLE_DEVICES=0,1 python eval.py models/google/gemma-3-4b-it/n300/functional/model.py --model google/gemma-3-4b-it
+TT_VISIBLE_DEVICES=1 python eval.py models/google/gemma-3-4b-it/n300/functional/model.py --model google/gemma-3-4b-it --max_seq_len 40960
 ```
 
 If `/home` is full, redirect runtime artifacts to a writable location. On this host,
@@ -80,7 +82,7 @@ If `/home` is full, redirect runtime artifacts to a writable location. On this h
 `ttnn`, and `runtime` from the installed package):
 
 ```
-TT_VISIBLE_DEVICES=0,2 TT_METAL_CACHE=/tmp/tt-metal-cache TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-runtime-root TT_METAL_INSPECTOR_LOG_PATH=/tmp/tt-metal-inspector TT_METAL_INSPECTOR_INITIALIZATION_IS_IMPORTANT=0 python eval.py models/google/gemma-3-4b-it/n300/functional/model.py --model google/gemma-3-4b-it
+TT_VISIBLE_DEVICES=1 TT_METAL_CACHE=/tmp/tt-metal-cache TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-runtime-root TT_METAL_INSPECTOR_LOG_PATH=/tmp/tt-metal-inspector TT_METAL_INSPECTOR_INITIALIZATION_IS_IMPORTANT=0 python eval.py models/google/gemma-3-4b-it/n300/functional/model.py --model google/gemma-3-4b-it --max_seq_len 40960
 ```
 
 Automation wrapper (emits YT_METRICS JSON):
@@ -97,5 +99,7 @@ python scripts/run_eval.py --mode tt --hf-model google/gemma-3-4b-it
 ## 2026-02-09 Update
 - Fixed HF state_dict key paths (use `model.language_model.*` and `lm_head.weight` fallback).
 - Respect `layer_types` when selecting sliding vs global RoPE; default to pattern = 6.
-- Re-ran the long teacher-forcing eval with `prompts/bringup_eval_long.txt` (100 new tokens) and confirmed accuracy meets release thresholds.
-- Re-ran the TT demo; output is coherent.
+- Re-ran the long teacher-forcing eval with `prompts/bringup_eval_long.txt` (100 new tokens) at `max_seq_len=40960`.
+- Top-1 94% and Top-5 100% on N300.
+- Re-ran the TT demo at `max_seq_len=40960`; output is coherent (TTFT 535 ms, decode 3.2 t/s/u).
+- Increased max sequence length to 40960 with paged KV cache and paged decode attention.
