@@ -7,10 +7,13 @@ Minimal TTNN bringup of `arcee-ai/Arcee-Spark` (Qwen2 family) with 1D tensor par
 - QKV, gate, and up projections are column-parallel (width sharded) across the mesh.
 - Output and down projections are row-parallel (height sharded) followed by all-reduce.
 - KV cache is sharded across KV heads; LM head is sharded across vocab and gathered for logits.
-- Mesh shape uses `2x1` to match the system mesh orientation (still 1D tensor parallel).
+- Mesh shape uses `1x2` for 1D tensor parallel.
 
 ## Max sequence length
 - `max_seq_len` uses the HF `max_position_embeddings` value (32768). No reduction needed for demo/eval.
+
+## Changes
+- 2026-02-09: Switched the mesh shape to `1x2` to align with the default N300 mesh and other n300 models.
 
 ## Commands
 ```

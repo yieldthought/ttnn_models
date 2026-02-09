@@ -20,7 +20,7 @@ from transformers.modeling_outputs import CausalLMOutputWithPast
 
 TILE_SIZE = 32
 PAGED_BLOCK_SIZE = 64
-MESH_SHAPE = (2, 1)
+MESH_SHAPE = (1, 2)
 MESH_TOPOLOGY = ttnn.Topology.Linear
 MESH_NUM_LINKS = 1
 WEIGHT_LAYOUT = ttnn.TILE_LAYOUT
