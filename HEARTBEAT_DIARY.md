@@ -341,4 +341,5 @@
 - ID 3 `aus-wh-10` (agent4/n300): active `codexapi task` on #88 and currently running `python demo.py ...` (high CPU).
 - ID 1 `aus-wh-01` (agent1/n300): worker loop running but stuck in repo sync retries due to GitHub `git pull` returning 500/502 (no active `codexapi task` process).
 - ID 2 `wh-lb-43` (agent2/t3000): worker loop running but stuck in repo sync retries due to GitHub `git pull` returning 500 (no active `codexapi task` process).
+- Cleared a stuck `owner: agent2` label on #103 (Falcon t3000 seq-len) with no active t3000 `codexapi task` process, and moved it back to Ready.
 - Next: wait for #88 PR to open; once GitHub stabilizes for git pulls, workers should resume and take the remaining seq-len tickets.
