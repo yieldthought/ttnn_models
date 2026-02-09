@@ -206,3 +206,15 @@
 - Runner health:
 - IRD reservations still healthy with >5h remaining: ID 1 `aus-wh-01:42857` (n300), ID 2 `wh-lb-43:42857` (t3000), ID 3 `wh-04:42857` (n150).
 - Verified each host has an active `codexapi task` process and is currently executing demo runs for its in-progress issue.
+
+## 2026-02-09T13:29:34+01:00
+
+- Project `yieldthought/projects/6` status: In review 0, In progress 3 (#72 Arcee-Spark n300 run_tests, #86 Phi n150 fix_correctness, #90 Llama t3000 fix_correctness), Ready 5 (#87-#92 excluding those in progress), Backlog 0.
+- No new PRs opened since the last tick.
+- Runners:
+- IRD reservations still healthy with >5h remaining on all three workers (IDs 1-3).
+- Verified each host has active `codexapi task` + child Python workloads running for the in-progress issues:
+  - `aus-wh-01` agent1: running `demo.py` for Arcee-Spark n300.
+  - `wh-lb-43` agent2: running `demo.py` for Llama-3.2-1B t3000 correctness work.
+  - `wh-04` agent3: running `demo.py` for Phi-3-mini n150 correctness work.
+- No intervention required; waiting for the workers to finish and open PRs for review/merge.
