@@ -34,8 +34,8 @@ It is designed to be easy to read and to serve as a template for future bringups
 - `ttnn.rms_norm` for RMSNorm
 - `ttnn.experimental.rotary_embedding` for HuggingFace-format RoPE
 - `ttnn.experimental.nlp_create_qkv_heads[_decode]` and `ttnn.experimental.nlp_concat_heads`
-- `ttnn.transformer.scaled_dot_product_attention[_decode]`
-- `ttnn.fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
+- `ttnn.transformer.scaled_dot_product_attention` and `ttnn.transformer.paged_scaled_dot_product_attention_decode`
+- `ttnn.experimental.paged_fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
 
 ## RoPE notes
 Decode path detail:
@@ -44,9 +44,10 @@ Decode path detail:
   RoPE, then reshape back to `[1, B, heads, head_dim]`.
 
 ## KV cache and tiling constraints
-- Cache tensors are `[32, n_kv_heads, max_seq_len, head_dim]`.
-- `MAX_CACHE_SEQ_LEN` is set to 256 to cap memory usage; increase if needed.
-- Prefill uses a height-sharded K/V path to avoid `fill_cache` grid limits when sequence length grows.
+- Cache tensors are `[num_blocks, n_kv_heads, block_size, head_dim]` with paged KV.
+- `PAGED_BLOCK_SIZE` is 64; `num_blocks = ceil(max_seq_len / 64)`.
+- Decode uses paged attention with the page table; prefill writes through `paged_fill_cache`.
+- This bringup targets `max_seq_len = 4096` to match the n150 row and the HF config.
 
 ## Precision
 - Weights use `ttnn.bfloat8_b`.
@@ -60,15 +61,15 @@ Decode trims padded head width after concatenating heads.
 Teacher-forcing accuracy is computed against the HF reference model.
 
 ```
-python eval.py models/humain-ai/ALLaM-7B-Instruct-preview/t3000/functional/model.py --model humain-ai/ALLaM-7B-Instruct-preview
+python eval.py models/humain-ai/ALLaM-7B-Instruct-preview/t3000/functional/model.py --model humain-ai/ALLaM-7B-Instruct-preview --max_seq_len 4096
 ```
 
 On this T3000 host, set the mesh graph descriptor and use all 8 devices:
 
 ```
 TT_MESH_GRAPH_DESC_PATH=/home/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/t3k_mesh_graph_descriptor.textproto \
-TT_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 \
-python eval.py models/humain-ai/ALLaM-7B-Instruct-preview/t3000/functional/model.py --model humain-ai/ALLaM-7B-Instruct-preview
+TT_VISIBLE_DEVICES=0,1,2,3 \
+python eval.py models/humain-ai/ALLaM-7B-Instruct-preview/t3000/functional/model.py --model humain-ai/ALLaM-7B-Instruct-preview --max_seq_len 4096
 ```
 
 If `/home` is full, redirect runtime artifacts to a writable location. On this host,
@@ -77,16 +78,16 @@ If `/home` is full, redirect runtime artifacts to a writable location. On this h
 
 ```
 TT_MESH_GRAPH_DESC_PATH=/home/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/t3k_mesh_graph_descriptor.textproto \
-TT_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 \
+TT_VISIBLE_DEVICES=0,1,2,3 \
 TT_METAL_CACHE=/tmp/tt-metal-cache TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-runtime-root TT_METAL_INSPECTOR_LOG_PATH=/tmp/tt-metal-inspector TT_METAL_INSPECTOR_INITIALIZATION_IS_IMPORTANT=0 \
-python eval.py models/humain-ai/ALLaM-7B-Instruct-preview/t3000/functional/model.py --model humain-ai/ALLaM-7B-Instruct-preview
+python eval.py models/humain-ai/ALLaM-7B-Instruct-preview/t3000/functional/model.py --model humain-ai/ALLaM-7B-Instruct-preview --max_seq_len 4096
 ```
 
 Automation wrapper (emits YT_METRICS JSON):
 
 ```
 TT_MESH_GRAPH_DESC_PATH=/home/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/t3k_mesh_graph_descriptor.textproto \
-TT_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 \
+TT_VISIBLE_DEVICES=0,1,2,3 \
 python scripts/run_eval.py --mode tt --hf-model humain-ai/ALLaM-7B-Instruct-preview
 ```
 
