@@ -35,6 +35,9 @@ prompt: |
   - If mesh device init fails, set `TT_MESH_GRAPH_DESC_PATH=/proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/n300_mesh_graph_descriptor.textproto`.
   - If `TT_VISIBLE_DEVICES` is unset and you suspect the wrong chips are being used, run `tt-smi -ls` and set `TT_VISIBLE_DEVICES` to the two PCI indices that form the n300.
   - If you see `cannot map elf file into memory: No space left on device`, rerun with `TT_METAL_CACHE=/tmp/tt-metal-cache` and `TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-runtime-root`.
+  - If you see TT JIT compile errors in `llk_*` headers (e.g. `_llk_unpack_untilize_init_` arg mismatch), run:
+    `cd /proj_sw/user_dev/moconnor/tt-metal && git submodule update --init --recursive`
+    and then rerun demo/eval.
 
   Deliverables:
   - Updated <dir>/model.py (+ any helper files you touched).
@@ -58,4 +61,3 @@ on_failure: |
   If you made meaningful progress, open a PR for review, but do NOT include a closing keyword (use `Refs #<issue-number>` instead).
 tear_down: |
   Switch back to the main branch and leave the repo is in a clean state, e.g. no temporary files etc.
-
