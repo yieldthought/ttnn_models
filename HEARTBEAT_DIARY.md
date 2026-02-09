@@ -343,3 +343,54 @@
 - ID 2 `wh-lb-43` (agent2/t3000): worker loop running but stuck in repo sync retries due to GitHub `git pull` returning 500 (no active `codexapi task` process).
 - Cleared a stuck `owner: agent2` label on #103 (Falcon t3000 seq-len) with no active t3000 `codexapi task` process, and moved it back to Ready.
 - Next: wait for #88 PR to open; once GitHub stabilizes for git pulls, workers should resume and take the remaining seq-len tickets.
+
+## 2026-02-09T18:24:32+01:00
+
+- In review triage/merges:
+- #88 (Arcee-Spark n300 fix_correctness) was stuck with a local commit on the runner but no PR (agent4 `codexapi task` appeared hung). Manually pushed/created PRs, then replaced the messy/conflicting PR with a clean one:
+  - Closed PR #119 (conflicting/superseded) and deleted its branch.
+  - Merged PR #120 (Fixes #88) with only the intended changes: Arcee-Spark n300 Top-1 now 91% (>=90) and logs/docs updated.
+- Removed the stale `owner: agent4` label from #88 and added the success marker `✓`. Item is in Done.
+
+- Project `yieldthought/projects/6` status: In review 0, In progress 3 (#103 Falcon t3000, #105 Phi n300, #110 gemma n300), Ready 4 (#98, #102, #109, #111), Backlog 0.
+
+- Runners and reservations:
+- Extended IRD timeout for ID 3 (`aus-wh-10`) to the 10h max to restore the >4h buffer (IDs 1-3 now ~9-10h remaining).
+- Marked #103 as In progress and re-added `owner: agent2` to reflect that agent2 is actively running demo/eval for it (GitHub status was briefly stale).
+- Verified active workloads:
+  - `aus-wh-01` agent1: running long eval for Phi n300 (#105) at `--max_seq_len 12288`.
+  - `wh-lb-43` agent2: running long eval for Falcon t3000 (#103) at `--max_seq_len 32768`.
+  - `aus-wh-10` agent4: active `codexapi task` and owns gemma n300 seq-len ticket (#110).
+
+## 2026-02-09T18:41:34+01:00
+
+- Repo/docs:
+- Re-read all `tasks/*.yaml` plus `../codexapi/README.md` and `../gh-task/README.md` to confirm runner/task/ownership behavior.
+
+- In review triage/merges:
+- Confirmed PR #121 is merged and issue #103 is closed with `✓` (no open PRs at this time).
+
+- Project `yieldthought/projects/6` status: In review 0, In progress 3 (#105 Phi n300, #110 gemma n300, #109 gemma t3000), Ready 3 (#98 ALLaM n300, #102 Falcon n300, #111 Phi t3000), Backlog 0.
+
+- Queue hygiene:
+- Removed stale `owner:` labels from Ready tickets (#98 had `owner: agent1`, #111 had `owner: agent2`) so runners can take them. #111 had also drifted into In progress without active work, so it was moved back to Ready.
+
+- Runners and reservations (all ~9h remaining, no extension needed):
+- ID 1 `aus-wh-01` (agent1/n300): `codexapi task` is alive but repeatedly failing repo sync (`git pull` returning GitHub 500/502); currently stalled (no active demo/eval process).
+- ID 2 `wh-lb-43` (agent2/t3000): `codexapi task` has moved on to #109 (gemma t3000 seq-len) after completing #103; long run in progress.
+- ID 3 `aus-wh-10` (agent4/n300): actively running `python demo.py models/google/gemma-3-4b-it/n300/functional/model.py --max_seq_len 40960` for #110.
+
+- Local repo:
+- `git pull --ff-only` to sync `main` to the Falcon t3000 seq-len merge; MODELS.md now reflects Falcon t3000 seq len 32768.
+
+## 2026-02-09T18:57:55+01:00
+
+- In review triage/merges:
+- Merged PR #122 (Fixes #109) for gemma-3-4b-it t3000 seq-len increase to 40960 with updated demo/eval logs and MODELS.md row. #109 is now closed and in Done.
+
+- Project `yieldthought/projects/6` status: In review 0, In progress 2 (#105 Phi n300, #110 gemma n300), Ready 3 (#98 ALLaM n300, #102 Falcon n300, #111 Phi t3000), Backlog 0.
+
+- Runners:
+- `aus-wh-01` agent1: still stuck in repo sync retries (GitHub 500/502 on git pulls), blocking #105 progress until it recovers.
+- `aus-wh-10` agent4: running gemma n300 demo/eval work for #110 (target max_seq_len 40960).
+- `wh-lb-43` agent2: completed gemma t3000 (#109) and started work on Phi t3000 (#111); project status for #111 may lag until the next successful GitHub update.

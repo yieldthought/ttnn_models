@@ -9,7 +9,7 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | Model                               | Hardware |  Variant   | Top-1 | Top-5 |   TTFT | t/s/u | Seq len |
 | ----------------------------------- | :------: | :--------: | ----: | ----: | -----: | ----: | ------: |
 | arcee-ai/Arcee-Spark                |   n150   | functional |   92% |  100% |   99ms |  13.9 |   29952 |
-| arcee-ai/Arcee-Spark                |   n300   | functional |   88% |  100% |  329ms |   4.9 |   32768 |
+| arcee-ai/Arcee-Spark                |   n300   | functional |   91% |  100% |  338ms |   5.0 |   32768 |
 | arcee-ai/Arcee-Spark                |  t3000   | functional |   90% |  100% |  343ms |   4.9 |   32768 |
 | arcee-ai/AFM-4.5B                   |  t3000   | functional |   98% |  100% |  181ms |   7.1 |   65536 |
 | arcee-ai/AFM-4.5B                   |   n150   | functional |   98% |  100% |   72ms |  17.2 |   65536 |
@@ -29,10 +29,10 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | Qwen/Qwen3-0.6B                     |  t3000   | functional |   98% |  100% |  229ms |   6.2 |   40960 |
 | google/gemma-3-4b-it                |   n150   | functional |   92% |  100% |   98ms |  13.9 |   40960 |
 | google/gemma-3-4b-it                |   n300   | functional |   94% |  100% |  535ms |   3.2 |   40960 |
-| google/gemma-3-4b-it                |  t3000   | functional |   92% |  100% |  322ms |   4.8 |     256 |
+| google/gemma-3-4b-it                |  t3000   | functional |   92% |  100% |  330ms |   4.7 |   40960 |
 | microsoft/Phi-3-mini-128k-instruct  |   n150   | functional |   92% |   99% |   80ms |  13.7 |   12288 |
 | microsoft/Phi-3-mini-128k-instruct  |   n300   | functional |   90% |  100% |  168ms |   7.6 |     256 |
 | microsoft/Phi-3-mini-128k-instruct  |  t3000   | functional |   90% |  100% |  145ms |   7.3 |     256 |
 | tiiuae/Falcon3-7B-Instruct          |   n150   | functional |   97% |  100% |  144ms |  13.4 |   32768 |
 | tiiuae/Falcon3-7B-Instruct          |   n300   | functional |   97% |  100% |  659ms |   5.7 |    1024 |
-| tiiuae/Falcon3-7B-Instruct          |  t3000   | functional |   97% |  100% |  381ms |   7.6 |    1024 |
+| tiiuae/Falcon3-7B-Instruct          |  t3000   | functional |   97% |  100% |  199ms |   7.3 |   32768 |
