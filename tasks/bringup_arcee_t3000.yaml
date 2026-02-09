@@ -59,7 +59,8 @@ set_up: |
   Run 'tt-smi -ls' and set TT_VISIBLE_DEVICES to the PCI Dev IDs listed before running demo/eval (example: export TT_VISIBLE_DEVICES=0,1,2,3).
 on_success: |
   Add, commit and push MODELS.md, MODEL_BRINGUP.md, model.py and the demo/eval log files, remove anything in generated/.
-  If a PR already exists for this branch, update it (push new commits). Otherwise use 'gh' to open a PR and link it back to the issue {{item}}.
+  If a PR already exists for this branch, update it (push new commits). Otherwise open a PR and link it back to the issue {{item}}.
+  Include `Fixes #<issue-number>` on its own line in the PR body, and use `gh pr create --body-file ...` (not `--body` with `\n` escapes) so GitHub recognizes the closing keyword.
 on_failure: |
   Add, commit and push MODELS.md, MODEL_BRINGUP.md, model.py and the demo/eval log files
 tear_down: |
