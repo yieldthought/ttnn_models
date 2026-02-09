@@ -16,7 +16,7 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | humain-ai/ALLaM-7B-Instruct-preview |  t3000   | functional |   97% |  100% |        |       |     256 |
 | meta-llama/Llama-3.2-1B             |   n150   | functional |   92% |  100% |   34ms |  39.5 |  131072 |
 | meta-llama/Llama-3.2-1B             |   n150   | optimized  |   79% |   99% |   26ms |  58.0 |    1024 |
-| meta-llama/Llama-3.2-1B             |   n300   | functional |   91% |  100% |        |       |         |
+| meta-llama/Llama-3.2-1B             |   n300   | functional |   90% |  100% |  610ms |   6.7 |  131072 |
 | meta-llama/Llama-3.2-1B             |  t3000   | functional |   87% |  100% |        |       |         |
 | mistralai/Mistral-7B-Instruct-v0.3  |   n150   | functional |   93% |  100% |  105ms |  16.5 |   32768 |
 | mistralai/Mistral-7B-Instruct-v0.3  |   n300   | functional |   96% |  100% |        |       |    1024 |
