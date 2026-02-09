@@ -106,6 +106,7 @@
 - #22 AFM-4.5B n300 -> `bringup_arcee_n300`
 - #23 AFM-4.5B t3000 -> `bringup_arcee_t3000`
 - #24 Arcee-Spark n300 -> `bringup_arcee_n300`
+- Reopened #25 (Arcee-Spark t3000) because the repo has logs/MODELS entries but no committed `t3000/functional/model.py`; cleared stale `## Progress`, removed the `✓` label, relabeled to `bringup_arcee_t3000`, and moved it back to Ready.
 - IRD reservations still healthy with >6h remaining on all runners (IDs 1-3).
 - Runners:
 - ID 1 `agent4` (t3000) started issue #23 using the new bringup task; log `/tmp/agent4.log` on `wh-lb-43:42857`.
