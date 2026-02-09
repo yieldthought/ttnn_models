@@ -1,86 +1,125 @@
-CMD: HF_HOME=/proj_sw/user_dev/moconnor/hf-cache TT_VISIBLE_DEVICES=0,1,2,3 TT_MESH_GRAPH_DESC_PATH=/proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/t3k_mesh_graph_descriptor.textproto python demo.py models/google/gemma-3-4b-it/t3000/functional/model.py
-2026-02-09 02:39:36.460 | DEBUG    | ttnn:<module>:77 - Initial ttnn.CONFIG:
+CMD: HF_HOME=/proj_sw/user_dev/moconnor/hf-cache TT_VISIBLE_DEVICES=0,1,2,3 TT_MESH_GRAPH_DESC_PATH=/proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/t3k_mesh_graph_descriptor.textproto TT_METAL_CACHE=/tmp/tt-metal-cache TT_METAL_INSPECTOR_LOG_PATH=/tmp/tt-metal-inspector TT_METAL_INSPECTOR_INITIALIZATION_IS_IMPORTANT=0 python demo.py models/google/gemma-3-4b-it/t3000/functional/model.py
+2026-02-09 13:40:08.736 | DEBUG    | ttnn:<module>:77 - Initial ttnn.CONFIG:
 Config{cache_path=/home/moconnor/.cache/ttnn,model_cache_path=/home/moconnor/.cache/ttnn/models,tmp_dir=/tmp/ttnn,enable_model_cache=false,enable_fast_runtime_mode=true,throw_exception_on_fallback=false,enable_logging=false,enable_graph_report=false,enable_detailed_buffer_report=false,enable_detailed_tensor_report=false,enable_comparison_mode=false,comparison_mode_should_raise_exception=false,comparison_mode_pcc=0.9999,root_report_path=generated/ttnn/reports,report_name=std::nullopt,std::nullopt}
-2026-02-09 02:39:38.082 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
-2026-02-09 02:39:38.112 | info     |          Device | Opening user mode device driver (tt_cluster.cpp:223)
-2026-02-09 02:39:38.122 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
-2026-02-09 02:39:38.194 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
-2026-02-09 02:39:38.256 | info     |             UMD | Harvesting masks for chip 3 tensix: 0x202 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
-2026-02-09 02:39:38.314 | info     |             UMD | Harvesting masks for chip 2 tensix: 0x201 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
-2026-02-09 02:39:38.324 | info     |             UMD | Harvesting masks for chip 1 tensix: 0x220 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
-2026-02-09 02:39:38.335 | info     |             UMD | Harvesting masks for chip 0 tensix: 0x240 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
-2026-02-09 02:39:38.345 | info     |             UMD | Harvesting masks for chip 7 tensix: 0x280 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
-2026-02-09 02:39:38.359 | info     |             UMD | Harvesting masks for chip 6 tensix: 0x210 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
-2026-02-09 02:39:38.372 | info     |             UMD | Harvesting masks for chip 5 tensix: 0x210 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
-2026-02-09 02:39:38.386 | info     |             UMD | Harvesting masks for chip 4 tensix: 0x5 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
-2026-02-09 02:39:38.399 | info     |             UMD | Opening local chip ids/PCIe ids: {0, 1, 2, 3}/[0, 3, 1, 2] and remote chip ids {4, 5, 6, 7} (cluster.cpp:186)
-2026-02-09 02:39:38.399 | info     |             UMD | IOMMU: disabled (cluster.cpp:161)
-2026-02-09 02:39:38.399 | info     |             UMD | KMD version: 2.4.1 (cluster.cpp:164)
-2026-02-09 02:39:38.408 | info     |             UMD | Starting devices in cluster (cluster.cpp:965)
-2026-02-09 02:39:38.409 | info     |             UMD | Mapped hugepage 0x240000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
-2026-02-09 02:39:38.409 | info     |             UMD | Mapped hugepage 0x200000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
-2026-02-09 02:39:38.410 | info     |             UMD | Mapped hugepage 0x41c0000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
-2026-02-09 02:39:38.411 | info     |             UMD | Mapped hugepage 0x4180000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
-2026-02-09 02:39:38.412 | info     |             UMD | Mapped hugepage 0x300000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
-2026-02-09 02:39:38.412 | info     |             UMD | Mapped hugepage 0x2c0000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
-2026-02-09 02:39:38.413 | info     |             UMD | Mapped hugepage 0x42c0000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
-2026-02-09 02:39:38.414 | info     |             UMD | Mapped hugepage 0x4280000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
-2026-02-09 02:39:38.466 | info     |     Distributed | Using custom mesh graph descriptor: /proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/t3k_mesh_graph_descriptor.textproto (metal_context.cpp:822)
-2026-02-09 02:39:38.467 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=8, n_phys=8, log_deg_hist={2:4, 3:4}, phys_deg_hist={2:4, 3:4} (topology_mapper_utils.cpp:171)
-2026-02-09 02:39:38.472 | DEBUG    | ttnn.device:__init__:150 - Using default dispatch core type for this system: DispatchCoreType.ETH
-2026-02-09 02:39:38.472 | DEBUG    | ttnn.device:__init__:152 - Using default dispatch core axis for this system: DispatchCoreAxis.ROW
-2026-02-09 02:39:38.477 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
-2026-02-09 02:39:38.480 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
-2026-02-09 02:39:38.480 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
-2026-02-09 02:39:38.481 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
-2026-02-09 02:39:38.481 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
-2026-02-09 02:39:38.482 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
-2026-02-09 02:39:38.482 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
-2026-02-09 02:39:38.483 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
-2026-02-09 02:39:38.816 | warning  |           Metal | Got num_routing_planes: 1, which is less than current value: 255, ignoring the override (metal_context.cpp:719)
-2026-02-09 02:39:38.816 | info     |           Metal | Dispatch on FabricConfig::FABRIC_2D with 1 Command Queues
+2026-02-09 13:40:10.311 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-09 13:40:10.471 | info     |          Device | Opening user mode device driver (tt_cluster.cpp:223)
+2026-02-09 13:40:10.481 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-09 13:40:10.685 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-09 13:40:10.877 | info     |             UMD | Harvesting masks for chip 3 tensix: 0x202 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 13:40:10.930 | info     |             UMD | Harvesting masks for chip 2 tensix: 0x201 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 13:40:10.940 | info     |             UMD | Harvesting masks for chip 1 tensix: 0x220 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 13:40:10.952 | info     |             UMD | Harvesting masks for chip 0 tensix: 0x240 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 13:40:10.962 | info     |             UMD | Harvesting masks for chip 7 tensix: 0x280 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 13:40:26.257 | info     |             UMD | Harvesting masks for chip 6 tensix: 0x210 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 13:40:41.768 | info     |             UMD | Harvesting masks for chip 5 tensix: 0x210 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 13:40:57.930 | info     |             UMD | Harvesting masks for chip 4 tensix: 0x5 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-09 13:41:14.238 | info     |             UMD | Opening local chip ids/PCIe ids: {0, 1, 2, 3}/[0, 3, 1, 2] and remote chip ids {4, 5, 6, 7} (cluster.cpp:186)
+2026-02-09 13:41:14.238 | info     |             UMD | IOMMU: disabled (cluster.cpp:161)
+2026-02-09 13:41:14.238 | info     |             UMD | KMD version: 2.4.1 (cluster.cpp:164)
+2026-02-09 13:41:14.250 | info     |             UMD | Starting devices in cluster (cluster.cpp:965)
+2026-02-09 13:41:14.251 | info     |             UMD | Mapped hugepage 0x240000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 13:41:14.252 | info     |             UMD | Mapped hugepage 0x200000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 13:41:14.253 | info     |             UMD | Mapped hugepage 0x41c0000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 13:41:14.254 | info     |             UMD | Mapped hugepage 0x4180000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 13:41:14.255 | info     |             UMD | Mapped hugepage 0x300000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 13:41:14.255 | info     |             UMD | Mapped hugepage 0x2c0000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 13:41:14.256 | info     |             UMD | Mapped hugepage 0x42c0000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 13:41:14.257 | info     |             UMD | Mapped hugepage 0x4280000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
+2026-02-09 13:41:23.629 | info     |     Distributed | Using custom mesh graph descriptor: /proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/t3k_mesh_graph_descriptor.textproto (metal_context.cpp:822)
+2026-02-09 13:41:23.630 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=8, n_phys=8, log_deg_hist={2:4, 3:4}, phys_deg_hist={2:4, 3:4} (topology_mapper_utils.cpp:171)
+2026-02-09 13:41:23.636 | DEBUG    | ttnn.device:__init__:150 - Using default dispatch core type for this system: DispatchCoreType.ETH
+2026-02-09 13:41:23.637 | DEBUG    | ttnn.device:__init__:152 - Using default dispatch core axis for this system: DispatchCoreAxis.ROW
+2026-02-09 13:41:23.642 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 13:41:23.645 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 13:41:23.645 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 13:41:23.645 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 13:41:24.198 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 13:41:24.641 | warning  |             UMD | Waiting for lock 'ARC_MSG' which is currently held by thread TID: 133106, PID: 132603 (robust_mutex.cpp:406)
+2026-02-09 13:41:24.641 | warning  |             UMD | Waiting for lock 'ARC_MSG' which is currently held by thread TID: 133106, PID: 132603 (robust_mutex.cpp:406)
+2026-02-09 13:41:24.724 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 13:41:25.590 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 13:41:26.356 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-09 13:42:19.732 | info     |           Metal | While initializing device 0, active ethernet dispatch core (x=21,y=17) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:19.732 | info     |           Metal | While initializing device 0, active ethernet dispatch core (x=22,y=17) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:19.732 | info     |           Metal | While initializing device 0, active ethernet dispatch core (x=18,y=17) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:19.732 | info     |           Metal | While initializing device 0, active ethernet dispatch core (x=25,y=17) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:19.732 | info     |           Metal | While initializing device 0, active ethernet dispatch core (x=21,y=16) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:19.732 | info     |           Metal | While initializing device 0, active ethernet dispatch core (x=22,y=16) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:19.735 | info     |           Metal | While initializing device 1, active ethernet dispatch core (x=21,y=17) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:19.735 | info     |           Metal | While initializing device 1, active ethernet dispatch core (x=22,y=17) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:19.735 | info     |           Metal | While initializing device 1, active ethernet dispatch core (x=18,y=17) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:19.736 | info     |           Metal | While initializing device 1, active ethernet dispatch core (x=25,y=17) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:19.736 | info     |           Metal | While initializing device 1, active ethernet dispatch core (x=21,y=16) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:19.736 | info     |           Metal | While initializing device 1, active ethernet dispatch core (x=22,y=16) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:19.738 | info     |           Metal | While initializing device 2, active ethernet dispatch core (x=21,y=17) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:19.738 | info     |           Metal | While initializing device 2, active ethernet dispatch core (x=18,y=17) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:19.738 | info     |           Metal | While initializing device 2, active ethernet dispatch core (x=25,y=17) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:19.738 | info     |           Metal | While initializing device 2, active ethernet dispatch core (x=22,y=17) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:19.738 | info     |           Metal | While initializing device 2, active ethernet dispatch core (x=18,y=16) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:19.738 | info     |           Metal | While initializing device 2, active ethernet dispatch core (x=25,y=16) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:19.741 | info     |           Metal | While initializing device 3, active ethernet dispatch core (x=21,y=17) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:19.741 | info     |           Metal | While initializing device 3, active ethernet dispatch core (x=18,y=17) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:19.741 | info     |           Metal | While initializing device 3, active ethernet dispatch core (x=25,y=17) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:19.741 | info     |           Metal | While initializing device 3, active ethernet dispatch core (x=22,y=17) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:19.741 | info     |           Metal | While initializing device 3, active ethernet dispatch core (x=18,y=16) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:19.741 | info     |           Metal | While initializing device 3, active ethernet dispatch core (x=25,y=16) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:19.744 | info     |           Metal | While initializing device 4, active ethernet dispatch core (x=21,y=16) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:19.947 | info     |           Metal | While initializing device 4, active ethernet dispatch core (x=22,y=16) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:20.187 | info     |           Metal | While initializing device 4, active ethernet dispatch core (x=18,y=16) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:20.307 | info     |           Metal | While initializing device 4, active ethernet dispatch core (x=25,y=16) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:20.410 | info     |           Metal | While initializing device 5, active ethernet dispatch core (x=21,y=16) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:20.663 | info     |           Metal | While initializing device 5, active ethernet dispatch core (x=22,y=16) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:20.915 | info     |           Metal | While initializing device 5, active ethernet dispatch core (x=18,y=16) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:21.041 | info     |           Metal | While initializing device 5, active ethernet dispatch core (x=25,y=16) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:21.099 | info     |           Metal | While initializing device 6, active ethernet dispatch core (x=21,y=16) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:21.099 | info     |           Metal | While initializing device 6, active ethernet dispatch core (x=22,y=16) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:21.100 | info     |           Metal | While initializing device 6, active ethernet dispatch core (x=18,y=16) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:21.100 | info     |           Metal | While initializing device 6, active ethernet dispatch core (x=25,y=16) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:21.216 | info     |           Metal | While initializing device 7, active ethernet dispatch core (x=21,y=16) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:21.402 | info     |           Metal | While initializing device 7, active ethernet dispatch core (x=22,y=16) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:21.403 | info     |           Metal | While initializing device 7, active ethernet dispatch core (x=18,y=16) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:21.403 | info     |           Metal | While initializing device 7, active ethernet dispatch core (x=25,y=16) detected as still running, issuing exit signal. (metal_context.cpp:866)
+2026-02-09 13:42:21.461 | warning  |           Metal | Got num_routing_planes: 1, which is less than current value: 255, ignoring the override (metal_context.cpp:719)
+2026-02-09 13:42:21.461 | info     |           Metal | Dispatch on FabricConfig::FABRIC_2D with 1 Command Queues
  (device_manager.cpp:328)
-2026-02-09 02:39:38.831 | info     |           Metal | Initializing Fabric (device_manager.cpp:404)
-2026-02-09 02:39:39.044 | info     |           Metal | Fabric initialized on Device 0 (device.cpp:386)
-2026-02-09 02:39:39.045 | info     |           Metal | Fabric initialized on Device 1 (device.cpp:386)
-2026-02-09 02:39:39.046 | info     |           Metal | Fabric initialized on Device 2 (device.cpp:386)
-2026-02-09 02:39:39.046 | info     |           Metal | Fabric initialized on Device 3 (device.cpp:386)
-2026-02-09 02:39:39.049 | info     |           Metal | Fabric initialized on Device 4 (device.cpp:386)
-2026-02-09 02:39:39.055 | info     |           Metal | Fabric initialized on Device 5 (device.cpp:386)
-2026-02-09 02:39:39.058 | info     |           Metal | Fabric initialized on Device 6 (device.cpp:386)
-2026-02-09 02:39:39.065 | info     |           Metal | Fabric initialized on Device 7 (device.cpp:386)
-2026-02-09 02:39:39.065 | info     |           Metal | Fabric Initialized with config FabricConfig::FABRIC_2D (device_manager.cpp:409)
-2026-02-09 02:39:39.168 | info     |           Metal | Command Queue initialized on Device 5 (device_manager.cpp:500)
-2026-02-09 02:39:39.170 | info     |           Metal | Command Queue initialized on Device 4 (device_manager.cpp:500)
-2026-02-09 02:39:39.171 | info     |           Metal | Command Queue initialized on Device 7 (device_manager.cpp:500)
-2026-02-09 02:39:39.171 | info     |           Metal | Command Queue initialized on Device 6 (device_manager.cpp:500)
+2026-02-09 13:42:21.476 | info     |           Metal | Initializing Fabric (device_manager.cpp:404)
+2026-02-09 13:42:21.638 | info     |           Metal | Fabric initialized on Device 0 (device.cpp:386)
+2026-02-09 13:42:21.639 | info     |           Metal | Fabric initialized on Device 1 (device.cpp:386)
+2026-02-09 13:42:21.675 | info     |           Metal | Fabric initialized on Device 2 (device.cpp:386)
+2026-02-09 13:42:21.676 | info     |           Metal | Fabric initialized on Device 3 (device.cpp:386)
+2026-02-09 13:42:21.679 | info     |           Metal | Fabric initialized on Device 4 (device.cpp:386)
+2026-02-09 13:42:21.685 | info     |           Metal | Fabric initialized on Device 5 (device.cpp:386)
+2026-02-09 13:42:21.688 | info     |           Metal | Fabric initialized on Device 6 (device.cpp:386)
+2026-02-09 13:42:21.695 | info     |           Metal | Fabric initialized on Device 7 (device.cpp:386)
+2026-02-09 13:42:21.695 | info     |           Metal | Fabric Initialized with config FabricConfig::FABRIC_2D (device_manager.cpp:409)
+2026-02-09 13:42:21.783 | info     |           Metal | Command Queue initialized on Device 7 (device_manager.cpp:500)
+2026-02-09 13:42:21.784 | info     |           Metal | Command Queue initialized on Device 5 (device_manager.cpp:500)
+2026-02-09 13:42:21.785 | info     |           Metal | Command Queue initialized on Device 4 (device_manager.cpp:500)
+2026-02-09 13:42:21.785 | info     |           Metal | Command Queue initialized on Device 6 (device_manager.cpp:500)
 Loading tokenizer: google/gemma-3-4b-it
 Opening TT device...
 Loading HuggingFace reference model on CPU: google/gemma-3-4b-it
-Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:05<00:05,  5.27s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:09<00:00,  4.47s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:09<00:00,  4.59s/it]
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:00<00:00,  1.23it/s]Loading checkpoint shards: 100%|██████████| 2/2 [00:01<00:00,  1.53it/s]Loading checkpoint shards: 100%|██████████| 2/2 [00:01<00:00,  1.47it/s]
 Building TT model...
   Loading embeddings...
   Computing RoPE cache...
   Loading 34 layers...
-Traceback (most recent call last):
-  File "/localdev/moconnor/ttnn_models/demo.py", line 374, in <module>
-    main()
-  File "/localdev/moconnor/ttnn_models/demo.py", line 353, in main
-    run_tt_demo(
-  File "/localdev/moconnor/ttnn_models/demo.py", line 299, in run_tt_demo
-    tt_model = build_tt_model(model_module, hf_model, tt_device, max_seq_len)
-  File "/localdev/moconnor/ttnn_models/device_utils.py", line 34, in build_tt_model
-    return module.build_model(hf_model, tt_device, max_seq_len)
-  File "/localdev/moconnor/ttnn_models/models/google/gemma-3-4b-it/t3000/functional/model.py", line 691, in build_model
-    return TtnnGemma3ForCausalLM(hf_model, tt_device, max_seq_len)
-  File "/localdev/moconnor/ttnn_models/models/google/gemma-3-4b-it/t3000/functional/model.py", line 574, in __init__
-    self.layers = [
-  File "/localdev/moconnor/ttnn_models/models/google/gemma-3-4b-it/t3000/functional/model.py", line 575, in <listcomp>
-    DecoderLayer(
-  File "/localdev/moconnor/ttnn_models/models/google/gemma-3-4b-it/t3000/functional/model.py", line 426, in __init__
-    self.attn = Attention(
-  File "/localdev/moconnor/ttnn_models/models/google/gemma-3-4b-it/t3000/functional/model.py", line 244, in __init__
-    self.is_sliding = bool((layer_idx + 1) % config.sliding_window_pattern)
-TypeError: unsupported operand type(s) for %: 'int' and 'NoneType'
-2026-02-09 02:40:19.480 | info     |          Device | Closing user mode device drivers (tt_cluster.cpp:472)
-2026-02-09 02:40:19.480 | info     |             UMD | Closing devices in cluster (cluster.cpp:976)
+TT demo (t3000)
+Model: google/gemma-3-4b-it
+Mesh shape: 2x4
+Prompt tokens: 54 | Generated tokens: 128
+TTFT: 322 ms | Decode: 4.8 t/s/u (127 tokens)
+
+Prompt:
+Journal entry, 1957: Tonight a tiny sphere called Sputnik 1 crossed the sky, beeping like a metronome for a new era. The neighbors gathered on the roof, listening and arguing about what comes next. I wrote in my notebook that
+
+Output:
+ this "satellite" was proof of something new, something powerful, and maybe, just maybe, a little frightening. 
+
+---
+
+I've been thinking about that night ever since. Fifty years. Fifty years since a tiny, simple sphere whispered into the void, announcing the dawn of the Space Age. It feels like a lifetime, and yet, it's just a blink.
+
+The world has changed… profoundly. We’ve walked on the moon, sent probes to Mars, unravelled the secrets of the atom. We’ve talked to each other across the globe in an instant, built cities that scrape the sky,
+2026-02-09 13:46:07.890 | info     |          Device | Closing user mode device drivers (tt_cluster.cpp:472)
+2026-02-09 13:46:07.890 | info     |             UMD | Closing devices in cluster (cluster.cpp:976)

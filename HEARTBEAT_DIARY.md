@@ -218,3 +218,73 @@
   - `wh-lb-43` agent2: running `demo.py` for Llama-3.2-1B t3000 correctness work.
   - `wh-04` agent3: running `demo.py` for Phi-3-mini n150 correctness work.
 - No intervention required; waiting for the workers to finish and open PRs for review/merge.
+
+## 2026-02-09T13:59:34+01:00
+
+- In review triage/merges:
+- Created PR #95 from local branch `pr72_arcee_spark_n300_logs` (Fixes #72) and merged it; #72 is now closed and in Done. MODELS.md Arcee-Spark n300 refreshed to TTFT 329ms / 4.9 t/s/u (Top-1 88%, Top-5 100%).
+- Merged PR #94 (Fixes #90) for Llama-3.2-1B t3000 correctness; #90 is now closed and in Done. MODELS.md Llama t3000 is now Top-1 92%, Top-5 100%.
+
+- Runners and reservations:
+- Extended IRD timeouts for IDs 1-3 back to 8h to maintain the >4h buffer.
+- Verified active workloads:
+- ID 3 (`wh-04`, agent3/n150) is running `eval.py` for Arcee-Spark n150 (#87).
+- ID 1 (`aus-wh-01`, agent1/n300) is actively editing `models/google/gemma-3-4b-it/n300/functional/model.py` (fixing stale state_dict prefixes) for #89.
+- ID 2 (`wh-lb-43`, agent2/t3000) is running `demo.py` for gemma t3000 (#91).
+
+- Project hygiene:
+- #88 (Arcee-Spark n300) was double-owned/stale under `owner: agent1` while agent1 was clearly working #89. Cleared ownership and moved #88 back to Ready so it can be picked up cleanly after #89 completes.
+
+- Task scheduling for the "full seq len" release goal:
+- Added new tasks `tasks/increase_seq_len_n300.yaml` and `tasks/increase_seq_len_t3000.yaml` (merged via PR #97) so we can systematically raise max_seq_len / KV cache caps while keeping paged attention.
+- Created Backlog issues #98-#105 (ALLaM/Mistral/Falcon/Qwen3/Phi n300 + ALLaM/Mistral/Falcon t3000) to raise Seq len toward the n150 baseline (or highest DRAM-fitting value).
+
+- Project `yieldthought/projects/6` status at end of tick: In progress 3 (#87, #89, #91), Ready 2 (#88, #92), In review 0, Backlog 8 (#98-#105).
+
+## 2026-02-09T14:39:20+01:00
+
+- Project `yieldthought/projects/6` status: In progress 3 (#87 Arcee n150, #89 gemma n300, #91 gemma t3000), In review 0.
+- Ready queue topped up for the next worker cycles:
+- Moved #98 (ALLaM n300 increase_seq_len) and #99 (ALLaM t3000 increase_seq_len) from Backlog to Ready so n300/t3000 workers won't go idle after #88/#92.
+- Ready now: #88 (Arcee n300 fix_correctness), #92 (Phi t3000 fix_correctness), #98 (ALLaM n300 increase_seq_len), #99 (ALLaM t3000 increase_seq_len).
+- Backlog remaining: #100-#105 (Mistral/Falcon/Qwen3/Phi n300 + Mistral/Falcon t3000 increase_seq_len).
+
+- Runners and reservations:
+- IRD reservations still healthy with ~7h45m remaining on all three hosts (IDs 1-3).
+- Verified active device work:
+- `aus-wh-01` (agent1/n300) running `eval.py` for gemma n300 (issue #89) under TT_VISIBLE_DEVICES=0.
+- `wh-04` (agent3/n150) and `wh-lb-43` (agent2/t3000) no longer had demo/eval python processes at the time of checking, suggesting they moved into code edits/LLM steps for #87/#91; no intervention taken.
+
+- No PRs were opened during this heartbeat; waiting for the workers to finish and create PRs for review/merge.
+
+## 2026-02-09T15:09:20+01:00
+
+- In review triage/merges:
+- Merged PR #108 (Fixes #91) for `google/gemma-3-4b-it` t3000 correctness; #91 is now closed and in Done.
+- Corrected the MODELS.md Seq len entry to match the current KV cache cap (`MAX_CACHE_SEQ_LEN = 256`) before merging.
+
+- Project `yieldthought/projects/6` status: In progress 4 (#87 Arcee n150, #88 Arcee n300, #89 gemma n300, #92 Phi t3000), Ready 2 (#98 ALLaM n300, #99 ALLaM t3000), In review 0, Backlog 8 (#100-#105, #109-#110).
+
+- Runners and reservations:
+- IRD reservations still healthy with ~6h53m remaining on IDs 1-3 and ~8h remaining on new ID 4 (`yyzc-wh-05`).
+- Started a second n300 worker (agent4 on `yyzc-wh-05`, ID 4) with `tasks/increase_seq_len_n300.yaml` included; agent4 took #88 and can take #98 after.
+- `wh-lb-43` (agent2/t3000) is actively running `eval.py` for Phi-3-mini t3000 (#92) at the time of checking.
+- `aus-wh-01` (agent1/n300) has local edits in progress on branch `fix_google-gemma-3-4b-it-n300-functional` for #89 (model.py + logs modified; no PR yet).
+- `wh-04` (agent3/n150) started #87 (Arcee-Spark n150) and is in early stages (no demo/eval python process at check).
+
+- Follow-up:
+- Once agent4 finishes #88, it should be able to take the Ready seq-len ticket #98 and then the n300 seq-len backlog (#100/#102/#104/#105/#110).
+
+## 2026-02-09T15:39:20+01:00
+
+- Project `yieldthought/projects/6` status: In review 0, In progress 4 (#87 Arcee n150, #88 Arcee n300, #89 gemma n300, #92 Phi t3000).
+- Expanded the Ready queue so workers don't stall after the current correctness fixes:
+- Moved to Ready: #100 (Mistral n300), #101 (Mistral t3000), #102 (Falcon n300), #103 (Falcon t3000), #104 (Qwen3 n300), #105 (Phi n300), #109 (gemma t3000).
+- Created #111 (Phi t3000 increase_seq_len) in Backlog to run after #92 lands. Backlog now: #110 (gemma n300 increase_seq_len), #111.
+
+- Runners and reservations:
+- IRD reservations still healthy with >6h remaining on IDs 1-3 and >7h remaining on ID 4.
+- `wh-04` (agent3/n150): actively running long eval for Arcee-Spark n150 and has local edits staged (model.py/logs/MODELS/bringup doc); issue #87 progress shows verifier success, awaiting commit/PR.
+- `yyzc-wh-05` (agent4/n300): actively running long eval for Arcee-Spark n300 (#88).
+- `wh-lb-43` (agent2/t3000): running short eval iterations for Phi-3-mini t3000 (#92) while editing model/logs.
+- `aus-wh-01` (agent1/n300): editing gemma n300 (#89) with local changes; no PR yet.

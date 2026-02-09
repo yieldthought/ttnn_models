@@ -4,9 +4,10 @@
 """
 Llama 3.2 1B implementation in ttnn for T3000.
 
-This version uses 1D tensor parallel across a 2x4 mesh (flattened across 8 devices):
-- QKV, gate, and up projections are column-parallel (width sharded).
-- Output and down projections are row-parallel (height sharded) followed by all-reduce.
+This version uses 1D tensor parallel across the mesh columns of a 2x4 mesh (4-way TP),
+with the mesh rows replicated:
+- QKV, gate, and up projections are column-parallel (width sharded) across mesh columns.
+- Output and down projections are row-parallel (height sharded) across mesh columns, followed by all-reduce.
 
 This file defines the ttnn model only. Use `eval.py` at repo root for
 teacher-forcing accuracy checks against the HuggingFace reference.
@@ -24,6 +25,7 @@ from transformers.modeling_outputs import CausalLMOutputWithPast
 
 
 TILE_SIZE = 32
+PAGED_BLOCK_SIZE = 64
 MESH_SHAPE = (2, 4)
 MESH_TOPOLOGY = ttnn.Topology.Linear
 MESH_NUM_LINKS = 1
@@ -34,19 +36,23 @@ def pad_to_tile(x: int) -> int:
     return ((x + TILE_SIZE - 1) // TILE_SIZE) * TILE_SIZE
 
 
-def mesh_shape_to_axis(mesh_shape: tuple[int, int]) -> Optional[int]:
-    """Return the mesh axis used for 1D tensor parallel or None for 2D."""
-    if mesh_shape[0] == 1 and mesh_shape[1] > 1:
+def mesh_shape_to_axis(mesh_shape: tuple[int, int]) -> int:
+    """Return the mesh axis used for tensor parallel."""
+    if mesh_shape[1] > 1:
         return 1
-    if mesh_shape[1] == 1 and mesh_shape[0] > 1:
+    if mesh_shape[0] > 1:
         return 0
-    if mesh_shape[0] > 1 and mesh_shape[1] > 1:
-        return None
     raise ValueError(f"Expected mesh shape with at least one dimension > 1, got {mesh_shape}")
 
 
 def num_mesh_devices(mesh_shape: tuple[int, int]) -> int:
     return mesh_shape[0] * mesh_shape[1]
+
+
+def tp_size_for_mesh(mesh_shape: tuple[int, int]) -> int:
+    if mesh_shape[1] > 1:
+        return mesh_shape[1]
+    return mesh_shape[0]
 
 
 @dataclass
@@ -85,7 +91,7 @@ class ParallelConfig:
     mesh_device: ttnn.MeshDevice
     mesh_shape: tuple[int, int]
     num_devices: int
-    mesh_axis: Optional[int]
+    mesh_axis: int
     num_links: int
     topology: ttnn.Topology
     replicate_mapper: object
@@ -95,29 +101,30 @@ class ParallelConfig:
     vocab_composer: object
 
 
-def validate_parallel_config(config: ModelConfig, num_devices: int) -> None:
-    if num_devices != 8:
+@dataclass
+class PagedAttentionConfig:
+    """Paged KV cache configuration."""
+
+    block_size: int
+    max_num_blocks: int
+
+
+def validate_parallel_config(config: ModelConfig, mesh_shape: tuple[int, int], tp_size: int) -> None:
+    if num_mesh_devices(mesh_shape) != 8:
         raise ValueError("T3000 model expects an 8-device mesh")
-    if config.num_attention_heads % num_devices != 0:
+    if config.num_attention_heads % tp_size != 0:
         raise ValueError("num_attention_heads must divide evenly across devices")
-    if config.num_key_value_heads % num_devices != 0:
+    if config.num_key_value_heads % tp_size != 0:
         raise ValueError("num_key_value_heads must divide evenly across devices")
-    if config.hidden_size % num_devices != 0:
+    if config.hidden_size % tp_size != 0:
         raise ValueError("hidden_size must divide evenly across devices")
-    if config.intermediate_size % num_devices != 0:
+    if config.intermediate_size % tp_size != 0:
         raise ValueError("intermediate_size must divide evenly across devices")
 
 
 def all_reduce_tensor(x: ttnn.Tensor, parallel: ParallelConfig) -> ttnn.Tensor:
     if parallel.num_devices == 1:
         return x
-    if parallel.mesh_axis is None:
-        return ttnn.all_reduce(
-            x,
-            num_links=parallel.num_links,
-            topology=parallel.topology,
-            memory_config=ttnn.DRAM_MEMORY_CONFIG,
-        )
     return ttnn.all_reduce(
         x,
         cluster_axis=parallel.mesh_axis,
@@ -187,7 +194,8 @@ class Attention:
         cos_cache: ttnn.Tensor,
         sin_cache: ttnn.Tensor,
         parallel: ParallelConfig,
-        max_seq_len: int,
+        paged_attention_config: PagedAttentionConfig,
+        page_table: ttnn.Tensor,
     ):
         self.layer_idx = layer_idx
         self.parallel = parallel
@@ -198,6 +206,8 @@ class Attention:
         self.head_dim = config.head_dim
         self.hidden_size = config.hidden_size
         self.scale = 1.0 / math.sqrt(self.head_dim)
+        self.paged_attention_config = paged_attention_config
+        self.page_table = page_table
 
         self.cos_cache = cos_cache
         self.sin_cache = sin_cache
@@ -208,7 +218,12 @@ class Attention:
         self.v_proj = self._load_weight(state_dict[f"{p}v_proj.weight"], parallel.shard_width_mapper)
         self.o_proj = self._load_weight(state_dict[f"{p}o_proj.weight"], parallel.shard_height_mapper)
 
-        cache_shape = (TILE_SIZE, self.n_kv_heads, max_seq_len, self.head_dim)
+        cache_shape = (
+            self.paged_attention_config.max_num_blocks,
+            self.n_kv_heads,
+            self.paged_attention_config.block_size,
+            self.head_dim,
+        )
         self.k_cache = ttnn.as_tensor(
             torch.zeros(cache_shape, dtype=torch.bfloat16),
             dtype=ttnn.bfloat16,
@@ -272,8 +287,8 @@ class Attention:
             q = ttnn.experimental.rotary_embedding(q, cos, sin)
             k = ttnn.experimental.rotary_embedding(k, cos, sin)
 
-            ttnn.fill_cache(self.k_cache, k, batch_idx=0)
-            ttnn.fill_cache(self.v_cache, v, batch_idx=0)
+            ttnn.experimental.paged_fill_cache(self.k_cache, k, self.page_table, batch_idx=0)
+            ttnn.experimental.paged_fill_cache(self.v_cache, v, self.page_table, batch_idx=0)
 
             attn_out = ttnn.transformer.scaled_dot_product_attention(
                 q, k, v, is_causal=True, scale=self.scale
@@ -308,11 +323,20 @@ class Attention:
             k = ttnn.experimental.rotary_embedding(k, self.cos_cache, self.sin_cache, start_pos)
             k = ttnn.reshape(k, (1, k_batch, k_heads, self.head_dim), (1, k_batch, k_heads, self.head_dim))
 
-            ttnn.experimental.paged_update_cache(self.k_cache, k, update_idxs_tensor=cur_pos_tensor)
-            ttnn.experimental.paged_update_cache(self.v_cache, v, update_idxs_tensor=cur_pos_tensor)
+            ttnn.experimental.paged_update_cache(
+                self.k_cache, k, update_idxs_tensor=cur_pos_tensor, page_table=self.page_table
+            )
+            ttnn.experimental.paged_update_cache(
+                self.v_cache, v, update_idxs_tensor=cur_pos_tensor, page_table=self.page_table
+            )
 
-            attn_out = ttnn.transformer.scaled_dot_product_attention_decode(
-                q, self.k_cache, self.v_cache, cur_pos_tensor=cur_pos_tensor, scale=self.scale
+            attn_out = ttnn.transformer.paged_scaled_dot_product_attention_decode(
+                q,
+                self.k_cache,
+                self.v_cache,
+                page_table_tensor=self.page_table,
+                cur_pos_tensor=cur_pos_tensor,
+                scale=self.scale,
             )
             attn_out = ttnn.transpose(attn_out, 1, 2)
             attn_out = ttnn.experimental.nlp_concat_heads(attn_out, memory_config=ttnn.DRAM_MEMORY_CONFIG)
@@ -384,12 +408,22 @@ class DecoderLayer:
         cos_cache: ttnn.Tensor,
         sin_cache: ttnn.Tensor,
         parallel: ParallelConfig,
-        max_seq_len: int,
+        paged_attention_config: PagedAttentionConfig,
+        page_table: ttnn.Tensor,
     ):
         p = f"model.layers.{layer_idx}."
         self.attn_norm = RMSNorm(state_dict[f"{p}input_layernorm.weight"], config.rms_norm_eps, parallel)
         self.ffn_norm = RMSNorm(state_dict[f"{p}post_attention_layernorm.weight"], config.rms_norm_eps, parallel)
-        self.attn = Attention(config, layer_idx, state_dict, cos_cache, sin_cache, parallel, max_seq_len)
+        self.attn = Attention(
+            config,
+            layer_idx,
+            state_dict,
+            cos_cache,
+            sin_cache,
+            parallel,
+            paged_attention_config,
+            page_table,
+        )
         self.mlp = MLP(layer_idx, state_dict, parallel)
 
     def __call__(
@@ -418,6 +452,10 @@ class TtnnLlamaForCausalLM(torch.nn.Module, GenerationMixin):
         self.tt_config = ModelConfig.from_hf(hf_model.config)
         self.max_seq_len = max_seq_len
         self._pos = 0
+        self.paged_attention_config = PagedAttentionConfig(
+            block_size=PAGED_BLOCK_SIZE,
+            max_num_blocks=math.ceil(max_seq_len / PAGED_BLOCK_SIZE),
+        )
 
         self.config = self.hf_config
         self.generation_config = GenerationConfig.from_model_config(self.config)
@@ -428,22 +466,33 @@ class TtnnLlamaForCausalLM(torch.nn.Module, GenerationMixin):
         self.register_buffer("_torch_dummy", torch.empty(0, dtype=torch.float32), persistent=False)
 
         mesh_shape = tuple(tt_device.shape)
-        num_devices = num_mesh_devices(mesh_shape)
+        tp_size = tp_size_for_mesh(mesh_shape)
         mesh_axis = mesh_shape_to_axis(mesh_shape)
-        validate_parallel_config(self.tt_config, num_devices)
+        validate_parallel_config(self.tt_config, mesh_shape, tp_size)
+
+        if mesh_shape[0] > 1 and mesh_shape[1] > 1:
+            shard_width_mapper = ttnn.ShardTensor2dMesh(tt_device, mesh_shape, dims=(None, 3))
+            shard_height_mapper = ttnn.ShardTensor2dMesh(tt_device, mesh_shape, dims=(None, 2))
+            shard_kv_mapper = ttnn.ShardTensor2dMesh(tt_device, mesh_shape, dims=(None, 1))
+            vocab_composer = ttnn.ConcatMesh2dToTensor(tt_device, mesh_shape, dims=(0, 3))
+        else:
+            shard_width_mapper = ttnn.ShardTensorToMesh(tt_device, dim=3)
+            shard_height_mapper = ttnn.ShardTensorToMesh(tt_device, dim=2)
+            shard_kv_mapper = ttnn.ShardTensorToMesh(tt_device, dim=1)
+            vocab_composer = ttnn.ConcatMeshToTensor(tt_device, dim=3)
 
         self.parallel = ParallelConfig(
             mesh_device=tt_device,
             mesh_shape=mesh_shape,
-            num_devices=num_devices,
+            num_devices=tp_size,
             mesh_axis=mesh_axis,
             num_links=MESH_NUM_LINKS,
             topology=MESH_TOPOLOGY,
             replicate_mapper=ttnn.ReplicateTensorToMesh(tt_device),
-            shard_width_mapper=ttnn.ShardTensorToMesh(tt_device, dim=3),
-            shard_height_mapper=ttnn.ShardTensorToMesh(tt_device, dim=2),
-            shard_kv_mapper=ttnn.ShardTensorToMesh(tt_device, dim=1),
-            vocab_composer=ttnn.ConcatMeshToTensor(tt_device, dim=3),
+            shard_width_mapper=shard_width_mapper,
+            shard_height_mapper=shard_height_mapper,
+            shard_kv_mapper=shard_kv_mapper,
+            vocab_composer=vocab_composer,
         )
 
         state_dict = hf_model.state_dict()
@@ -477,9 +526,29 @@ class TtnnLlamaForCausalLM(torch.nn.Module, GenerationMixin):
             mesh_mapper=self.parallel.replicate_mapper,
         )
 
+        page_table = torch.arange(self.paged_attention_config.max_num_blocks, dtype=torch.int32)
+        page_table = page_table.repeat(TILE_SIZE, 1)
+        self.page_table = ttnn.as_tensor(
+            page_table,
+            dtype=ttnn.int32,
+            layout=ttnn.ROW_MAJOR_LAYOUT,
+            device=tt_device,
+            memory_config=ttnn.DRAM_MEMORY_CONFIG,
+            mesh_mapper=self.parallel.replicate_mapper,
+        )
+
         print(f"  Loading {self.tt_config.num_hidden_layers} layers...")
         self.layers = [
-            DecoderLayer(self.tt_config, i, state_dict, self.cos_cache, self.sin_cache, self.parallel, max_seq_len)
+            DecoderLayer(
+                self.tt_config,
+                i,
+                state_dict,
+                self.cos_cache,
+                self.sin_cache,
+                self.parallel,
+                self.paged_attention_config,
+                self.page_table,
+            )
             for i in range(self.tt_config.num_hidden_layers)
         ]
 
@@ -533,8 +602,10 @@ class TtnnLlamaForCausalLM(torch.nn.Module, GenerationMixin):
 
         cur_pos_tensor = None
         if seq_len == 1:
+            cur_pos = torch.full((TILE_SIZE,), -1, dtype=torch.int32)
+            cur_pos[0] = start_pos
             cur_pos_tensor = ttnn.from_torch(
-                torch.full((TILE_SIZE,), start_pos, dtype=torch.int32),
+                cur_pos,
                 dtype=ttnn.int32,
                 device=self.tt_device,
                 mesh_mapper=self.parallel.replicate_mapper,
@@ -562,7 +633,10 @@ class TtnnLlamaForCausalLM(torch.nn.Module, GenerationMixin):
             logits = ttnn.to_torch(logits, mesh_composer=self.parallel.vocab_composer)
         else:
             logits = ttnn.to_torch(logits)
-        logits = logits.reshape(batch, padded_seq, -1)[:, :seq_len, :]
+        if self.parallel.mesh_shape[0] > 1:
+            logits = logits.reshape(batch * self.parallel.mesh_shape[0], padded_seq, -1)[:batch, :seq_len, :]
+        else:
+            logits = logits.reshape(batch, padded_seq, -1)[:, :seq_len, :]
 
         self._pos = start_pos + seq_len
 
