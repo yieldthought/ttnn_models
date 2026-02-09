@@ -401,16 +401,22 @@ class Attention:
                 (attn_out.shape[0], attn_out.shape[1], attn_out.shape[2], expected_width),
             )
 
-        out = ttnn.linear(attn_out, self.o_proj)
+        out = ttnn.linear(
+            attn_out,
+            self.o_proj,
+            dtype=ttnn.bfloat16,
+            compute_kernel_config=ATTN_KERNEL_CONFIG,
+        )
         return all_reduce_tensor(out, self.parallel)
 
 
 class MLP:
     """SwiGLU MLP with 1D tensor parallel."""
 
-    def __init__(self, layer_idx: int, state_dict: dict, parallel: ParallelConfig):
+    def __init__(self, layer_idx: int, state_dict: dict, parallel: ParallelConfig, weight_dtype: ttnn.DataType):
         p = f"model.layers.{layer_idx}.mlp."
         self.parallel = parallel
+        self.weight_dtype = weight_dtype
         self.gate_proj = self._load_weight(state_dict[f"{p}gate_proj.weight"], parallel.shard_width_mapper)
         self.up_proj = self._load_weight(state_dict[f"{p}up_proj.weight"], parallel.shard_width_mapper)
         self.down_proj = self._load_weight(state_dict[f"{p}down_proj.weight"], parallel.shard_height_mapper)
@@ -418,7 +424,7 @@ class MLP:
     def _load_weight(self, w: torch.Tensor, mesh_mapper) -> ttnn.Tensor:
         return ttnn.as_tensor(
             w.T.unsqueeze(0).unsqueeze(0).to(torch.bfloat16).contiguous(),
-            dtype=MLP_WEIGHT_DTYPE,
+            dtype=self.weight_dtype,
             layout=WEIGHT_LAYOUT,
             device=self.parallel.mesh_device,
             memory_config=ttnn.DRAM_MEMORY_CONFIG,
@@ -426,9 +432,26 @@ class MLP:
         )
 
     def __call__(self, x: ttnn.Tensor) -> ttnn.Tensor:
-        gate = ttnn.silu(ttnn.linear(x, self.gate_proj))
-        up = ttnn.linear(x, self.up_proj)
-        out = ttnn.linear(ttnn.mul(gate, up), self.down_proj)
+        gate = ttnn.silu(
+            ttnn.linear(
+                x,
+                self.gate_proj,
+                dtype=ttnn.bfloat16,
+                compute_kernel_config=ATTN_KERNEL_CONFIG,
+            )
+        )
+        up = ttnn.linear(
+            x,
+            self.up_proj,
+            dtype=ttnn.bfloat16,
+            compute_kernel_config=ATTN_KERNEL_CONFIG,
+        )
+        out = ttnn.linear(
+            ttnn.mul(gate, up),
+            self.down_proj,
+            dtype=ttnn.bfloat16,
+            compute_kernel_config=ATTN_KERNEL_CONFIG,
+        )
         return all_reduce_tensor(out, self.parallel)
 
 
@@ -459,7 +482,11 @@ class DecoderLayer:
             paged_attention_config,
             page_table,
         )
-        self.mlp = MLP(layer_idx, state_dict, parallel)
+        # Keep tail MLPs in BF16 to hit long-eval accuracy on n300.
+        mlp_weight_dtype = MLP_WEIGHT_DTYPE
+        if layer_idx >= config.num_hidden_layers - 8:
+            mlp_weight_dtype = ttnn.bfloat16
+        self.mlp = MLP(layer_idx, state_dict, parallel, mlp_weight_dtype)
 
     def __call__(
         self,
