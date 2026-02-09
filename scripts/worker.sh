@@ -89,6 +89,7 @@ while true; do
         sleep 60
         continue
     fi
-    codexapi task -p https://github.com/users/yieldthought/projects/6 -n "$agent_name" "${task_files[@]}"
+    # Ensure codexapi output is flushed promptly to nohup logs.
+    PYTHONUNBUFFERED=1 codexapi task -p https://github.com/users/yieldthought/projects/6 -n "$agent_name" "${task_files[@]}"
     sleep 60
 done
