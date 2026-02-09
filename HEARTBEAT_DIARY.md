@@ -61,3 +61,5 @@
 - IRD ID 2 `wh-lb-43:42857` running `agent4` (t3000), log `/tmp/agent4.log`.
 - Verified `tt-smi -ls` works on `wh-lb-43` and shows 4 PCI Dev IDs (0-3) for 4 n300 boards (2 chips each); this is the expected t3k mesh hardware.
 - Updated `tasks/run_tests_n300.yaml` and `tasks/run_tests_t3000.yaml` instructions to clarify TT_VISIBLE_DEVICES selection for x2 boards/t3k Loudbox (often `0,1,2,3` on t3000, not `0-7`).
+- Started an n150 runner on a dedicated AUS host:
+- IRD ID 3 `aus-wh-09:42857` running `agent3` (n150), log `/tmp/agent3.log` (idle, no n150 Ready issues).
