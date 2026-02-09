@@ -69,12 +69,12 @@ python eval.py models/microsoft/Phi-3-mini-128k-instruct/t3000/functional/model.
   --model microsoft/Phi-3-mini-128k-instruct \
   --prompt_file prompts/bringup_eval_long.txt \
   --max_new_tokens 100 \
-  --max_seq_len 2048
+  --max_seq_len 256
+```
 
 ## Correctness fix (2026-02-09)
 - Decode now reshards the attention output and uses `ttnn.experimental.nlp_concat_heads_decode` instead of a transpose
   + `nlp_concat_heads` flow. This aligns decode layout expectations and raises Top-1 to the release threshold.
-```
 
 If `/home` is full, redirect runtime artifacts to a writable location. On this host,
 `/proj_sw/user_dev/moconnor/tt-runtime-root` is a symlinked runtime root (with `tt_metal`,
@@ -90,7 +90,8 @@ TT_METAL_INSPECTOR_INITIALIZATION_IS_IMPORTANT=0 \
 python eval.py models/microsoft/Phi-3-mini-128k-instruct/t3000/functional/model.py \
   --model microsoft/Phi-3-mini-128k-instruct \
   --prompt_file prompts/bringup_eval_long.txt \
-  --max_new_tokens 100
+  --max_new_tokens 100 \
+  --max_seq_len 256
 ```
 
 Automation wrapper (emits YT_METRICS JSON):
