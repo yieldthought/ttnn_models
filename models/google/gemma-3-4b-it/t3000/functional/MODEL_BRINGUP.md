@@ -34,8 +34,9 @@ It is designed to be easy to read and to serve as a template for future bringups
 - `ttnn.rms_norm` for RMSNorm and Q/K head norm
 - `ttnn.experimental.rotary_embedding` for HuggingFace-format RoPE
 - `ttnn.experimental.nlp_create_qkv_heads[_decode]` and `ttnn.experimental.nlp_concat_heads`
-- `ttnn.transformer.scaled_dot_product_attention[_decode]`
-- `ttnn.fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
+- `ttnn.transformer.scaled_dot_product_attention` (prefill) and
+  `ttnn.transformer.paged_scaled_dot_product_attention_decode` (decode)
+- `ttnn.experimental.paged_fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
 
 ## Gemma3 specifics
 - Q/K RMSNorm uses `(1 + weight)` (Gemma3RMSNorm).
@@ -53,8 +54,9 @@ Decode path detail:
   RoPE, then reshape back to `[1, B, heads, head_dim]`.
 
 ## KV cache and tiling constraints
-- Cache tensors are `[32, n_kv_heads, max_seq_len, head_dim]`.
-- `MAX_CACHE_SEQ_LEN` is set to 256 to cap memory usage; increase if needed.
+- Paged cache tensors are `[max_num_blocks, n_kv_heads, PAGED_BLOCK_SIZE, head_dim]`.
+- `max_num_blocks = ceil(max_seq_len / PAGED_BLOCK_SIZE)` with `PAGED_BLOCK_SIZE = 64`.
+- This bringup runs with `max_seq_len = 40960` (matches the n150 row).
 
 ## Precision
 - Weights use `ttnn.bfloat8_b`.
@@ -68,7 +70,8 @@ Decode trims padded head width after concatenating heads.
 Teacher-forcing accuracy is computed against the HF reference model.
 
 ```
-python eval.py models/google/gemma-3-4b-it/t3000/functional/model.py --model google/gemma-3-4b-it
+python eval.py models/google/gemma-3-4b-it/t3000/functional/model.py --model google/gemma-3-4b-it \
+  --max_new_tokens 100 --max_seq_len 40960
 ```
 
 On this T3000 host, set the mesh graph descriptor and use all 8 devices:
@@ -76,7 +79,8 @@ On this T3000 host, set the mesh graph descriptor and use all 8 devices:
 ```
 TT_MESH_GRAPH_DESC_PATH=/home/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/t3k_mesh_graph_descriptor.textproto \
 TT_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 \
-python eval.py models/google/gemma-3-4b-it/t3000/functional/model.py --model google/gemma-3-4b-it
+python eval.py models/google/gemma-3-4b-it/t3000/functional/model.py --model google/gemma-3-4b-it \
+  --max_new_tokens 100 --max_seq_len 40960
 ```
 
 If `/home` is full, redirect runtime artifacts to a writable location. On this host,
@@ -88,7 +92,8 @@ TT_MESH_GRAPH_DESC_PATH=/home/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descr
 TT_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 \
 TT_METAL_CACHE=/tmp/tt-metal-cache TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-runtime-root \
 TT_METAL_INSPECTOR_LOG_PATH=/tmp/tt-metal-inspector TT_METAL_INSPECTOR_INITIALIZATION_IS_IMPORTANT=0 \
-python eval.py models/google/gemma-3-4b-it/t3000/functional/model.py --model google/gemma-3-4b-it
+python eval.py models/google/gemma-3-4b-it/t3000/functional/model.py --model google/gemma-3-4b-it \
+  --max_new_tokens 100 --max_seq_len 40960
 ```
 
 Automation wrapper (emits YT_METRICS JSON):
@@ -107,11 +112,12 @@ python scripts/run_eval.py --mode tt --hf-model google/gemma-3-4b-it
 ## Changes (2026-02-09)
 - Handle `sliding_window_pattern` when configs omit `layer_types` and supply a per-layer list,
   preventing a `TypeError` during layer setup.
+- Switched to paged KV cache + paged attention decode and increased `max_seq_len` to 40960.
 - Re-ran demo and long teacher-forcing eval for the release thresholds.
 
 ### Latest results (t3000 functional)
 - Top-1: 92%
 - Top-5: 100%
-- TTFT: 322 ms
-- Decode: 4.8 t/s/u
-- Seq len: 256 (MAX_CACHE_SEQ_LEN)
+- TTFT: 330 ms
+- Decode: 4.7 t/s/u
+- Seq len: 40960
