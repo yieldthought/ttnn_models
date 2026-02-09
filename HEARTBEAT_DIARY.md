@@ -94,3 +94,20 @@
 - ID 1 `agent4` (t3000) idle; no `run_tests_t3000` Ready issues.
 - ID 2 `agent2` (n300) actively running issue #36 (Falcon3 n300); log `/tmp/agent2.log` on `aus-wh-01:42857`.
 - ID 3 `agent3` (n150) idle; no `run_tests_n150` Ready issues.
+
+## 2026-02-09T04:09:53+01:00
+
+- Project `yieldthought/projects/6` status: Done 24, In progress 2 (#23 t3000, #38 n300), Ready 2 (#22, #24).
+- Merged PR `yieldthought/ttnn_models#52` (Falcon3 n300); issue #36 is now Done.
+- Added new bringup task files and labels for Arcee multi-device bringup:
+- `tasks/bringup_arcee_n300.yaml` (label `bringup_arcee_n300`)
+- `tasks/bringup_arcee_t3000.yaml` (label `bringup_arcee_t3000`)
+- Relabeled and moved Arcee backlog issues to Ready so workers can pick them up:
+- #22 AFM-4.5B n300 -> `bringup_arcee_n300`
+- #23 AFM-4.5B t3000 -> `bringup_arcee_t3000`
+- #24 Arcee-Spark n300 -> `bringup_arcee_n300`
+- IRD reservations still healthy with >6h remaining on all runners (IDs 1-3).
+- Runners:
+- ID 1 `agent4` (t3000) started issue #23 using the new bringup task; log `/tmp/agent4.log` on `wh-lb-43:42857`.
+- ID 2 `agent2` (n300) started issue #38 (Qwen3 n300 run_tests); it should pick #22/#24 next; log `/tmp/agent2.log` on `aus-wh-01:42857`.
+- ID 3 `agent3` (n150) idle; no `run_tests_n150` Ready issues.
