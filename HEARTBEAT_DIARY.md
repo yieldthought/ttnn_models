@@ -43,3 +43,12 @@
 - Learned `tt-smi -l` is "local chips" and launches the interactive UI; use `tt-smi -ls` to list boards and exit (killed a stray `tt-smi -l` I accidentally started during diagnosis).
 - Updated all `tasks/run_tests*.yaml` prompts to use `--max_new_tokens` (instead of the incorrect `--max-tokens`) and added short notes about always emitting demo/eval logs, mesh descriptor env vars for n300/t3000, and the TT metal cache/runtime-root gotcha.
 - Updated `scripts/worker.sh` to pass all task files matching `tasks/*_<system>.yaml` to `codexapi task` (so new per-system tasks can be added without changing the worker invocation).
+
+## 2026-02-09T01:59:57+01:00
+
+- Project `yieldthought/projects/6` status: Done 14, In progress 1 (#28 n300), Ready 10, Backlog 3.
+- Merged PR `yieldthought/ttnn_models#43` (Llama-3.2-1B n300) and moved issue #30 to Done (issue auto-closed by PR). The run produced demo/eval logs showing an n300 mesh graph mapping failure (TT_FATAL), so MODELS.md row was updated to `bad`.
+- Fixed a major runner interference issue: I had both n300 and n150 workers on `aus-wh-01` and they shared `/localdev/moconnor/ttnn_models`, causing the idle n150 worker to repeatedly `git stash -u` and silently remove the n300 worker's uncommitted logs/edits. Stopped the n150 worker and released that IRD reservation.
+- T3000 runner status: `tt-smi -ls` consistently fails on `aus-wh-09` with `unordered_map::at`, matching the earlier multi-device init failures. Killed the t3000 worker, reset issue #31 back to Ready with stricter instructions (no model.py edits; set TT_VISIBLE_DEVICES from `tt-smi -ls`; set TT_MESH_GRAPH_DESC_PATH), and released the broken IRD reservation.
+- Attempted to reserve new t3000 hardware on `tt_aus`; direct wormhole_b0 `--model lb` allocation failed, and a `--team models_team --model glx6u` reservation is still pending in the scheduler.
+- Updated all `tasks/run_tests*.yaml` `set_up` sections to require running `tt-smi -ls` and setting `TT_VISIBLE_DEVICES` before demo/eval (IRD containers often expose non-0 PCI Dev IDs like `4,5`).
