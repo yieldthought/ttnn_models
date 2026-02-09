@@ -17,3 +17,9 @@ Minimal TTNN bringup of `arcee-ai/Arcee-Spark` (Qwen2 family) with 1D tensor par
 python demo.py models/arcee-ai/Arcee-Spark/n300/functional/model.py
 python eval.py models/arcee-ai/Arcee-Spark/n300/functional/model.py --model arcee-ai/Arcee-Spark --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100 --max_seq_len 32768
 ```
+
+## 2026-02-09 Revalidation
+- Long eval (bringup_eval_long, 100 tokens, max_seq_len 32768): Top-1 91.00%, Top-5 100.00%.
+- Demo run: TTFT 338 ms, decode 5.0 t/s/u; output looked coherent.
+- Correctness tweaks kept: `o_proj` and MLP linears use the HiFi4 `ATTN_KERNEL_CONFIG` with BF16 compute.
+- Correctness tweaks kept: the last 8 MLP layers keep BF16 weights (`bfloat16`), earlier layers use `bfloat8_b`.
