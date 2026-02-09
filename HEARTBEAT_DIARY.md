@@ -21,3 +21,13 @@
 - `agent2` (n300) still running `codexapi task` for issue #30.
 - `agent3` (n150) idle and polling; no `run_tests_n150` Ready issues.
 - Found a bad state on runner ID 2 where an old `codexapi task ... tasks/run_tests.yaml` process was still running alongside the intended `tasks/run_tests_n300.yaml` run; killed the stray `run_tests.yaml` process to restore single-task/device safety.
+
+## 2026-02-09T01:08:45+01:00
+
+- Project `yieldthought/projects/6` status: Done 13, In progress 2, Ready 10, Backlog 3.
+- Merged PR `yieldthought/ttnn_models#42` (ALLaM-7B t3000) and moved issue #29 to Done (issue closed by PR).
+- Runners:
+- ID 1 `agent1` (t3000) moved on to issue #31 (Llama-3.2-1B t3000); progress not posted yet.
+- ID 2 `agent2` (n300) still on issue #30; agent is actively running demo/eval with an explicit n300 mesh graph descriptor and is generating demo/eval logs (plus a small `eval.py` CLI alias tweak for `--max-tokens`).
+- ID 3 `agent3` (n150) still idle; keeps creating `worker auto-stash` entries due to periodic dirty working tree (needs cleanup/limits if this runs for days).
+- Found a repo correctness gap: `models/arcee-ai/Arcee-Spark/t3000/functional/` has logs but no `model.py` in git even though the logged commands reference it (likely requires a follow-up bringup/fix ticket).
