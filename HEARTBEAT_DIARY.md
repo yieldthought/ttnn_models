@@ -63,3 +63,15 @@
 - Updated `tasks/run_tests_n300.yaml` and `tasks/run_tests_t3000.yaml` instructions to clarify TT_VISIBLE_DEVICES selection for x2 boards/t3k Loudbox (often `0,1,2,3` on t3000, not `0-7`).
 - Started an n150 runner on a dedicated AUS host:
 - IRD ID 3 `aus-wh-09:42857` running `agent3` (n150), log `/tmp/agent3.log` (idle, no n150 Ready issues).
+
+## 2026-02-09T03:06:21+01:00
+
+- Project `yieldthought/projects/6` status: Done 17, In progress 2 (#32 n300, #35 t3000), Ready 6, Backlog 3.
+- Merged PR `yieldthought/ttnn_models#45` (Phi-3-mini-128k-instruct t3000) and moved issue #33 to Done (issue auto-closed by PR). MODELS.md row is now `bad` with demo/eval logs captured (device open failed due to hugepage pin/memory allocation error).
+- Cleaned up the stale n300 runner state:
+- Released the broken AUS n300 reservation (two unlinked x1 boards caused mesh mapping failures and the worker was killed).
+- Reset issue #32 back to Ready (released `owner: agent2`), then reserved a new AUS n300 x2 board (single PCI Dev ID `0` with n300 L+R) and restarted `agent2` on it.
+- `agent2` (n300) is now actively running issue #32 again (Phi n300); log `/tmp/agent2.log` on `aus-wh-01:42857`.
+- Re-established an idle n150 runner on a separate AUS host:
+- Reserved `aus-wh-09` and started `agent3` (n150); log `/tmp/agent3.log` (still idle, no n150 Ready issues).
+- T3000 runner `agent4` on Loudbox `wh-lb-43:42857` is healthy and moved on to issue #35 after completing #33; log `/tmp/agent4.log`.
