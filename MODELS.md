@@ -25,7 +25,7 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | mistralai/Mistral-7B-Instruct-v0.3  |   n300   | functional |   96% |  100% |  116ms |  11.2 |    1024 |
 | mistralai/Mistral-7B-Instruct-v0.3  |  t3000   | functional |  100% |  100% |  110ms |  10.6 |    1024 |
 | Qwen/Qwen3-0.6B                     |   n150   | functional |   99% |  100% |   52ms |  28.0 |   40960 |
-| Qwen/Qwen3-0.6B                     |   n300   | functional |   99% |  100% |  329ms |   5.2 |    2048 |
+| Qwen/Qwen3-0.6B                     |   n300   | functional |   99% |  100% |  943ms |   2.0 |   40960 |
 | Qwen/Qwen3-0.6B                     |  t3000   | functional |   98% |  100% |  229ms |   6.2 |   40960 |
 | google/gemma-3-4b-it                |   n150   | functional |   92% |  100% |   98ms |  13.9 |   40960 |
 | google/gemma-3-4b-it                |   n300   | functional |   94% |  100% |  523ms |   3.3 |     256 |

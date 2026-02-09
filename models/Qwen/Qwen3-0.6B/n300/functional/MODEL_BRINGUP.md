@@ -16,7 +16,7 @@ models/Qwen/Qwen3-0.6B/<system>/functional/model.py
 ```
 
 ## Model API contract
-- The model exposes a `build_model(hf_model, tt_device, max_seq_len)` function.
+- The model exposes a `build_model(hf_model, tt_device, max_seq_len=None)` function.
 - The returned class subclasses `torch.nn.Module` and `GenerationMixin` so HF `generate()` works.
 - The forward method returns `CausalLMOutputWithPast(logits=..., past_key_values=...)`.
 
@@ -41,8 +41,8 @@ models/Qwen/Qwen3-0.6B/<system>/functional/model.py
 - `ttnn.rms_norm` for RMSNorm and Q/K head norm
 - `ttnn.experimental.rotary_embedding` for HuggingFace-format RoPE
 - `ttnn.experimental.nlp_create_qkv_heads[_decode]` and `ttnn.experimental.nlp_concat_heads`
-- `ttnn.transformer.scaled_dot_product_attention[_decode]`
-- `ttnn.fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
+- `ttnn.transformer.scaled_dot_product_attention` and `ttnn.transformer.paged_scaled_dot_product_attention_decode`
+- `ttnn.experimental.paged_fill_cache` (prefill) and `ttnn.experimental.paged_update_cache` (decode)
 
 ## RoPE notes
 Qwen3 uses HuggingFace-format RoPE. Use:
@@ -55,13 +55,10 @@ Decode path detail:
   RoPE, then reshape back to `[1, B, heads, head_dim]`.
 
 ## KV cache and tiling constraints
-- Cache tensors are allocated as `[32, n_kv_heads, max_seq_len, head_dim]`.
+- Cache tensors are allocated as `[max_num_blocks, n_kv_heads, block_size, head_dim]` with `block_size=64`.
+- The page table is a `[32, max_num_blocks]` int32 identity mapping in row-major layout.
 - The batch dimension is tile-aligned to 32 for decode ops.
-- Prefill uses `ttnn.fill_cache` and decode uses `ttnn.experimental.paged_update_cache`.
-
-On this device, `ttnn.fill_cache` hits a grid limit for long prefill lengths (around 1024 tokens).
-If prefill hits a `fill_cache` grid limit, reduce the prefill length or fix the model. The old
-`--prefill_decode` workaround was a hack and has been removed from the eval scripts.
+- Prefill uses `ttnn.experimental.paged_fill_cache` and decode uses `ttnn.experimental.paged_update_cache`.
 
 ## Precision
 - Weights use `ttnn.bfloat16` in this bringup for simplicity.
@@ -75,13 +72,16 @@ Decode trims padded head width after concatenating heads.
 Teacher-forcing accuracy is computed against the HF reference model.
 
 ```
-python eval.py models/Qwen/Qwen3-0.6B/n300/functional/model.py --model Qwen/Qwen3-0.6B
+python eval.py models/Qwen/Qwen3-0.6B/n300/functional/model.py --model Qwen/Qwen3-0.6B --max_seq_len 40960
 ```
 
-On this N300 host, set the mesh to devices 0 and 2:
+`max_seq_len` defaults to the HF config `max_position_embeddings` (40960 for Qwen3-0.6B),
+but `eval.py` still needs the explicit `--max_seq_len` argument.
+
+On this N300 host, the 2-chip board is exposed as device 0:
 
 ```
-TT_VISIBLE_DEVICES=0,2 python eval.py models/Qwen/Qwen3-0.6B/n300/functional/model.py --model Qwen/Qwen3-0.6B
+TT_VISIBLE_DEVICES=0 python eval.py models/Qwen/Qwen3-0.6B/n300/functional/model.py --model Qwen/Qwen3-0.6B --max_seq_len 40960
 ```
 
 If `/home` is full, redirect runtime artifacts to a writable location. On this host,
@@ -89,8 +89,11 @@ If `/home` is full, redirect runtime artifacts to a writable location. On this h
 `ttnn`, and `runtime` from the installed package):
 
 ```
-TT_VISIBLE_DEVICES=0,2 TT_METAL_CACHE=/tmp/tt-metal-cache TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-runtime-root TT_METAL_INSPECTOR_LOG_PATH=/tmp/tt-metal-inspector TT_METAL_INSPECTOR_INITIALIZATION_IS_IMPORTANT=0 python eval.py models/Qwen/Qwen3-0.6B/n300/functional/model.py --model Qwen/Qwen3-0.6B
+TT_VISIBLE_DEVICES=0 TT_METAL_CACHE=/tmp/tt-metal-cache TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-runtime-root TT_METAL_INSPECTOR_LOG_PATH=/tmp/tt-metal-inspector TT_METAL_INSPECTOR_INITIALIZATION_IS_IMPORTANT=0 python eval.py models/Qwen/Qwen3-0.6B/n300/functional/model.py --model Qwen/Qwen3-0.6B --max_seq_len 40960
 ```
+
+If you see an `erisc` compile failure about `eth_l1_address_map.h` with that runtime root,
+set `TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-metal` instead.
 
 Automation wrapper (emits YT_METRICS JSON):
 
