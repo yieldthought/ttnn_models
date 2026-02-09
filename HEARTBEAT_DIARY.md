@@ -112,3 +112,23 @@
 - ID 1 `agent4` (t3000) started issue #23 using the new bringup task; log `/tmp/agent4.log` on `wh-lb-43:42857`.
 - ID 2 `agent2` (n300) started issue #38 (Qwen3 n300 run_tests); it should pick #22/#24 next; log `/tmp/agent2.log` on `aus-wh-01:42857`.
 - ID 3 `agent3` (n150) idle; no `run_tests_n150` Ready issues.
+
+## 2026-02-09T05:03:34+01:00
+
+- Project `yieldthought/projects/6` status: Done 26, In progress 2 (#22 n300, #25 t3000), Ready 2 (#23 t3000, #56 t3000), Backlog 0, In review 0.
+- Merged PR `yieldthought/ttnn_models#53` (Qwen3-0.6B n300 run_tests) after adding missing `Seq len=2048` and it closed issue #38.
+- Merged PR `yieldthought/ttnn_models#55` (Arcee-Spark n300 bringup) and it closed issue #24.
+- T3000 runner diagnosis/fix:
+- Found widespread t3k failures were coming from TT JIT compile errors in `llk_*` headers (e.g. `_llk_unpack_untilize_init_` arg mismatch) on `wh-lb-43`, caused by `tt-metal` submodules not matching the superproject gitlink.
+- Fixed `wh-lb-43` by running `git submodule update --init --recursive` in `/proj_sw/user_dev/moconnor/tt-metal` (brought `tt_llk`/`umd` back to the pinned commits).
+- Stopped the stuck t3000 worker, reset issue #25 back to Ready, then restarted `agent4` (t3000) on `wh-lb-43`.
+- Requeued issue #23:
+- Did not merge PR #54 (AFM-4.5B t3000) since demo/eval never ran successfully and the bringup drifted from the n150 paged-cache behavior.
+- Replaced the issue body with concrete retry instructions (paged KV cache, no internal cache cap, update existing PR), removed the `✓` label, and moved it back to Ready.
+- Task improvements:
+- Updated `tasks/bringup_arcee_n300.yaml` and `tasks/bringup_arcee_t3000.yaml` to explicitly require keeping paged attention/KV-cache (matching n150), add a note about the `git submodule update` fix for `llk_*` JIT errors, and handle "PR already exists" when retrying.
+- Runner reservations:
+- Released an unused galaxy reservation (`wh-glx6u-06`) that had no worker attached.
+- Stopped and released the idle n150 runner/reservation (`aus-wh-09`), leaving active n300 + t3000 runners only.
+- Scheduled follow-up validation:
+- Created issue #56 (`models/Qwen/Qwen3-0.6B/t3000/functional`) labeled `run_tests_t3000` to rerun t3000 demo/eval now that the t3k `tt-metal` submodules are fixed.
