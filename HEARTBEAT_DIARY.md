@@ -274,3 +274,17 @@
 
 - Follow-up:
 - Once agent4 finishes #88, it should be able to take the Ready seq-len ticket #98 and then the n300 seq-len backlog (#100/#102/#104/#105/#110).
+
+## 2026-02-09T15:39:20+01:00
+
+- Project `yieldthought/projects/6` status: In review 0, In progress 4 (#87 Arcee n150, #88 Arcee n300, #89 gemma n300, #92 Phi t3000).
+- Expanded the Ready queue so workers don't stall after the current correctness fixes:
+- Moved to Ready: #100 (Mistral n300), #101 (Mistral t3000), #102 (Falcon n300), #103 (Falcon t3000), #104 (Qwen3 n300), #105 (Phi n300), #109 (gemma t3000).
+- Created #111 (Phi t3000 increase_seq_len) in Backlog to run after #92 lands. Backlog now: #110 (gemma n300 increase_seq_len), #111.
+
+- Runners and reservations:
+- IRD reservations still healthy with >6h remaining on IDs 1-3 and >7h remaining on ID 4.
+- `wh-04` (agent3/n150): actively running long eval for Arcee-Spark n150 and has local edits staged (model.py/logs/MODELS/bringup doc); issue #87 progress shows verifier success, awaiting commit/PR.
+- `yyzc-wh-05` (agent4/n300): actively running long eval for Arcee-Spark n300 (#88).
+- `wh-lb-43` (agent2/t3000): running short eval iterations for Phi-3-mini t3000 (#92) while editing model/logs.
+- `aus-wh-01` (agent1/n300): editing gemma n300 (#89) with local changes; no PR yet.
