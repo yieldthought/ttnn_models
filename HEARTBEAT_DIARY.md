@@ -343,3 +343,21 @@
 - ID 2 `wh-lb-43` (agent2/t3000): worker loop running but stuck in repo sync retries due to GitHub `git pull` returning 500 (no active `codexapi task` process).
 - Cleared a stuck `owner: agent2` label on #103 (Falcon t3000 seq-len) with no active t3000 `codexapi task` process, and moved it back to Ready.
 - Next: wait for #88 PR to open; once GitHub stabilizes for git pulls, workers should resume and take the remaining seq-len tickets.
+
+## 2026-02-09T18:24:32+01:00
+
+- In review triage/merges:
+- #88 (Arcee-Spark n300 fix_correctness) was stuck with a local commit on the runner but no PR (agent4 `codexapi task` appeared hung). Manually pushed/created PRs, then replaced the messy/conflicting PR with a clean one:
+  - Closed PR #119 (conflicting/superseded) and deleted its branch.
+  - Merged PR #120 (Fixes #88) with only the intended changes: Arcee-Spark n300 Top-1 now 91% (>=90) and logs/docs updated.
+- Removed the stale `owner: agent4` label from #88 and added the success marker `✓`. Item is in Done.
+
+- Project `yieldthought/projects/6` status: In review 0, In progress 3 (#103 Falcon t3000, #105 Phi n300, #110 gemma n300), Ready 4 (#98, #102, #109, #111), Backlog 0.
+
+- Runners and reservations:
+- Extended IRD timeout for ID 3 (`aus-wh-10`) to the 10h max to restore the >4h buffer (IDs 1-3 now ~9-10h remaining).
+- Marked #103 as In progress and re-added `owner: agent2` to reflect that agent2 is actively running demo/eval for it (GitHub status was briefly stale).
+- Verified active workloads:
+  - `aus-wh-01` agent1: running long eval for Phi n300 (#105) at `--max_seq_len 12288`.
+  - `wh-lb-43` agent2: running long eval for Falcon t3000 (#103) at `--max_seq_len 32768`.
+  - `aus-wh-10` agent4: active `codexapi task` and owns gemma n300 seq-len ticket (#110).
