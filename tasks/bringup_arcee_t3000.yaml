@@ -1,0 +1,60 @@
+prompt: |
+  Welcome to the ttnn_models project! Take your time to read the source code and understand it. This is based on tt-metal and ttnn. You can find the tt-metal source in /proj_sw/user_dev/moconnor/tt-metal/ if you need to look something up.
+
+  Our task today is to bring up the t3000 version of an Arcee model, run the demo (TTFT and t/s/u) and run the long eval test (top-1 and top-5 using --max_new_tokens 100 --prompt_file prompts/bringup_eval_long.txt), and then update MODELS.md and add the produced logs to git.
+
+  The issue details are {{item}}.
+
+  Expectations:
+  - The issue title should include '/t3000/' and point at a directory like: models/arcee-ai/<MODEL>/t3000/functional
+  - There should be an n150 reference implementation at: models/arcee-ai/<MODEL>/n150/functional/model.py
+    Use that file as the source of truth for architecture and weight names.
+
+  Work plan:
+  1. Create the directory: models/arcee-ai/<MODEL>/t3000/functional/ (if missing).
+  2. Implement models/arcee-ai/<MODEL>/t3000/functional/model.py with 1D tensor parallel over an 8-device 2x4 mesh.
+     Use existing working t3000 models as templates for the parallelism patterns:
+     - For arcee-ai/AFM-4.5B:
+       - Start from models/arcee-ai/AFM-4.5B/n150/functional/model.py for the architecture details (Yarn RoPE + relu2).
+       - Port the sharding/all-reduce patterns from models/mistralai/Mistral-7B-Instruct-v0.3/t3000/functional/model.py.
+     - For arcee-ai/Arcee-Spark (Qwen2 family):
+       - Start from models/arcee-ai/Arcee-Spark/n150/functional/model.py for the architecture and dtypes/kernel configs.
+       - Port the sharding/all-reduce patterns from models/Qwen/Qwen3-0.6B/t3000/functional/model.py, but keep the Qwen2 architecture (no Q/K norm).
+  3. Add a short models/arcee-ai/<MODEL>/t3000/functional/MODEL_BRINGUP.md describing:
+     - Any key deviations from the n150 implementation.
+     - The chosen max_seq_len (and why, if reduced).
+  4. Max sequence length:
+     - Prefer using the HF max position embeddings from the config.
+     - If that OOMs, reduce max_seq_len only as much as needed to make demo/eval succeed, and document it.
+  5. Run demo and eval (always capture logs):
+     - demo: python demo.py models/arcee-ai/<MODEL>/t3000/functional/model.py
+     - eval: python eval.py models/arcee-ai/<MODEL>/t3000/functional/model.py --model arcee-ai/<MODEL> --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100 --max_seq_len <max_seq_len>
+     Always produce demo.log and eval.log even if the command fails (capture stdout/stderr, then continue).
+  6. Update MODELS.md:
+     - Add the missing t3000 row for this model if needed.
+     - Fill Top-1/Top-5/TTFT/t/s/u/Seq len from the runs.
+     - If demo/eval crashes and you cannot get a successful run, set Top-1/Top-5/TTFT/t/s/u to 'bad' and still commit logs.
+
+  Notes:
+  - If mesh device init fails, set `TT_MESH_GRAPH_DESC_PATH=/proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/t3k_mesh_graph_descriptor.textproto`.
+  - If `TT_VISIBLE_DEVICES` is unset, set it from `tt-smi -ls`. On Loudbox t3k hosts this is often the 4 PCI Dev IDs for the n300 boards (example: `0,1,2,3`); do not assume `0-7`.
+  - If you see `cannot map elf file into memory: No space left on device`, rerun with `TT_METAL_CACHE=/tmp/tt-metal-cache` and `TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-runtime-root`.
+
+  Deliverables:
+  - models/arcee-ai/<MODEL>/t3000/functional/model.py
+  - models/arcee-ai/<MODEL>/t3000/functional/MODEL_BRINGUP.md
+  - models/arcee-ai/<MODEL>/t3000/functional/demo.log and eval.log (command line + output)
+  - MODELS.md updated for the model's t3000 row
+
+set_up: |
+  Make sure you are in /localdev/moconnor/ttnn_models
+  If there are any unsaved changes, stash them and be sure to mention it in your output.
+  Create and switch to a new branch named test_<sanitized_title>, where <sanitized_title> is the issue title with the leading 'models/' stripped and slashes replaced by dashes: {{item}}
+  Run 'tt-smi -r' to reset the device.
+  Run 'tt-smi -ls' and set TT_VISIBLE_DEVICES to the PCI Dev IDs listed before running demo/eval (example: export TT_VISIBLE_DEVICES=0,1,2,3).
+on_success: |
+  Add, commit and push MODELS.md, MODEL_BRINGUP.md, model.py and the demo/eval log files, remove anything in generated/, then use 'gh' to open a PR and link it back to the issue {{item}}.
+on_failure: |
+  Add, commit and push MODELS.md, MODEL_BRINGUP.md, model.py and the demo/eval log files
+tear_down: |
+  Switch back to the main branch and leave the repo is in a clean state, e.g. no temporary files etc.
