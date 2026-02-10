@@ -41,9 +41,9 @@ repo_root=$(cd "$(dirname "$0")/.." && pwd)
 cd "$repo_root" || exit 1
 
 select_task_files() {
-    task_files=(tasks/*_"$system".yaml)
+    task_files=(tasks/*.yaml)
     if [ ! -f "${task_files[0]}" ]; then
-        echo "[worker] ERROR: No task files found for system '$system' (expected tasks/*_${system}.yaml)" >&2
+        echo "[worker] ERROR: No task files found (expected tasks/*.yaml)" >&2
         return 1
     fi
 }
@@ -89,7 +89,8 @@ while true; do
         sleep 60
         continue
     fi
+    only_matching="/${system}/"
     # Ensure codexapi output is flushed promptly to nohup logs.
-    PYTHONUNBUFFERED=1 codexapi task -p https://github.com/users/yieldthought/projects/6 -n "$agent_name" "${task_files[@]}"
+    PYTHONUNBUFFERED=1 codexapi task -p https://github.com/users/yieldthought/projects/6 -n "$agent_name" --only-matching "$only_matching" "${task_files[@]}"
     sleep 60
 done

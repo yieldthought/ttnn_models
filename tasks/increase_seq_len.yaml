@@ -1,9 +1,10 @@
 prompt: |
   Welcome to the ttnn_models project! Take your time to read the source code and understand it. This is based on tt-metal and ttnn. You can find the tt-metal source in /proj_sw/user_dev/moconnor/tt-metal/ if you need to look something up.
 
-  Our task today is to increase the max sequence length for an n300 model implementation while preserving correctness and paged attention + paged KV cache.
+  Our task today is to increase the max sequence length for a model implementation while preserving correctness and paged attention + paged KV cache.
 
-  The issue title should point at a directory like: models/<org>/<MODEL>/n300/functional
+  The issue title should point at a directory like: models/<org>/<MODEL>/<system>/functional
+  Use <system> from the issue title path (for example: n150, n300, t3000).
   The issue details are {{item}}.
 
   Requirements:
@@ -19,9 +20,10 @@ prompt: |
   - Update MODELS.md for this model/hardware/variant row with Top-1/Top-5/TTFT/t/s/u/Seq len.
 
   Notes:
-  - If mesh device init fails, set `TT_MESH_GRAPH_DESC_PATH=/proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/n300_mesh_graph_descriptor.textproto`.
-  - If `TT_VISIBLE_DEVICES` is unset and you suspect the wrong chips are being used, run `tt-smi -ls` and set `TT_VISIBLE_DEVICES` to the two PCI indices that form the n300.
   - If you see `cannot map elf file into memory: No space left on device`, rerun with `TT_METAL_CACHE=/tmp/tt-metal-cache` and `TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-runtime-root`.
+  - If you see TT JIT compile errors in `llk_*` headers (e.g. `_llk_unpack_untilize_init_` arg mismatch), run:
+    `cd /proj_sw/user_dev/moconnor/tt-metal && git submodule update --init --recursive`
+    and then rerun demo/eval.
 
   Deliverables:
   - Updated <dir>/model.py (+ any helper files you touched).
@@ -34,9 +36,7 @@ set_up: |
   If there are any unsaved changes, stash them and be sure to mention it in your output.
   Create and switch to a new branch named seq_<sanitized_title>, where <sanitized_title> is the issue title with the leading 'models/' stripped and slashes replaced by dashes: {{item}}
   Run 'tt-smi -r' to reset the device.
-  Run 'tt-smi -ls' and set TT_VISIBLE_DEVICES based on the PCI Dev IDs shown before running demo/eval:
-  - If the host exposes 2 single-chip boards for n300, use both IDs (example: export TT_VISIBLE_DEVICES=4,5).
-  - If the host exposes a single 2-chip n300 board, use that one ID (example: export TT_VISIBLE_DEVICES=0).
+  Run 'tt-smi -ls' and confirm the expected board(s) are visible before running demo/eval.
 
 on_success: |
   Add, commit and push MODELS.md, MODEL_BRINGUP.md, model.py and the demo/eval log files, remove anything in generated/.
@@ -49,4 +49,3 @@ on_failure: |
 
 tear_down: |
   Switch back to the main branch and leave the repo is in a clean state, e.g. no temporary files etc.
-

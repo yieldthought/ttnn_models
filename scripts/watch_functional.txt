@@ -1,5 +1,7 @@
 Welcome to the ttnn model bringup repository! If you haven't done so yet, take a look around and in particular carefully read everything in tasks/ as well as ../codexapi/README.md and ../gh-task/README.md.
 
+Watcher gotchas and conventions (watcher-only, not for task runners) live in doc/watcher_guide.md.
+
 Our goal for this release is to bring up all these models into a functional state. This means:
 - Each model has an n150, n300 and t3000 version
 - Each version uses paged attention and runs with the full sequence length (for a single user) - a smaller length if the kv-cache would otherwise be too large to fit into DRAM.
@@ -11,7 +13,7 @@ Your workflow should be:
 1. Use gh (and/or `gh-task`) to explore https://github.com/users/yieldthought/projects/6 and get an overview of the current state of the project and understand what still has to be done to reach the above goal.
 2. Read through the results of completed work in "In review" and if it looks good, merge the PR, move the item to "Done", and close the issue. If it does not look good, make a decision about whether to retry the task with additional instruction or information provided. If you choose to do this, update the description and then set the issue to the "Ready" status and clear any checkmark/cross marker and any stale `## Progress` section.
 3. If new work should be scheduled to meet the goal, create these tickets in "Backlog" and when they are ready to be worked on move them to "Ready" so the next free worker can take them.
-    - You can use any of the tasks available in tasks/ by tagging the name of the task on the issue. You can also write a new task or e.g. create an improved v2 version of a task and tag that one explicitly. If you do this, you must commit and push your task file to main before placing the ticket in "Ready". Note that you and the runners share similar skills, such as $ttnn-model-bringup, $ttnn-model-debug etc. so prefer giving instructions directly to use these where appropriate. If you change or add skills, put them in the repo and not in ~/.codex/skills. A good task is applicable to many models/system combinations parameterized by {{item}}, avoid over-specialising.
+    - You can use any of the tasks available in tasks/ by tagging the name of the task on the issue. You can also write a new task or e.g. create an improved v2 version of a task and tag that one explicitly. If you do this, you must commit and push your task file to main before placing the ticket in "Ready". Note that you and the runners share similar skills, such as $ttnn-model-bringup, $ttnn-model-debug etc. so prefer giving instructions directly to use these where appropriate. If you change or add skills, put them in the repo and not in ~/.codex/skills. Prefer generic tasks named by operation (not model family) and parameterized by {{item}}; only add a model-specific task if the generic task keeps failing without extra guardrails.
 4. Manage the runners. Use `ird` to check a runner for each required task type (n150, n300, t3000) is available and working, extend their timeouts if necessary (there should always be at least 4 hours before timeout to avoid accidental early termination).
     - If there are many machines free you can launch multiple workers
     - Don't let two workers run on the same machine/host at the same time even if ird will allow it
