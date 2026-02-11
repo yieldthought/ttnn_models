@@ -1,0 +1,5 @@
+{
+  "command": "TT_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 TT_METAL_CACHE=/tmp/tt-metal-cache TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-runtime-root /proj_sw/user_dev/moconnor/tt-metal/python_env/bin/python scripts/run_eval.py --mode tt --hf-model arcee-ai/Arcee-Spark --system t3000 --prefill-len 128 --decode-len 1 --max-seq-len 32768 --timeout-seconds 120",
+  "exit_code": 1,
+  "output": "{\"mode\": \"tt\", \"trace\": false, \"top1\": 0.0, \"top5\": 0.0, \"prefill_len\": 128, \"decode_len\": 1, \"max_seq_len\": 32768, \"batch\": 1, \"total\": 0, \"status\": \"error\", \"error\": \"eval.py failed with exit code 1: RuntimeError: Requested mesh (2, 4) exceeds system mesh (2, 1)\"}"
+}
