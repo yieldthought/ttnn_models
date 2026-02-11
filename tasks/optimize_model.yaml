@@ -1,0 +1,38 @@
+prompt: |
+  Welcome to the ttnn_models project! Take your time to read the source code and understand it. This is based on tt-metal and ttnn. You can find the tt-metal source in /proj_sw/user_dev/moconnor/tt-metal/ if you need to look something up.
+
+  Apply the `$ttnn-model-optimization` skill to `{{item}}`.
+
+  Scope:
+  - The issue title should point at `models/<org>/<MODEL>/<system>/<variant>`.
+  - Use that target directory for model/log/doc updates.
+
+  Deliverables:
+  - Updated model code (and any helper files touched).
+  - Updated `<dir>/MODEL_BRINGUP.md` with baseline/final metrics and optimization decisions.
+  - Updated `MODELS.md` if reported metrics changed.
+  - `<dir>/demo.log` and `<dir>/eval.log` with command line + output.
+check: |
+  1. Decode uses traced execution.
+  2. Top-1 / Top-5 accuracy is >= 85 / 95.
+  3. TTFT and tok/s are improved versus the corresponding functional model on the same system.
+  4. Main optimization recommendations from `doc/ttnn.md` are implemented, or tried and explicitly rejected with evidence.
+  5. `MODELS.md` is updated for the optimized model row with the new results.
+  6. No capability regression: optimized `max_seq_len` is >= the corresponding functional model on the same system.
+  7. `demo.log` and `eval.log` exist, include commands and results, and demo output is coherent.
+  8. `<dir>/MODEL_BRINGUP.md` records baseline vs final metrics and kept vs rejected optimization decisions.
+set_up: |
+  Make sure you are in /localdev/moconnor/ttnn_models
+  If there are any unsaved changes, stash them and be sure to mention it in your output.
+  Create and switch to a new branch named opt_<sanitized_title>, where <sanitized_title> is the issue title with the leading 'models/' stripped and slashes replaced by dashes: {{item}}
+  Run 'tt-smi -r' to reset the device.
+  Run 'tt-smi -ls' and confirm the expected board(s) are visible before running demo/eval.
+on_success: |
+  Add, commit and push MODELS.md, MODEL_BRINGUP.md, updated model code/helper files and the demo/eval log files, remove anything in generated/.
+  If a PR already exists for this branch, update it (push new commits). Otherwise open a PR and link it back to the issue {{item}}.
+  Include `Fixes #<issue-number>` on its own line in the PR body, and use `gh pr create --body-file ...` (not `--body` with `\n` escapes) so GitHub recognizes the closing keyword.
+on_failure: |
+  Add, commit and push MODELS.md, MODEL_BRINGUP.md, updated model code/helper files and the demo/eval log files, remove anything in generated/.
+  If you made meaningful progress, open a PR for review, but do NOT include a closing keyword (use `Refs #<issue-number>` instead).
+tear_down: |
+  Switch back to the main branch and leave the repo is in a clean state, e.g. no temporary files etc.
