@@ -8,9 +8,20 @@ import pathlib
 import subprocess
 import sys
 import tempfile
+import warnings
+
+warnings.filterwarnings(
+    "ignore",
+    message="Using `TRANSFORMERS_CACHE` is deprecated and will be removed in v5 of Transformers. Use `HF_HOME` instead.",
+    category=FutureWarning,
+)
+os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers.utils import logging as hf_logging
+
+hf_logging.disable_progress_bar()
 
 
 DEFAULT_PREFILL_LEN = 20
