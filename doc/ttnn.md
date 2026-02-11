@@ -1,8 +1,8 @@
 # TTNN Bringup Notes (tt-metal/ttnn)
 
-Practical guidance for bringing up HuggingFace LLMs on TTNN. This is not a full API
-reference. It focuses on the ops used by the Llama 3.2 1B functional bringup and the
-failure modes we keep hitting.
+Practical guidance for bringing up and optimizing HuggingFace LLMs on TTNN. This is not
+a full API reference. It focuses on the ops and constraints we use in the Llama 3.2 1B
+n150 optimized path and the failure modes we keep hitting.
 
 ## Quick bringup checklist
 
@@ -61,7 +61,7 @@ attn = ttnn.experimental.nlp_concat_heads(attn, memory_config=ttnn.DRAM_MEMORY_C
 
 # Decode (seq_len == 1)
 q, k, v = ttnn.experimental.nlp_create_qkv_heads_decode(
-    qkv, num_heads=n_qh, num_kv_heads=n_kh, memory_config=ttnn.DRAM_MEMORY_CONFIG,
+    qkv, num_heads=n_qh, num_kv_heads=n_kh, memory_config=ttnn.L1_MEMORY_CONFIG,
 )
 q = ttnn.experimental.rotary_embedding(q, cos_cache, sin_cache, start_pos)
 k = ttnn.experimental.rotary_embedding(k, cos_cache, sin_cache, start_pos)
@@ -74,9 +74,13 @@ attn = ttnn.transformer.paged_scaled_dot_product_attention_decode(
     page_table_tensor=page_table,
     cur_pos_tensor=cur_pos_tensor,
     scale=scale,
+    memory_config=ttnn.L1_MEMORY_CONFIG,
 )
-attn = ttnn.transpose(attn, 1, 2)
-attn = ttnn.experimental.nlp_concat_heads(attn, memory_config=ttnn.DRAM_MEMORY_CONFIG)
+# For GQA decode, SDPA output is interleaved; reshard before concat-heads-decode.
+attn = ttnn.to_memory_config(attn, decode_heads_memcfg)
+attn = ttnn.experimental.nlp_concat_heads_decode(
+    attn, num_heads=n_qh, memory_config=decode_output_memcfg,
+)
 ```
 
 ## Sequence length and paged KV cache
@@ -94,33 +98,6 @@ Paged cache recipe:
 - Decode: `ttnn.experimental.paged_update_cache(..., page_table=page_table)` and
   `ttnn.transformer.paged_scaled_dot_product_attention_decode(..., page_table_tensor=page_table, cur_pos_tensor=cur_pos_tensor)`.
 - Decode positions: set `cur_pos_tensor` to `-1` for padded batch entries so unused slots are skipped.
-
-### Legacy non-paged KV cache (fallback)
-
-If you keep the default cache layout `[32, n_kv_heads, max_seq_len, head_dim]`, prefill uses
-`ttnn.fill_cache`. Interleaved `fill_cache` can hit the grid-size work-block limit for large
-`n_kv_heads * seq_tiles`. In that case, shard K/V for `fill_cache` (height-sharded, ROW_MAJOR):
-
-```python
-grid = tt_device.core_grid
-grid_x = min(grid.x, n_kv_heads)
-while grid_x > 1 and n_kv_heads % grid_x != 0:
-    grid_x -= 1
-shard_grid = ttnn.CoreGrid(x=grid_x, y=n_kv_heads // grid_x)
-if shard_grid.y > grid.y:
-    raise ValueError("shard grid exceeds device core grid")
-
-shard_mem_config = ttnn.create_sharded_memory_config(
-    k.shape,
-    shard_grid,
-    ttnn.ShardStrategy.HEIGHT,
-    ttnn.ShardOrientation.ROW_MAJOR,
-)
-k_sharded = ttnn.to_memory_config(k, shard_mem_config)
-v_sharded = ttnn.to_memory_config(v, shard_mem_config)
-ttnn.fill_cache(k_cache, k_sharded, batch_idx=0)
-ttnn.fill_cache(v_cache, v_sharded, batch_idx=0)
-```
 
 Rough KV memory math (batch=1):
 `bytes_per_token = n_kv_heads * head_dim * 2 (K+V) * dtype_bytes * num_layers`.
@@ -145,11 +122,88 @@ python scripts/run_eval.py --mode tt --hf-model <hf-id> \
 - For each TTNN tensor, log `shape`, `padded_shape`, `dtype`, `layout`, and memory config.
 - Use `ttnn.to_torch` only for inspection or output; keep it outside trace capture.
 
+## Optimizing models
+
+This section captures the optimization workflow and lessons from the Llama-3.2-1B n150
+investigation so they are not lost when `SCIENCE.md` is removed. Treat all numbers as
+model-specific, but the ordering and constraints are broadly reusable.
+
+### Optimization order (highest leverage first)
+
+1. Lock correctness + evaluation contract first. Set a fixed eval target (for example: teacher-forcing Top-1/Top-5, coherent demo output), and keep warm-run and cold-run numbers separate.
+2. Use paged KV cache as the default decode path. It avoids the legacy `[32, n_kv_heads, seq, head_dim]` cache tax and scales to long sequence lengths.
+3. Profile decode hotspots before changing kernels. Use trace signposts + `tt-perf-report` to identify dominant device-time ops.
+4. Optimize memory-bound decode matmuls first. Start with decode MLP matmuls, then decode `o_proj`, then LM head if feasible.
+5. Tune lightweight program-config/grid knobs after big kernel/layout changes, and keep these changes isolated and easy to revert.
+6. Sweep precision and compute fidelity per submodule, not globally. Re-run full teacher-forcing after each sweep because decode kernel config can shift Top-1.
+7. Make decode traces allocation-free. Capture trace after prefill and avoid post-trace allocations in the decode loop.
+
+### What was worth it (Llama-3.2-1B n150)
+
+- DRAM-sharded decode MLP matmuls were the biggest decode win.
+- This required decode-only sharded weights and a decode MLP path that avoids `ttnn.swiglu` on width-sharded inputs.
+- DRAM-sharded decode `o_proj` gave a smaller but real win.
+- LM head decode grid tuning (avoid full `8x8` when it hurts K blocking) gave another small win.
+- Keeping decode token/RoPE buffers in L1 (while keeping position indices in DRAM) gave a small gain.
+- `prefill_logits_last_device()` reduced unnecessary prefill logits work and improved TTFT in this setup.
+
+### What was not worth it (or was blocked)
+
+- DRAM-sharded decode QKV improved the QKV op in microbenchmarks but barely moved layer-level time.
+- Device-side top-k sampling prototype was slower end-to-end in this setup.
+- DRAM-sharded one-shot LM head decode hit L1/static-CB limits and needs vocab chunking or a different path.
+- Reducing decode core grid below 32 cores failed for `nlp_concat_heads_decode` due to padded decode batch sharding requirements.
+- Some SDPA decode fidelity/accumulation settings looked attractive but were slower on measured runs.
+- Several decode program-config tweaks moved accuracy by ~1 Top-1 point or regressed throughput; treat as fragile and revalidate.
+
+### Hard constraints to keep in mind
+
+- Paged decode with tile-padded decode batch needs inactive `cur_pos_tensor` lanes set to `-1`.
+- `ttnn.experimental.paged_update_cache(..., update_idxs_tensor=...)` requires DRAM buffer type for `update_idxs_tensor`.
+- For GQA models, `ttnn.transformer.paged_scaled_dot_product_attention_decode` does not support sharded output memory config.
+- DRAM-sharded matmul program configs require input activation A to be sharded.
+- DRAM-sharded matmul program configs require weight B memory layout to be `WIDTH_SHARDED`.
+- DRAM-sharded matmul program configs require output memory config to be sharded.
+- `ttnn.experimental.nlp_concat_heads_decode` decode path effectively requires one core per padded decode user lane.
+- `ttnn.slice` on sharded tensors has been unreliable in this bringup; interleaved tensors are safer for slicing.
+
+### Measurement discipline
+
+- `demo.py` performs one prefill+decode warmup pass before timing to compile first-use kernels.
+- Keep evaluation prompt/seed fixed when comparing optimizations.
+- Measure accuracy (`eval.py` teacher-forcing).
+- Measure end-to-end demo throughput (`demo.py`) plus microbench regions for root-cause attribution.
+- If an optimization adds significant code complexity but only yields noise-level gains, prefer reverting it.
+
+### Exact command examples
+
+Teacher-forcing eval (100 tokens):
+```bash
+python eval.py models/meta-llama/Llama-3.2-1B/n150/optimized/model.py \
+  --max_new_tokens 100 \
+  --prompt_file prompts/bringup_eval_long.txt \
+  --seed 0
+```
+
+Demo timing (includes built-in one-pass warmup):
+```bash
+python demo.py models/meta-llama/Llama-3.2-1B/n150/optimized/model.py --seed 0
+```
+
+Layer/LM-head profiling with signposts:
+```bash
+python -m tracy -r -p -v -o /tmp/llama32-prof-tracy scripts/profile_llama32_1b_optimized.py
+tt-perf-report /tmp/llama32-prof-tracy/reports/*/ops_perf_results_*.csv \
+  --start-signpost LAYER0_START --end-signpost LAYER0_END
+tt-perf-report /tmp/llama32-prof-tracy/reports/*/ops_perf_results_*.csv \
+  --start-signpost LM_HEAD_START --end-signpost LM_HEAD_END
+```
+
 ## Llama bringup ops reference
 
 Each entry includes a minimal call pattern, typical shapes, and constraints/gotchas
-observed in tt-metal. Paths refer to the Llama 3.2 1B bringup in
-`models/meta-llama/Llama-3.2-1B/n150/functional/model.py`.
+observed in tt-metal. Paths refer to the Llama 3.2 1B n150 optimized bringup in
+`models/meta-llama/Llama-3.2-1B/n150/optimized/model.py`.
 
 ### `ttnn.as_tensor`
 
@@ -335,7 +389,7 @@ Gotchas:
 
 ### `ttnn.transpose`
 
-Purpose: swap tensor dimensions (decode attention output path).
+Purpose: swap tensor dimensions.
 
 Call:
 ```python
@@ -343,7 +397,11 @@ y = ttnn.transpose(x, 1, 2)
 ```
 
 Typical shapes:
-- Decode attention output: `[1, B, n_qh, d]` -> `[1, n_qh, B, d]`
+- Legacy decode/head path example: `[1, B, n_qh, d]` -> `[1, n_qh, B, d]`
+
+Note:
+- This op is usually not needed in the recommended paged decode path that uses
+  `ttnn.experimental.nlp_concat_heads_decode`.
 
 Gotchas:
 - For rank > 4, transpose uses `permute`; for rank <= 4 it is constrained to N/C/H/W dims.
@@ -365,30 +423,6 @@ ttnn.deallocate(qkv)
 
 Gotchas:
 - No functional constraints beyond releasing device buffers; avoid deallocate inside trace capture.
-
-### `ttnn.fill_cache`
-
-Purpose: copy prefill K/V into a legacy (non-paged) cache at batch index.
-
-Prefer paged KV cache (`ttnn.experimental.paged_fill_cache` / `ttnn.experimental.paged_update_cache`)
-for long sequence lengths.
-
-Call:
-```python
-ttnn.fill_cache(cache, k, batch_idx=0)
-```
-
-Typical shapes:
-- `cache`: `[B, n_kv, S_max, d]` (TILE, DRAM)
-- `k`/`v`: `[B, n_kv, S, d]` (TILE)
-
-Gotchas:
-- Requires device tensors, TILE layout, matching width/height, and interleaved cache memory
-  layout.
-- Input batch size must be 1; `batch_idx` must be in range; input seq_len <= cache seq_len.
-- For FILL, input and cache dtypes must match.
-- Interleaved inputs with seq_len > 1 must fit within grid size; sharded inputs must not be
-  WIDTH_SHARDED and shard width must match padded width.
 
 ### `ttnn.experimental.paged_fill_cache`
 
@@ -478,8 +512,7 @@ Gotchas:
 - If `input_kv` is provided, Q and KV head_dim must match; otherwise it raises.
 - If `input_kv` is not provided, input last dim must be divisible by
   `(num_q_heads + 2 * num_kv_heads)`.
-- `transpose_k_heads` defaults to true (K is transposed); code relies on this for SDPA layout
-  expectations.
+- In this bringup path we use `transpose_k_heads=False`.
 
 ### `ttnn.experimental.nlp_create_qkv_heads_decode`
 
@@ -488,7 +521,7 @@ Purpose: split fused QKV for decode (batch is tile-aligned).
 Call:
 ```python
 q, k, v = ttnn.experimental.nlp_create_qkv_heads_decode(
-    qkv, num_heads=n_qh, num_kv_heads=n_kh, memory_config=ttnn.DRAM_MEMORY_CONFIG,
+    qkv, num_heads=n_qh, num_kv_heads=n_kh, memory_config=ttnn.L1_MEMORY_CONFIG,
 )
 ```
 
@@ -498,8 +531,7 @@ Typical shapes:
 - `k`/`v`: `[1, B, n_kh, d]`
 
 Gotchas:
-- Input must be on device, TILE layout, and typically WIDTH_SHARDED with ROW_MAJOR sharding
-  orientation.
+- Input must be on device and TILE layout.
 - Input shape must be `[1, 1, B, head_dim * (num_q_heads + 2*num_kv_heads)]` with `B <= 32`
   and head_dim multiple of TILE_WIDTH.
 - `num_q_heads <= 32` and `num_q_heads >= num_kv_heads`.
@@ -517,13 +549,36 @@ y = ttnn.experimental.nlp_concat_heads(attn_out, memory_config=ttnn.DRAM_MEMORY_
 
 Typical shapes:
 - Prefill `attn_out`: `[1, n_qh, S, d]` -> `[1, 1, S, H]`
-- Decode `attn_out`: `[1, n_qh, B, d]` -> `[1, 1, B, H]`
+
+Note:
+- For decode, prefer `ttnn.experimental.nlp_concat_heads_decode`.
 
 Gotchas:
 - Input must be on device, TILE layout, dtype BF16/BFP8/FP32.
 - Sharded inputs must not be WIDTH_SHARDED and shard width must match padded width.
 - For sharded input, output must not be HEIGHT_SHARDED; for interleaved input, output must be
   interleaved.
+
+### `ttnn.experimental.nlp_concat_heads_decode`
+
+Purpose: collapse decode heads back to hidden dimension in the decode-optimized path.
+
+Call:
+```python
+y = ttnn.experimental.nlp_concat_heads_decode(
+    attn_out, num_heads=n_qh, memory_config=decode_output_memcfg,
+)
+```
+
+Typical shapes:
+- `attn_out`: `[1, B, n_qh, d]`
+- `y`: `[1, 1, B, H]`
+
+Gotchas:
+- Decode path expects a HEIGHT_SHARDED input whose core count matches padded decode batch.
+- For the common padded decode batch `B=32`, this effectively requires 32 decode cores.
+- For GQA decode, `paged_scaled_dot_product_attention_decode` output is interleaved, so do an
+  explicit `ttnn.to_memory_config(..., decode_heads_memcfg)` before this op.
 
 ### `ttnn.transformer.scaled_dot_product_attention`
 
@@ -570,13 +625,11 @@ Typical shapes:
 - `k_cache`/`v_cache`: `[max_num_blocks, n_kh, block_size, d]`
 - `page_table`: `[32, max_num_blocks]` int32 (ROW_MAJOR)
 - `cur_pos_tensor`: `[B]` int32 (ROW_MAJOR)
-- `attn_out`: `[1, B, n_qh, d]` (transpose before concat)
+- `attn_out`: `[1, B, n_qh, d]` (typically interleaved for GQA models)
 
 Gotchas:
 - Decode uses tile-aligned batch B (usually 32) even for batch=1; set `cur_pos_tensor` to `-1`
   for inactive lanes so they are skipped.
 - `page_table` must be ROW_MAJOR int32 and match how cache blocks are mapped (identity mapping is fine).
-
-Legacy note:
-- `ttnn.transformer.scaled_dot_product_attention_decode` is the non-paged decode attention op and
-  expects a non-paged KV cache layout.
+- For GQA models, sharded output memory config is not supported. Keep SDPA decode output interleaved,
+  then reshard before `ttnn.experimental.nlp_concat_heads_decode` if needed.

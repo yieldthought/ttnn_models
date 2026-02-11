@@ -42,9 +42,13 @@ def evaluate(
 
     past = None
     prompt_ids = reference_tokens[:prompt_len].unsqueeze(0)
-    outputs = tt_model(prompt_ids, past_key_values=past, use_cache=True)
-    past = outputs.past_key_values
-    logits = outputs.logits[0, -1, :]
+    if hasattr(tt_model, "prefill_logits_last_device"):
+        logits, past = tt_model.prefill_logits_last_device(prompt_ids, use_cache=True)
+        logits = logits[0]
+    else:
+        outputs = tt_model(prompt_ids, past_key_values=past, use_cache=True)
+        past = outputs.past_key_values
+        logits = outputs.logits[0, -1, :]
     target_id = int(reference_tokens[prompt_len].item())
     step_top1, step_top5 = score_step(logits, target_id)
     top1 += step_top1

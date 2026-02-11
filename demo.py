@@ -11,6 +11,7 @@ Usage:
 
 import argparse
 import pathlib
+import os
 import sys
 import time
 from typing import Optional, Tuple
@@ -48,31 +49,49 @@ def sync_if_needed(tt_device, is_tt: bool):
     ttnn.synchronize_device(tt_device)
 
 
-def warmup_model(model, input_ids: torch.Tensor, is_tt: bool, tt_device):
-    """Warm up with one prefill and one decode step."""
+def warmup_model(model, input_ids: torch.Tensor, is_tt: bool, tt_device, warmup_device_sampling: bool = False):
+    """Warm up kernels with one prefill pass and one decode step."""
     trace_enabled = getattr(model, "use_decode_trace", None)
     if trace_enabled is not None:
         model.use_decode_trace = False
     try:
         with torch.no_grad():
-            outputs = model(input_ids, use_cache=True)
-            sync_if_needed(tt_device, is_tt)
-            logits = outputs.logits[:, -1, :]
-            next_token = int(torch.argmax(logits, dim=-1).item())
-            next_input = torch.tensor([[next_token]], dtype=torch.long)
-            _ = model(next_input, past_key_values=outputs.past_key_values, use_cache=True)
+            use_device_sampling = is_tt and warmup_device_sampling and hasattr(model, "next_token_device")
+            if use_device_sampling:
+                next_token, past = model.next_token_device(input_ids, past_key_values=None, use_cache=True)
+                next_input = torch.tensor([[next_token]], dtype=torch.long)
+                _ = model.next_token_device(next_input, past_key_values=past, use_cache=True)
+            else:
+                past = None
+                if is_tt and hasattr(model, "prefill_logits_last_device"):
+                    logits, past = model.prefill_logits_last_device(input_ids, use_cache=True)
+                else:
+                    outputs = model(input_ids, use_cache=True)
+                    past = outputs.past_key_values
+                    logits = outputs.logits[:, -1, :]
+                next_token = int(torch.argmax(logits, dim=-1).item())
+                next_input = torch.tensor([[next_token]], dtype=torch.long)
+                _ = model(next_input, past_key_values=past, use_cache=True)
             sync_if_needed(tt_device, is_tt)
     finally:
         if trace_enabled is not None:
             model.use_decode_trace = trace_enabled
 
-    if trace_enabled and hasattr(model, "next_token_device"):
-        with torch.no_grad():
-            _ = model.next_token_device(input_ids[:, -1:], past_key_values=None, use_cache=True)
-            sync_if_needed(tt_device, is_tt)
-
     if hasattr(model, "reset"):
         model.reset()
+
+
+def maybe_tt_signpost(is_tt: bool, name: str, attributes: Optional[str] = None) -> None:
+    if not is_tt:
+        return
+    if os.environ.get("TT_METAL_DEVICE_PROFILER") != "1" and os.environ.get("TT_SIGNPOSTS") != "1":
+        return
+    import ttnn
+
+    message = f"TT_SIGNPOST: {name}"
+    if attributes:
+        message = f"{message}\n{attributes}"
+    ttnn.tracy_message(message)
 
 
 def pick_next_token(logits: torch.Tensor, temperature: float, top_k: int) -> int:
@@ -111,19 +130,25 @@ def generate_with_timing(
     use_device_sampling = is_tt and hasattr(model, "next_token_device") and temperature <= 0.0
 
     with torch.no_grad():
+        maybe_tt_signpost(is_tt, "PREFILL_START")
         start = time.perf_counter()
         if use_device_sampling:
             next_token, past = model.next_token_device(input_ids, past_key_values=None, use_cache=True)
         else:
-            if attention_mask is None:
-                outputs = model(input_ids, use_cache=True)
+            if is_tt and hasattr(model, "prefill_logits_last_device"):
+                logits, past = model.prefill_logits_last_device(input_ids, use_cache=True)
+                next_token = pick_next_token(logits, temperature, top_k)
             else:
-                outputs = model(input_ids, attention_mask=attention_mask, use_cache=True)
-            next_token = pick_next_token(outputs.logits[:, -1, :], temperature, top_k)
-            past = outputs.past_key_values
+                if attention_mask is None:
+                    outputs = model(input_ids, use_cache=True)
+                else:
+                    outputs = model(input_ids, attention_mask=attention_mask, use_cache=True)
+                next_token = pick_next_token(outputs.logits[:, -1, :], temperature, top_k)
+                past = outputs.past_key_values
         if not use_device_sampling:
             sync_if_needed(tt_device, is_tt)
         prefill_time = time.perf_counter() - start
+        maybe_tt_signpost(is_tt, "PREFILL_END")
         generated = [next_token]
 
         eos_token_id = tokenizer.eos_token_id
@@ -131,9 +156,39 @@ def generate_with_timing(
             text = tokenizer.decode(generated, skip_special_tokens=True, clean_up_tokenization_spaces=False)
             return text, len(generated), prefill_time, 0.0, 0
 
-        decode_start = time.perf_counter()
         input_token = torch.empty((1, 1), dtype=torch.long)
-        for _ in range(max_new_tokens - 1):
+        timed_decode_tokens = 0
+        remaining_steps = max_new_tokens - 1
+
+        trace_needs_capture = (
+            is_tt
+            and hasattr(model, "use_decode_trace")
+            and bool(getattr(model, "use_decode_trace"))
+            and hasattr(model, "decode_trace_id")
+            and getattr(model, "decode_trace_id") is None
+            and remaining_steps > 0
+        )
+
+        if trace_needs_capture and remaining_steps > 0:
+            # Capture the decode trace after prefill, so we don't run a full prefill while a trace exists.
+            # Exclude this priming step from the timed decode throughput.
+            input_token[0, 0] = generated[-1]
+            if use_device_sampling:
+                next_token, past = model.next_token_device(input_token, past_key_values=past, use_cache=True)
+            else:
+                outputs = model(input_token, past_key_values=past, use_cache=True)
+                past = outputs.past_key_values
+                next_token = pick_next_token(outputs.logits[:, -1, :], temperature, top_k)
+            sync_if_needed(tt_device, is_tt)
+            generated.append(next_token)
+            remaining_steps -= 1
+            if eos_token_id is not None and next_token == eos_token_id:
+                text = tokenizer.decode(generated, skip_special_tokens=True, clean_up_tokenization_spaces=False)
+                return text, len(generated), prefill_time, 0.0, 0
+
+        maybe_tt_signpost(is_tt, "DECODE_TIMING_START")
+        decode_start = time.perf_counter()
+        for _ in range(remaining_steps):
             input_token[0, 0] = generated[-1]
             if use_device_sampling:
                 next_token, past = model.next_token_device(input_token, past_key_values=past, use_cache=True)
@@ -144,13 +199,14 @@ def generate_with_timing(
             if not use_device_sampling:
                 sync_if_needed(tt_device, is_tt)
             generated.append(next_token)
+            timed_decode_tokens += 1
             if eos_token_id is not None and next_token == eos_token_id:
                 break
         decode_time = time.perf_counter() - decode_start
+        maybe_tt_signpost(is_tt, "DECODE_TIMING_END")
 
     text = tokenizer.decode(generated, skip_special_tokens=True, clean_up_tokenization_spaces=False)
-    decode_tokens = max(len(generated) - 1, 0)
-    return text, len(generated), prefill_time, decode_time, decode_tokens
+    return text, len(generated), prefill_time, decode_time, timed_decode_tokens
 
 
 def use_color() -> bool:
@@ -312,7 +368,8 @@ def run_tt_demo(
         tt_model = build_tt_model(model_module, hf_model, tt_device, max_seq_len)
         tt_model.eval()
 
-        warmup_model(tt_model, input_ids, True, tt_device)
+        print("Running one warmup prefill+decode pass (kernel compile warmup)...")
+        warmup_model(tt_model, input_ids, True, tt_device, warmup_device_sampling=temperature <= 0.0)
 
         output, generated_tokens, prefill_time, decode_time, decode_tokens = generate_with_timing(
             tt_model,
