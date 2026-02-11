@@ -15,13 +15,19 @@ warnings.filterwarnings(
     message="Using `TRANSFORMERS_CACHE` is deprecated and will be removed in v5 of Transformers. Use `HF_HOME` instead.",
     category=FutureWarning,
 )
+warnings.filterwarnings(
+    "ignore",
+    message="Passing a tuple of `past_key_values` is deprecated",
+)
 os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+os.environ.setdefault("TRANSFORMERS_NO_ADVISORY_WARNINGS", "1")
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers.utils import logging as hf_logging
 
 hf_logging.disable_progress_bar()
+hf_logging.set_verbosity_error()
 
 
 DEFAULT_PREFILL_LEN = 20
