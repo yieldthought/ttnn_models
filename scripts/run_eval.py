@@ -34,6 +34,15 @@ DEFAULT_PREFILL_LEN = 20
 DEFAULT_DECODE_LEN = 20
 
 
+def emit_metrics(metrics: dict, output_format: str) -> None:
+    """Emit metrics in the requested output format."""
+    payload = json.dumps(metrics)
+    if output_format == "json":
+        print(payload)
+        return
+    print(f"YT_METRICS={payload}")
+
+
 def resolve_model_path(repo_root: pathlib.Path, hf_model_id: str, system: str) -> pathlib.Path:
     """Resolve model.py path using the HF model id as the directory convention."""
     model_path = repo_root / "models" / hf_model_id / system / "functional" / "model.py"
@@ -242,6 +251,11 @@ def main():
     parser.add_argument("--batch", type=int, default=1)
     parser.add_argument("--trace", type=int, default=0)
     parser.add_argument("--cache-dir", default=None)
+    parser.add_argument(
+        "--output-format",
+        choices=["yt_metrics", "json"],
+        default=os.environ.get("YT_OUTPUT_FORMAT", "yt_metrics"),
+    )
     args = parser.parse_args()
 
     if args.batch != 1:
@@ -292,7 +306,7 @@ def main():
                 "batch": args.batch,
                 "total": int(total),
             }
-            print(f"YT_METRICS={json.dumps(metrics)}")
+            emit_metrics(metrics, args.output_format)
             continue
 
         model_path = resolve_model_path(repo_root, args.hf_model, args.system)
@@ -327,7 +341,7 @@ def main():
                 "batch": args.batch,
                 "total": int(total),
             }
-            print(f"YT_METRICS={json.dumps(metrics)}")
+            emit_metrics(metrics, args.output_format)
 
 
 if __name__ == "__main__":
