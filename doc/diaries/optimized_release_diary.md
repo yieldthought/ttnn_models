@@ -421,3 +421,18 @@
   - Checked latest remote session tail; current activity is still live warmup/compile + eval flow for #154, so no intervention/restart was needed.
 - No merge/retry/scheduling actions were needed this tick because no item reached In review and no runner fault was detected.
 - Assessment: release completion is fully gated on #154 finishing and reaching review/merge.
+
+## 2026-02-13 00:54
+
+- Reviewed and merged PR #191 (#154, Falcon3-7B-Instruct n300 optimized) after validating acceptance artifacts:
+  - Long eval Top-1 97% / Top-5 100%.
+  - TTFT 72ms vs 661ms functional and decode 21.8 t/s/u vs 5.6 functional.
+  - Seq len 32768 (no regression) and decode trace enabled in `model.py`.
+  - `demo.log`, `eval.log`, and `MODELS.md` optimized row are present and consistent.
+- Post-merge completion check:
+  - Project board has no non-Done items; no open issues; no open PRs.
+  - Verified MODELS coverage against release criteria: all 27 functional rows have optimized counterparts, all with quality/pass + TTFT/t/s/u improvements + no seq regression.
+- Runner management / shutdown:
+  - Released final n300 reservation (wh-04); `ird list` now reports zero active reservations.
+- Sent Pushover notification announcing optimized-release completion and runner shutdown.
+- Release objective is complete.
