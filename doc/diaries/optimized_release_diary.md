@@ -316,3 +316,13 @@
   - n300: wh-04 (agent3) running `scripts/worker.sh` + `codexapi task` for active n300 work.
   - No t3000 worker is running (no remaining t3000 Ready/In progress items).
   - Reservation headroom remains above the 4h floor (~6h42, ~6h43, ~7h54), so no extensions were needed this pass.
+
+## 2026-02-12 19:59
+
+- Reviewed and merged PR #185 (Falcon3-7B-Instruct n150 optimized) and PR #186 (Phi-3-mini-128k-instruct n150 optimized); both met release acceptance (quality, traced decode, TTFT/t/s/u improvements, no seq regression) and moved #153/#150 to Done.
+- Project now: Done 76, In progress 1 (#142 n300), Ready 4 (#145/#148/#151/#154), In review 0, open PRs 0.
+- Runner management:
+  - Released idle n150 reservations (aus-wh-20 then aus-wh-08) because no n150 tasks remain.
+  - Kept one healthy n300 runner on wh-04 (`agent3`) with >7h remaining.
+  - Verified active work via process/session evidence: #142 is still running long eval on a real 1x2 n300 mesh (device open 1x2, eval process active).
+- Assessment: release is now entirely n300-bound; remaining work is the five n300 optimized items in/behind #142.
