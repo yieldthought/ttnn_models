@@ -359,6 +359,7 @@ def run_tt_demo(
 
     try:
         tt_device, is_mesh, fabric_config = open_tt_device(mesh_shape, device_id)
+        runtime_mesh_shape = tuple(tt_device.shape) if hasattr(tt_device, "shape") else (1, 1)
 
         print(f"Loading HuggingFace reference model on CPU: {model_id}")
         hf_model = AutoModelForCausalLM.from_pretrained(model_id, torch_dtype=torch.float32, cache_dir=cache_dir)
@@ -388,7 +389,7 @@ def run_tt_demo(
             "tt",
             model_id,
             system,
-            mesh_shape,
+            runtime_mesh_shape,
             prompt,
             output,
             input_ids.shape[1],
