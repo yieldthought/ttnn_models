@@ -32,7 +32,7 @@ WEIGHT_LAYOUT = ttnn.TILE_LAYOUT
 ATTN_WEIGHT_DTYPE = ttnn.bfloat16
 MLP_WEIGHT_DTYPE = ttnn.bfloat8_b
 EMBED_DTYPE = ttnn.bfloat16
-LM_HEAD_DTYPE = ttnn.bfloat16
+LM_HEAD_DTYPE = ttnn.bfloat8_b
 
 ATTN_KERNEL_CONFIG = ttnn.WormholeComputeKernelConfig(
     math_fidelity=ttnn.MathFidelity.HiFi4,
@@ -174,13 +174,17 @@ class Attention:
         self.sin_cache = sin_cache
 
         p = f"model.layers.{layer_idx}.self_attn."
-        self.q_proj = self._load_weight(state_dict[f"{p}q_proj.weight"])
-        self.k_proj = self._load_weight(state_dict[f"{p}k_proj.weight"])
-        self.v_proj = self._load_weight(state_dict[f"{p}v_proj.weight"])
+        self.qkv_proj = self._load_qkv_weight(
+            state_dict[f"{p}q_proj.weight"],
+            state_dict[f"{p}k_proj.weight"],
+            state_dict[f"{p}v_proj.weight"],
+        )
+        self.qkv_bias = self._load_qkv_bias(
+            state_dict[f"{p}q_proj.bias"],
+            state_dict[f"{p}k_proj.bias"],
+            state_dict[f"{p}v_proj.bias"],
+        )
         self.o_proj = self._load_weight(state_dict[f"{p}o_proj.weight"])
-        self.q_bias = self._load_bias(state_dict[f"{p}q_proj.bias"])
-        self.k_bias = self._load_bias(state_dict[f"{p}k_proj.bias"])
-        self.v_bias = self._load_bias(state_dict[f"{p}v_proj.bias"])
 
         cache_shape = (
             self.paged_attention_config.max_num_blocks,
@@ -213,9 +217,20 @@ class Attention:
             memory_config=ttnn.DRAM_MEMORY_CONFIG,
         )
 
-    def _load_bias(self, b: torch.Tensor) -> ttnn.Tensor:
+    def _load_qkv_weight(self, wq: torch.Tensor, wk: torch.Tensor, wv: torch.Tensor) -> ttnn.Tensor:
+        w_qkv = torch.cat([wq.T, wk.T, wv.T], dim=-1)
         return ttnn.as_tensor(
-            b.reshape(1, 1, 1, -1).to(torch.bfloat16).contiguous(),
+            w_qkv.unsqueeze(0).unsqueeze(0).to(torch.bfloat16).contiguous(),
+            dtype=ATTN_WEIGHT_DTYPE,
+            layout=WEIGHT_LAYOUT,
+            device=self.tt_device,
+            memory_config=ttnn.DRAM_MEMORY_CONFIG,
+        )
+
+    def _load_qkv_bias(self, bq: torch.Tensor, bk: torch.Tensor, bv: torch.Tensor) -> ttnn.Tensor:
+        b_qkv = torch.cat([bq, bk, bv], dim=-1)
+        return ttnn.as_tensor(
+            b_qkv.reshape(1, 1, 1, -1).to(torch.bfloat16).contiguous(),
             dtype=ttnn.bfloat16,
             layout=ttnn.TILE_LAYOUT,
             device=self.tt_device,
@@ -237,28 +252,13 @@ class Attention:
         padded_seq = pad_to_tile(seq_len)
 
         x = ttnn.to_dtype(x, dtype=ttnn.bfloat16)
-        q = ttnn.linear(
+        qkv = ttnn.linear(
             x,
-            self.q_proj,
-            bias=self.q_bias,
+            self.qkv_proj,
+            bias=self.qkv_bias,
             dtype=ttnn.bfloat16,
             compute_kernel_config=ATTN_KERNEL_CONFIG,
         )
-        k = ttnn.linear(
-            x,
-            self.k_proj,
-            bias=self.k_bias,
-            dtype=ttnn.bfloat16,
-            compute_kernel_config=ATTN_KERNEL_CONFIG,
-        )
-        v = ttnn.linear(
-            x,
-            self.v_proj,
-            bias=self.v_bias,
-            dtype=ttnn.bfloat16,
-            compute_kernel_config=ATTN_KERNEL_CONFIG,
-        )
-        qkv = ttnn.concat([q, k, v], dim=-1)
 
         if is_prefill:
             q, k, v = ttnn.experimental.nlp_create_qkv_heads(
@@ -295,7 +295,7 @@ class Attention:
                 qkv,
                 num_heads=self.n_heads,
                 num_kv_heads=self.n_kv_heads,
-                memory_config=ttnn.DRAM_MEMORY_CONFIG,
+                memory_config=ttnn.L1_MEMORY_CONFIG,
             )
             if not trace_decode:
                 ttnn.deallocate(qkv)
@@ -342,6 +342,7 @@ class Attention:
                 page_table_tensor=self.page_table,
                 cur_pos_tensor=cur_pos_tensor,
                 scale=self.scale,
+                memory_config=ttnn.L1_MEMORY_CONFIG,
                 compute_kernel_config=ATTN_KERNEL_CONFIG,
             )
             attn_out = ttnn.transpose(attn_out, 1, 2)
@@ -369,9 +370,21 @@ class MLP:
     def __init__(self, layer_idx: int, state_dict: dict, tt_device, weight_dtype: ttnn.DataType):
         p = f"model.layers.{layer_idx}.mlp."
         self.weight_dtype = weight_dtype
-        self.gate_proj = self._load_weight(state_dict[f"{p}gate_proj.weight"], tt_device)
-        self.up_proj = self._load_weight(state_dict[f"{p}up_proj.weight"], tt_device)
+        gate_w = state_dict[f"{p}gate_proj.weight"]
+        up_w = state_dict[f"{p}up_proj.weight"]
+        self.intermediate_size = gate_w.shape[0]
+        self.gate_up_proj = self._load_gate_up_weight(gate_w, up_w, tt_device)
         self.down_proj = self._load_weight(state_dict[f"{p}down_proj.weight"], tt_device)
+
+    def _load_gate_up_weight(self, gate_w: torch.Tensor, up_w: torch.Tensor, tt_device) -> ttnn.Tensor:
+        w_gate_up = torch.cat([gate_w.T, up_w.T], dim=-1)
+        return ttnn.as_tensor(
+            w_gate_up.unsqueeze(0).unsqueeze(0).to(torch.bfloat16).contiguous(),
+            dtype=self.weight_dtype,
+            layout=WEIGHT_LAYOUT,
+            device=tt_device,
+            memory_config=ttnn.DRAM_MEMORY_CONFIG,
+        )
 
     def _load_weight(self, w: torch.Tensor, tt_device) -> ttnn.Tensor:
         return ttnn.as_tensor(
@@ -383,20 +396,14 @@ class MLP:
         )
 
     def __call__(self, x: ttnn.Tensor) -> ttnn.Tensor:
-        gate = ttnn.silu(
-            ttnn.linear(
-                x,
-                self.gate_proj,
-                dtype=ttnn.bfloat16,
-                compute_kernel_config=ATTN_KERNEL_CONFIG,
-            )
-        )
-        up = ttnn.linear(
+        gate_up = ttnn.linear(
             x,
-            self.up_proj,
+            self.gate_up_proj,
             dtype=ttnn.bfloat16,
             compute_kernel_config=ATTN_KERNEL_CONFIG,
         )
+        gate, up = ttnn.split(gate_up, split_size=self.intermediate_size, dim=3)
+        gate = ttnn.silu(gate)
         return ttnn.linear(
             ttnn.mul(gate, up),
             self.down_proj,
@@ -528,7 +535,7 @@ class TtnnQwen2ForCausalLM(torch.nn.Module, GenerationMixin):
             dtype=ttnn.uint32,
             layout=ttnn.ROW_MAJOR_LAYOUT,
             device=tt_device,
-            memory_config=ttnn.L1_MEMORY_CONFIG,
+            memory_config=ttnn.DRAM_MEMORY_CONFIG,
         )
         self.decode_pos_buffer = ttnn.from_torch(
             torch.zeros((TILE_SIZE,), dtype=torch.int32),
@@ -599,9 +606,17 @@ class TtnnQwen2ForCausalLM(torch.nn.Module, GenerationMixin):
     def device(self) -> torch.device:
         return self._torch_dummy.device
 
+    def _release_decode_trace(self) -> None:
+        if self.decode_trace_id is None:
+            return
+        ttnn.release_trace(self.tt_device, self.decode_trace_id)
+        self.decode_trace_id = None
+        self.decode_trace_logits = None
+
     def reset(self):
         """Reset position counter for new sequence."""
         self._pos = 0
+        self._release_decode_trace()
 
     def prepare_inputs_for_generation(self, input_ids, past_key_values=None, **kwargs):
         if past_key_values is not None:
