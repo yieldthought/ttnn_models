@@ -1,0 +1,26 @@
+{
+  "model": "google/gemma-3-4b-it",
+  "hardware": "t3000",
+  "variant": "optimized",
+  "functional_baseline": {
+    "top1_pct": 92.0,
+    "top5_pct": 100.0,
+    "ttft_ms": 330.0,
+    "decode_tps_u": 4.7,
+    "seq_len": 40960
+  },
+  "optimized_final": {
+    "top1_pct": 95.0,
+    "top5_pct": 100.0,
+    "ttft_ms": 94.04755756258965,
+    "decode_tps_u": 17.56890675826918,
+    "seq_len": 40960
+  },
+  "acceptance": {
+    "top1_top5_pass": true,
+    "decode_trace_enabled": true,
+    "ttft_improved": true,
+    "decode_tps_improved": true,
+    "seq_len_non_regressed": true
+  }
+}
