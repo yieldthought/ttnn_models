@@ -17,6 +17,7 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | arcee-ai/AFM-4.5B                   |   n300   | optimized  |   99% |  100% |   56ms |  23.6 |   65536 |
 | humain-ai/ALLaM-7B-Instruct-preview |   n150   | functional |   97% |  100% |   76ms |  14.9 |    4096 |
 | humain-ai/ALLaM-7B-Instruct-preview |   n300   | functional |   97% |  100% |  184ms |   7.9 |    4096 |
+| humain-ai/ALLaM-7B-Instruct-preview |   n300   | optimized  |   97% |  100% |   69ms |  15.9 |    4096 |
 | humain-ai/ALLaM-7B-Instruct-preview |  t3000   | functional |   95% |  100% |  127ms |   9.1 |    4096 |
 | meta-llama/Llama-3.2-1B             |   n150   | functional |   92% |  100% |   34ms |  39.5 |  131072 |
 | meta-llama/Llama-3.2-1B             |   n150   | optimized  |   90% |  100% |   21ms |  68.0 |    2048 |
