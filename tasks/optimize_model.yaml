@@ -13,27 +13,35 @@ prompt: |
   - Updated `MODELS.md` if reported metrics changed.
   - `<dir>/demo.log` and `<dir>/eval.log` with command line + output.
 check: |
-  Return a single JSON object (no code fences, no extra text) with keys:
-  - success: boolean
-  - reason: string
+  Output EXACTLY one line of JSON, and nothing else.
+  - First character MUST be "{"
+  - Last character MUST be "}"
+  - No code fences, no markdown, no extra text
+  - 'reason' must be a single line (no newlines)
 
-  Your output must start with "{" and end with "}".
+  Choose exactly one output (copy the format exactly):
+  {"success": true, "reason": "PASS"}
+  {"success": false, "reason": "FAIL: <single line reason>"}
 
-  Do NOT run any TT/TTNN workloads (no demo/eval, no tt-smi) and do NOT download models.
-  Verify by reading repo files only, using the target path from the task prompt to locate <dir>.
+  Do NOT run any tests or TT/TTNN workloads (no demo/eval, no tt-smi) and do NOT download models.
+  Only read these repo files (and nothing else), using the target path from the task prompt to locate <dir>:
+  - MODELS.md
+  - <dir>/model.py
+  - <dir>/MODEL_BRINGUP.md
+  - <dir>/metrics.json
+  - <dir>/demo.log
+  - <dir>/eval.log
 
-  Checks:
-  1. Decode uses traced execution (evidence: model code and/or `MODEL_BRINGUP.md`).
-  2. Long eval quality is >= 85 / 95 (evidence: `<dir>/eval.log` or `<dir>/metrics.json`).
+  Pass criteria:
+  1. Decode uses traced execution (evidence: <dir>/model.py and/or <dir>/MODEL_BRINGUP.md).
+  2. Long eval quality is >= 85 / 95 (evidence: <dir>/eval.log or <dir>/metrics.json).
   3. TTFT and tok/s are improved versus the corresponding functional model on the same system
-     (evidence: `MODELS.md` and/or `<dir>/metrics.json`).
-  4. Main optimization recommendations from `doc/ttnn.md` are implemented, or tried and explicitly rejected with evidence
-     (evidence: `<dir>/MODEL_BRINGUP.md`).
-  5. `MODELS.md` is updated for the optimized model row with the new results.
-  6. No capability regression: optimized `max_seq_len` is >= the corresponding functional model on the same system
-     (evidence: `MODELS.md` row or `<dir>/metrics.json`).
-  7. `demo.log` and `eval.log` exist and include the command line + outputs, and demo output is coherent.
-  8. `<dir>/MODEL_BRINGUP.md` records baseline vs final metrics and kept vs rejected optimization decisions.
+     (evidence: MODELS.md and/or <dir>/metrics.json).
+  4. MODELS.md is updated for the optimized model row with the new results.
+  5. No capability regression: optimized max_seq_len is >= the corresponding functional model on the same system
+     (evidence: MODELS.md and/or <dir>/metrics.json).
+  6. demo.log and eval.log exist and include the command line + outputs, and demo output is coherent.
+  7. <dir>/MODEL_BRINGUP.md records baseline vs final metrics and kept vs rejected optimization decisions.
 set_up: |
   Make sure you are in /localdev/moconnor/ttnn_models
   If there are any unsaved changes, stash them and be sure to mention it in your output.
