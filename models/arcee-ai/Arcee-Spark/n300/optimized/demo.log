@@ -1,105 +1,75 @@
-python demo.py models/arcee-ai/Arcee-Spark/n300/optimized/model.py
+env TTNN_ALLOW_SYSTEM_MESH_FALLBACK=1 TT_METAL_CACHE=/tmp/tt-metal-cache PYTHONUNBUFFERED=1 python demo.py models/arcee-ai/Arcee-Spark/n300/optimized/model.py --seed 0 --max_seq_len 32768
 /proj_sw/user_dev/moconnor/tt-metal/python_env/lib/python3.10/site-packages/transformers/utils/hub.py:111: FutureWarning: Using `TRANSFORMERS_CACHE` is deprecated and will be removed in v5 of Transformers. Use `HF_HOME` instead.
   warnings.warn(
-2026-02-12 12:40:02.226 | DEBUG    | ttnn:<module>:77 - Initial ttnn.CONFIG:
+2026-02-12 13:31:12.758 | DEBUG    | ttnn:<module>:77 - Initial ttnn.CONFIG:
 Config{cache_path=/home/moconnor/.cache/ttnn,model_cache_path=/home/moconnor/.cache/ttnn/models,tmp_dir=/tmp/ttnn,enable_model_cache=false,enable_fast_runtime_mode=true,throw_exception_on_fallback=false,enable_logging=false,enable_graph_report=false,enable_detailed_buffer_report=false,enable_detailed_tensor_report=false,enable_comparison_mode=false,comparison_mode_should_raise_exception=false,comparison_mode_pcc=0.9999,root_report_path=generated/ttnn/reports,report_name=std::nullopt,std::nullopt}
 Loading tokenizer: arcee-ai/Arcee-Spark
 Opening TT device...
-2026-02-12 12:40:03.182 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
-2026-02-12 12:40:03.184 | info     |          Device | Opening user mode device driver (tt_cluster.cpp:223)
-2026-02-12 12:40:03.190 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
-2026-02-12 12:40:03.226 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
-2026-02-12 12:40:03.227 | info     |             UMD | Harvesting masks for chip 1 tensix: 0x100 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
-2026-02-12 12:40:03.319 | info     |             UMD | Harvesting masks for chip 0 tensix: 0x20 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
-2026-02-12 12:40:03.336 | info     |             UMD | Opening local chip ids/PCIe ids: {0, 1}/[3, 0] and remote chip ids {} (cluster.cpp:186)
-2026-02-12 12:40:03.336 | info     |             UMD | IOMMU: disabled (cluster.cpp:161)
-2026-02-12 12:40:03.336 | info     |             UMD | KMD version: 2.4.1 (cluster.cpp:164)
-2026-02-12 12:40:03.340 | info     |             UMD | Starting devices in cluster (cluster.cpp:965)
-2026-02-12 12:40:03.341 | info     |             UMD | Mapped hugepage 0x40c0000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
-2026-02-12 12:40:03.342 | info     |             UMD | Mapped hugepage 0x200000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
-2026-02-12 12:40:03.447 | info     |     Distributed | Using auto discovery to generate mesh graph. (metal_context.cpp:863)
-2026-02-12 12:40:03.447 | info     |     Distributed | Constructing control plane using auto-discovery (no mesh graph descriptor). (metal_context.cpp:840)
-2026-02-12 12:40:03.447 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=2, n_phys=2, log_deg_hist={1:2}, phys_deg_hist={0:2} (topology_mapper_utils.cpp:171)
-2026-02-12 12:40:03.447 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=1, n_phys=2, log_deg_hist={0:1}, phys_deg_hist={0:2} (topology_mapper_utils.cpp:171)
-2026-02-12 12:40:03.447 | warning  |          Fabric | TopologyMapper auto-discovery: Downgrading to mesh shape 1x1 (1 total nodes) for 2 physical chips. Some physical chips may not be used. This may indicate connectivity issues, topology mismatches, or insufficient fabric links between chips. Verify your physical chip connectivity and ensure that the fabric links are correctly configured. (topology_mapper.cpp:1564)
-2026-02-12 12:40:03.447 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=1, n_phys=2, log_deg_hist={0:1}, phys_deg_hist={0:2} (topology_mapper_utils.cpp:171)
-Traceback (most recent call last):
-  File "/localdev/moconnor/ttnn_models/demo.py", line 446, in <module>
-    main()
-  File "/localdev/moconnor/ttnn_models/demo.py", line 424, in main
-    run_tt_demo(
-  File "/localdev/moconnor/ttnn_models/demo.py", line 361, in run_tt_demo
-    tt_device, is_mesh, fabric_config = open_tt_device(mesh_shape, device_id)
-  File "/localdev/moconnor/ttnn_models/device_utils.py", line 93, in open_tt_device
-    raise RuntimeError(f"Requested mesh {mesh_shape} exceeds system mesh {system_shape}")
-RuntimeError: Requested mesh (2, 1) exceeds system mesh (1, 1)
-2026-02-12 12:40:05.242 | info     |          Device | Closing user mode device drivers (tt_cluster.cpp:472)
-2026-02-12 12:40:05.242 | info     |             UMD | Closing devices in cluster (cluster.cpp:976)
+2026-02-12 13:31:13.507 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-12 13:31:13.508 | info     |          Device | Opening user mode device driver (tt_cluster.cpp:223)
+2026-02-12 13:31:13.516 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-12 13:31:13.551 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-12 13:31:13.552 | info     |             UMD | Harvesting masks for chip 1 tensix: 0x100 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-12 13:31:13.644 | info     |             UMD | Harvesting masks for chip 0 tensix: 0x20 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-12 13:31:13.661 | info     |             UMD | Opening local chip ids/PCIe ids: {0, 1}/[3, 0] and remote chip ids {} (cluster.cpp:186)
+2026-02-12 13:31:13.661 | info     |             UMD | IOMMU: disabled (cluster.cpp:161)
+2026-02-12 13:31:13.661 | info     |             UMD | KMD version: 2.4.1 (cluster.cpp:164)
+2026-02-12 13:31:13.664 | info     |             UMD | Starting devices in cluster (cluster.cpp:965)
+2026-02-12 13:31:13.665 | info     |             UMD | Mapped hugepage 0x40c0000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-12 13:31:13.667 | info     |             UMD | Mapped hugepage 0x200000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-12 13:31:13.765 | info     |     Distributed | Using auto discovery to generate mesh graph. (metal_context.cpp:863)
+2026-02-12 13:31:13.765 | info     |     Distributed | Constructing control plane using auto-discovery (no mesh graph descriptor). (metal_context.cpp:840)
+2026-02-12 13:31:13.766 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=2, n_phys=2, log_deg_hist={1:2}, phys_deg_hist={0:2} (topology_mapper_utils.cpp:171)
+2026-02-12 13:31:13.766 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=1, n_phys=2, log_deg_hist={0:1}, phys_deg_hist={0:2} (topology_mapper_utils.cpp:171)
+2026-02-12 13:31:13.766 | warning  |          Fabric | TopologyMapper auto-discovery: Downgrading to mesh shape 1x1 (1 total nodes) for 2 physical chips. Some physical chips may not be used. This may indicate connectivity issues, topology mismatches, or insufficient fabric links between chips. Verify your physical chip connectivity and ensure that the fabric links are correctly configured. (topology_mapper.cpp:1564)
+2026-02-12 13:31:13.766 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=1, n_phys=2, log_deg_hist={0:1}, phys_deg_hist={0:2} (topology_mapper_utils.cpp:171)
+Requested mesh (2, 1) exceeds discovered system mesh (1, 1); falling back to discovered mesh because TTNN_ALLOW_SYSTEM_MESH_FALLBACK is enabled.
+2026-02-12 13:31:13.773 | DEBUG    | ttnn.device:__init__:150 - Using default dispatch core type for this system: DispatchCoreType.WORKER
+2026-02-12 13:31:13.773 | DEBUG    | ttnn.device:__init__:152 - Using default dispatch core axis for this system: DispatchCoreAxis.ROW
+2026-02-12 13:31:13.782 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-12 13:31:13.786 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-12 13:31:13.840 | warning  |           Metal | Opening subset of mmio devices slows down UMD read/write to remote chips. If opening more devices, consider using CreateDevices API. (device_manager.cpp:301)
+Loading HuggingFace reference model on CPU: arcee-ai/Arcee-Spark
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards:  25%|██▌       | 1/4 [00:00<00:02,  1.29it/s]Loading checkpoint shards:  50%|█████     | 2/4 [00:01<00:01,  1.29it/s]Loading checkpoint shards:  75%|███████▌  | 3/4 [00:02<00:00,  1.35it/s]Loading checkpoint shards: 100%|██████████| 4/4 [00:02<00:00,  1.95it/s]Loading checkpoint shards: 100%|██████████| 4/4 [00:02<00:00,  1.66it/s]
+Building TT model...
+  Loading embeddings...
+  Computing RoPE cache...
+  Loading 28 layers...
+Running one warmup prefill+decode pass (kernel compile warmup)...
+2026-02-12 13:34:39.213 | warning  |    BuildKernels | Compute kernel 'tilize/15018517563973709478/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 13:34:43.466 | warning  |    BuildKernels | Compute kernel 'layernorm/4393001257389957809/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 13:34:47.612 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/9481184439253373145/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 13:34:51.719 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/15535423802772626664/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 13:35:03.214 | warning  |    BuildKernels | Compute kernel 'rotary_embedding/15977828201954068243/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 13:35:10.705 | warning  |    BuildKernels | Compute kernel 'sdpa/16537920458028298373/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 13:35:18.565 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/7517597377572897993/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 13:35:22.723 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/12716309668102825674/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 13:35:30.556 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/8929485927259071040/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 13:35:34.638 | warning  |    BuildKernels | Compute kernel 'pack_untilize_wh/7086840538318172595/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 13:35:38.419 | warning  |    BuildKernels | Compute kernel 'tilize_wh/4709288304851342762/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 13:35:42.121 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/14804962876515701384/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 13:35:49.834 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/7255830942752183330/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 13:35:57.633 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/6143339829293803944/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 13:36:09.039 | warning  |    BuildKernels | Compute kernel 'rotary_embedding/18025573480810144695/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 13:36:20.221 | warning  |    BuildKernels | Compute kernel 'update_cache/4072058481346503601/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 13:36:24.060 | warning  |    BuildKernels | Compute kernel 'sdpa_flash_decode/8591812927057607678/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 13:36:39.764 | warning  |    BuildKernels | Compute kernel 'bmm/6868421297949101084/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 13:36:39.764 | warning  |    BuildKernels | Compute kernel 'bmm/14594107113158565526/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 13:36:47.306 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/16753059734065165711/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 13:36:55.044 | warning  |    BuildKernels | Compute kernel 'bmm/16016883396715686915/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 13:36:55.044 | warning  |    BuildKernels | Compute kernel 'bmm/15671375319304356620/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+TT demo (n300)
+Model: arcee-ai/Arcee-Spark
+Mesh shape: 1x1
+Prompt tokens: 56 | Generated tokens: 128
+TTFT: 87 ms | Decode: 8.8 t/s/u (126 tokens)
 
-# Diagnostics: UMD system_health
-2026-02-12 12:40:05.507 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
-2026-02-12 12:40:05.508 | info     |             UMD | Harvesting masks for chip 1 tensix: 0x100 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
-2026-02-12 12:40:05.509 | info     |             UMD | Harvesting masks for chip 0 tensix: 0x20 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
-2026-02-12 12:40:05.511 | info     |             UMD | Opening local chip ids/PCIe ids: {0, 1}/[3, 0] and remote chip ids {} (cluster.cpp:186)
-2026-02-12 12:40:05.511 | info     |             UMD | IOMMU: disabled (cluster.cpp:161)
-2026-02-12 12:40:05.511 | info     |             UMD | KMD version: 2.4.1 (cluster.cpp:164)
+Prompt:
+Journal entry, 1957: Tonight a tiny sphere called Sputnik 1 crossed the sky, beeping like a metronome for a new era. The neighbors gathered on the roof, listening and arguing about what comes next. I wrote in my notebook that
 
-Found 2 chips in cluster_descriptor:
-Chip: 1 Unique ID: 1000186119060f4
- eth channel 0 CoreCoord: (0, 0, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 1 CoreCoord: (0, 1, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 2 CoreCoord: (0, 2, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 3 CoreCoord: (0, 3, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 4 CoreCoord: (0, 4, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 5 CoreCoord: (0, 5, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 6 CoreCoord: (0, 6, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 7 CoreCoord: (0, 7, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 8 CoreCoord: (0, 8, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 9 CoreCoord: (0, 9, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 10 CoreCoord: (0, 10, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 11 CoreCoord: (0, 11, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 12 CoreCoord: (0, 12, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 13 CoreCoord: (0, 13, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 14 CoreCoord: (0, 14, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 15 CoreCoord: (0, 15, ETH, LOGICAL) link DOWN/unconnected (internal trace)
-
-Chip: 0 Unique ID: 1000186119060f1
- eth channel 0 CoreCoord: (0, 0, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 1 CoreCoord: (0, 1, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 2 CoreCoord: (0, 2, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 3 CoreCoord: (0, 3, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 4 CoreCoord: (0, 4, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 5 CoreCoord: (0, 5, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 6 CoreCoord: (0, 6, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 7 CoreCoord: (0, 7, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 8 CoreCoord: (0, 8, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 9 CoreCoord: (0, 9, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 10 CoreCoord: (0, 10, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 11 CoreCoord: (0, 11, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 12 CoreCoord: (0, 12, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 13 CoreCoord: (0, 13, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 14 CoreCoord: (0, 14, ETH, LOGICAL) link DOWN/unconnected (internal trace)
- eth channel 15 CoreCoord: (0, 15, ETH, LOGICAL) link DOWN/unconnected (internal trace)
-
-Cluster descriptor serialized to /tmp/umd_vcUuts/cluster_descriptor.yaml
-
-# Diagnostics: ttnn.cluster
-2026-02-12 12:40:10.444 | DEBUG    | ttnn:<module>:77 - Initial ttnn.CONFIG:
-Config{cache_path=/home/moconnor/.cache/ttnn,model_cache_path=/home/moconnor/.cache/ttnn/models,tmp_dir=/tmp/ttnn,enable_model_cache=false,enable_fast_runtime_mode=true,throw_exception_on_fallback=false,enable_logging=false,enable_graph_report=false,enable_detailed_buffer_report=false,enable_detailed_tensor_report=false,enable_comparison_mode=false,comparison_mode_should_raise_exception=false,comparison_mode_pcc=0.9999,root_report_path=generated/ttnn/reports,report_name=std::nullopt,std::nullopt}
-2026-02-12 12:40:24.585 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
-2026-02-12 12:40:24.587 | info     |          Device | Opening user mode device driver (tt_cluster.cpp:223)
-2026-02-12 12:40:24.593 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
-2026-02-12 12:40:24.629 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
-2026-02-12 12:40:24.630 | info     |             UMD | Harvesting masks for chip 1 tensix: 0x100 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
-2026-02-12 12:40:24.722 | info     |             UMD | Harvesting masks for chip 0 tensix: 0x20 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
-2026-02-12 12:40:24.740 | info     |             UMD | Opening local chip ids/PCIe ids: {0, 1}/[3, 0] and remote chip ids {} (cluster.cpp:186)
-2026-02-12 12:40:24.740 | info     |             UMD | IOMMU: disabled (cluster.cpp:161)
-2026-02-12 12:40:24.740 | info     |             UMD | KMD version: 2.4.1 (cluster.cpp:164)
-2026-02-12 12:40:24.742 | info     |             UMD | Starting devices in cluster (cluster.cpp:965)
-2026-02-12 12:40:24.744 | info     |             UMD | Mapped hugepage 0x40c0000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
-2026-02-12 12:40:24.745 | info     |             UMD | Mapped hugepage 0x200000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
-Cluster type: ClusterType.N150
-2026-02-12 12:40:24.854 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
-Cluster descriptor: /tmp/umd_tUnr3q/cluster_descriptor.yaml
-2026-02-12 12:40:25.322 | info     |          Device | Closing user mode device drivers (tt_cluster.cpp:472)
-2026-02-12 12:40:25.322 | info     |             UMD | Closing devices in cluster (cluster.cpp:976)
+Output:
+ this will be the first time the world has been lit up by the light of another star and the first time a country (Russia) will have power over the other (the USA).
+That same year I was 12. My family and I moved in a big car from Warsaw (Poland) to Rome, Italy, where we would stay for three years. The move meant leaving behind the last of my life in Poland, including my beloved, the red and white book of Miroslaw Kvanica’s poems, which I read, like a gospel, on the metro, in the metro station, or on the back
+YT_METRICS={"mode": "tt_demo", "model": "arcee-ai/Arcee-Spark", "system": "n300", "mesh_shape": [1, 1], "prompt_tokens": 56, "generated_tokens": 128, "ttft_ms": 87.35101699858205, "decode_tps_u": 8.764558395891694, "decode_tokens": 126, "max_seq_len": 32768}
+2026-02-12 13:37:18.345 | info     |          Device | Closing user mode device drivers (tt_cluster.cpp:472)
+2026-02-12 13:37:18.345 | info     |             UMD | Closing devices in cluster (cluster.cpp:976)
