@@ -11,6 +11,7 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | arcee-ai/Arcee-Spark                |   n150   | functional |   92% |  100% |   99ms |  13.9 |   29952 |
 | arcee-ai/Arcee-Spark                |   n150   | optimized  |   91% |  100% |   77ms |  14.5 |   29952 |
 | arcee-ai/Arcee-Spark                |   n300   | functional |   91% |  100% |  338ms |   5.0 |   32768 |
+| arcee-ai/Arcee-Spark                |   n300   | optimized  |   85% |  100% |  101ms |  16.0 |   32768 |
 | arcee-ai/Arcee-Spark                |  t3000   | functional |   90% |  100% |  343ms |   4.9 |   32768 |
 | arcee-ai/Arcee-Spark                |  t3000   | optimized  |   90% |  100% |   72ms |  17.6 |   32768 |
 | arcee-ai/AFM-4.5B                   |  t3000   | functional |   98% |  100% |  181ms |   7.1 |   65536 |
@@ -35,6 +36,7 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | mistralai/Mistral-7B-Instruct-v0.3  |  t3000   | functional |   95% |  100% |  104ms |   9.9 |   32768 |
 | mistralai/Mistral-7B-Instruct-v0.3  |  t3000   | optimized  |   98% |  100% |   60ms |  26.6 |   32768 |
 | Qwen/Qwen3-0.6B                     |   n150   | functional |   99% |  100% |   52ms |  28.0 |   40960 |
+| Qwen/Qwen3-0.6B                     |   n150   | optimized  |   97% |  100% |   25ms |  46.2 |   40960 |
 | Qwen/Qwen3-0.6B                     |   n300   | functional |   99% |  100% |  943ms |   2.0 |   40960 |
 | Qwen/Qwen3-0.6B                     |  t3000   | functional |   98% |  100% |  229ms |   6.2 |   40960 |
 | Qwen/Qwen3-0.6B                     |  t3000   | optimized  |   98% |  100% |   59ms |  61.9 |   40960 |
