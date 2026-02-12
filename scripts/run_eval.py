@@ -254,7 +254,7 @@ def main():
     parser.add_argument(
         "--output-format",
         choices=["yt_metrics", "json"],
-        default=os.environ.get("YT_OUTPUT_FORMAT", "yt_metrics"),
+        default=os.environ.get("YT_OUTPUT_FORMAT", "json"),
     )
     args = parser.parse_args()
 
