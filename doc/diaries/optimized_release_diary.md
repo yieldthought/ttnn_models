@@ -158,3 +158,16 @@
   - Reserved new n300 host (wh-03, tt_aus, wormhole_b0 --num-pcie-chips 2) and started agent2 there; `scripts/worker.sh agent2 n300` and `codexapi task` are active.
 - Cleaned up stale project state: issues #135 (ALLaM n150 optimized) and #130 (Arcee-Spark n300 optimized) had very old `updatedAt` timestamps and no PRs; removed owner labels and moved both back to Ready so active workers can re-claim.
 - Runners now: wh-lb-44 (t3000), aus-wh-08 (n150), wh-03 (n300), all with >5h remaining.
+
+## 2026-02-12 11:13
+
+- Project status: Done 61, In progress 3, Ready 17. No In review items.
+- In progress: #129 (Arcee-Spark n150 optimized, owner: agent1), #139 (Llama-3.2-1B n300 optimized, owner: agent2), #149 (gemma-3-4b-it t3000 optimized, owner: agent3; PR #169 opened).
+- Runners/reservations:
+  - wh-lb-44 (t3000), aus-wh-08 (n150), wh-03 (n300); time remaining ~5h, ~5h, ~7.5h respectively.
+  - All three `codexapi task` processes are running (agent3 ~1h34m, agent1 ~33m, agent2 ~28m).
+- Worker progress notes:
+  - agent3 is running optimize_model for gemma-3-4b-it t3000; PR #169 exists and is mergeable but issue still In progress.
+  - agent1 is actively working on Arcee-Spark n150 optimized; session log shows a demo failure due to tokenizer repo id being set to the model.py path (HFValidationError). It is rerunning demo after verifying the file path exists.
+  - agent2 is actively working on Llama-3.2-1B n300 optimized; session log shows it created the n300/optimized directory, copied the t3000 model.py as a starting point, and is running demo/eval with `TTNN_ALLOW_SYSTEM_MESH_FALLBACK=1` (host reports disconnected topology; effective mesh falls back to 1x1). It also added MODEL_BRINGUP.md and metrics.json.
+- Local: attempted `git pull --ff-only` but it hung; killed the `git pull`/`git fetch` processes and left the working tree clean.
