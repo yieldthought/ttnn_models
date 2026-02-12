@@ -9,6 +9,7 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | Model                               | Hardware |  Variant   | Top-1 | Top-5 |   TTFT | t/s/u | Seq len |
 | ----------------------------------- | :------: | :--------: | ----: | ----: | -----: | ----: | ------: |
 | arcee-ai/Arcee-Spark                |   n150   | functional |   92% |  100% |   99ms |  13.9 |   29952 |
+| arcee-ai/Arcee-Spark                |   n150   | optimized  |   91% |  100% |   77ms |  14.5 |   29952 |
 | arcee-ai/Arcee-Spark                |   n300   | functional |   91% |  100% |  338ms |   5.0 |   32768 |
 | arcee-ai/Arcee-Spark                |   n300   | optimized  |   85% |  100% |  101ms |  16.0 |   32768 |
 | arcee-ai/Arcee-Spark                |  t3000   | functional |   90% |  100% |  343ms |   4.9 |   32768 |
@@ -26,7 +27,7 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | humain-ai/ALLaM-7B-Instruct-preview |  t3000   | functional |   95% |  100% |  127ms |   9.1 |    4096 |
 | humain-ai/ALLaM-7B-Instruct-preview |  t3000   | optimized  |   97% |  100% |   61ms |  24.3 |    4096 |
 | meta-llama/Llama-3.2-1B             |   n150   | functional |   92% |  100% |   34ms |  39.5 |  131072 |
-| meta-llama/Llama-3.2-1B             |   n150   | optimized  |   90% |  100% |   21ms |  68.0 |    2048 |
+| meta-llama/Llama-3.2-1B             |   n150   | optimized  |   92% |  100% |   22ms |  64.8 |  131072 |
 | meta-llama/Llama-3.2-1B             |   n300   | functional |   90% |  100% |  610ms |   6.7 |  131072 |
 | meta-llama/Llama-3.2-1B             |  t3000   | functional |   92% |  100% |  267ms |   6.6 |  131072 |
 | meta-llama/Llama-3.2-1B             |  t3000   | optimized  |   94% |  100% |   36ms |  57.5 |  131072 |
@@ -49,3 +50,4 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | tiiuae/Falcon3-7B-Instruct          |   n150   | functional |   97% |  100% |  144ms |  13.4 |   32768 |
 | tiiuae/Falcon3-7B-Instruct          |   n300   | functional |   97% |  100% |  661ms |   5.6 |   32768 |
 | tiiuae/Falcon3-7B-Instruct          |  t3000   | functional |   97% |  100% |  199ms |   7.3 |   32768 |
+| tiiuae/Falcon3-7B-Instruct          |  t3000   | optimized  |   97% |  100% |   58ms |  26.3 |   32768 |
