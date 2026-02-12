@@ -8,7 +8,6 @@ This version keeps the functional model structure but reduces overhead by:
 - Traced decode execution with preallocated token/position/RoPE buffers
 - LM head slicing in decode to avoid computing logits for the tile-padded batch
 - `prefill_logits_last_device()` to avoid transferring full prefill logits to host
-- Optional 1x1 mesh compatibility for disconnected-host fallback runs
 
 The model uses 1D tensor parallel across a 2x1 mesh (N300).
 """
@@ -49,13 +48,11 @@ def pad_to_tile(x: int) -> int:
 
 def mesh_shape_to_axis(mesh_shape: tuple[int, int]) -> int:
     """Return the mesh axis used for 1D tensor parallel."""
-    if mesh_shape == (1, 1):
-        return 0
     if mesh_shape[0] == 1 and mesh_shape[1] > 1:
         return 1
     if mesh_shape[1] == 1 and mesh_shape[0] > 1:
         return 0
-    raise ValueError(f"Expected 1D mesh shape for N300 compatibility path, got {mesh_shape}")
+    raise ValueError(f"Expected 1D mesh shape for N300, got {mesh_shape}")
 
 
 def num_mesh_devices(mesh_shape: tuple[int, int]) -> int:
@@ -125,8 +122,8 @@ class ParallelConfig:
 
 
 def validate_parallel_config(config: ModelConfig, num_devices: int) -> None:
-    if num_devices < 1:
-        raise ValueError("num_devices must be >= 1")
+    if num_devices < 2:
+        raise ValueError("N300 model expects a 2-device mesh")
     if config.num_attention_heads % num_devices != 0:
         raise ValueError("num_attention_heads must divide evenly across devices")
     if config.num_key_value_heads % num_devices != 0:
@@ -503,10 +500,9 @@ class DecoderLayer:
             paged_attention_config,
             page_table,
         )
-        # Keep tail MLPs in BF16 to hit long-eval accuracy on true N300 systems.
-        # When the host can only open a 1x1 mesh (disconnected fallback), stay in BF8 to fit in DRAM.
+        # Keep tail MLPs in BF16 to hit long-eval accuracy on N300.
         mlp_weight_dtype = MLP_WEIGHT_DTYPE
-        if parallel.num_devices > 1 and layer_idx >= config.num_hidden_layers - 8:
+        if layer_idx >= config.num_hidden_layers - 8:
             mlp_weight_dtype = ttnn.bfloat16
         self.mlp = MLP(layer_idx, state_dict, parallel, mlp_weight_dtype)
 
