@@ -35,6 +35,9 @@ The demo log records the effective runtime mesh (`Mesh shape: 1x1`).
 4. Decode trace with reusable preallocated decode buffers.
 5. `1x1` compatibility (allow `tp_size==1`) so the model can run under mesh fallback on disconnected hosts.
 
+## Rejected optimization attempts
+None in this pass (host topology prevented running a true `1x2` mesh, so decode micro-tuning was deferred).
+
 ## Commands used
 Device checks:
 ```bash
@@ -67,4 +70,3 @@ python -u eval.py models/meta-llama/Llama-3.2-1B/n300/optimized/model.py \
   --max_seq_len 131072 \
   --seed 0
 ```
-
