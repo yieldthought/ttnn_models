@@ -166,6 +166,7 @@
 - Runners/reservations:
   - wh-lb-44 (t3000), aus-wh-08 (n150), wh-03 (n300); time remaining ~5h, ~5h, ~7.5h respectively.
   - All three `codexapi task` processes are running (agent3 ~1h34m, agent1 ~33m, agent2 ~28m).
+- Extended reservations #1 (wh-lb-44) and #2 (aus-wh-08) back to 6 hours remaining to keep >4h headroom.
 - Worker progress notes:
   - agent3 is running optimize_model for gemma-3-4b-it t3000; PR #169 exists and is mergeable but issue still In progress.
   - agent1 is actively working on Arcee-Spark n150 optimized; session log shows a demo failure due to tokenizer repo id being set to the model.py path (HFValidationError). It is rerunning demo after verifying the file path exists.
