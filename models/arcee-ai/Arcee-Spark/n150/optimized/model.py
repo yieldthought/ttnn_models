@@ -308,7 +308,7 @@ class Attention:
             if decode_cos is None or decode_sin is None:
                 q = ttnn.experimental.rotary_embedding(q, self.cos_cache, self.sin_cache, start_pos)
             else:
-                q = ttnn.experimental.rotary_embedding(q, decode_cos, decode_sin)
+                q = ttnn.experimental.rotary_embedding(q, decode_cos, decode_sin, 0)
             q = ttnn.reshape(q, (1, q_batch, q_heads, self.head_dim), (1, q_batch, q_heads, self.head_dim))
 
             k_batch = k.shape[1]
@@ -319,7 +319,7 @@ class Attention:
             if decode_cos is None or decode_sin is None:
                 k = ttnn.experimental.rotary_embedding(k, self.cos_cache, self.sin_cache, start_pos)
             else:
-                k = ttnn.experimental.rotary_embedding(k, decode_cos, decode_sin)
+                k = ttnn.experimental.rotary_embedding(k, decode_cos, decode_sin, 0)
             k = ttnn.reshape(k, (1, k_batch, k_heads, self.head_dim), (1, k_batch, k_heads, self.head_dim))
 
             ttnn.experimental.paged_update_cache(
@@ -538,16 +538,15 @@ class TtnnQwen2ForCausalLM(torch.nn.Module, GenerationMixin):
             memory_config=ttnn.DRAM_MEMORY_CONFIG,
         )
 
-        self.decode_rope_seq = self.tt_config.num_attention_heads * TILE_SIZE
         self.decode_cos_buffer = ttnn.from_torch(
-            torch.zeros((1, 1, self.decode_rope_seq, self.tt_config.head_dim), dtype=torch.bfloat16),
+            torch.zeros((1, 1, 1, self.tt_config.head_dim), dtype=torch.bfloat16),
             dtype=ttnn.bfloat16,
             layout=ttnn.TILE_LAYOUT,
             device=tt_device,
             memory_config=ttnn.L1_MEMORY_CONFIG,
         )
         self.decode_sin_buffer = ttnn.from_torch(
-            torch.zeros((1, 1, self.decode_rope_seq, self.tt_config.head_dim), dtype=torch.bfloat16),
+            torch.zeros((1, 1, 1, self.tt_config.head_dim), dtype=torch.bfloat16),
             dtype=ttnn.bfloat16,
             layout=ttnn.TILE_LAYOUT,
             device=tt_device,
@@ -679,10 +678,8 @@ class TtnnQwen2ForCausalLM(torch.nn.Module, GenerationMixin):
         ttnn.copy_host_to_device_tensor(host_pos, self.decode_pos_buffer)
 
     def _update_decode_rope_buffers(self, start_pos: int) -> None:
-        cos_token = self.cos_cache_host[:, :, start_pos : start_pos + 1, :]
-        sin_token = self.sin_cache_host[:, :, start_pos : start_pos + 1, :]
-        cos_slice = cos_token.repeat(1, 1, self.decode_rope_seq, 1)
-        sin_slice = sin_token.repeat(1, 1, self.decode_rope_seq, 1)
+        cos_slice = self.cos_cache_host[:, :, start_pos : start_pos + 1, :]
+        sin_slice = self.sin_cache_host[:, :, start_pos : start_pos + 1, :]
         host_cos = ttnn.from_torch(
             cos_slice,
             dtype=ttnn.bfloat16,
