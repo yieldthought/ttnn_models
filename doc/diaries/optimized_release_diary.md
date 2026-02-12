@@ -365,3 +365,14 @@
   - Verified worker process health (`scripts/worker.sh agent3` + `codexapi task`) and active session updates under `~/.codex/sessions`, indicating continued progress on #148.
   - No n150/t3000 work remains, so no additional workers were started.
 - Assessment: remaining release scope is three n300 optimized issues total (#148 active, #151 and #154 queued).
+
+## 2026-02-12 22:24
+
+- Reviewed PR #189 (gemma-3-4b-it n300 optimized) and merged after confirming release acceptance from artifacts: Top-1 94%, Top-5 100%, TTFT 68ms (<535ms functional), decode 18.5 t/s/u (>3.2 functional), seq len 40960 (no regression), and traced decode enabled in `model.py`.
+- Issue #148 auto-closed on merge, moved to Done with ✓, and I removed stale `owner: agent3` label.
+- Project now: In progress #151 (Phi-3-mini-128k-instruct n300 optimized, owner: agent3), Ready #154 (Falcon3-7B-Instruct n300 optimized), In review 0, open PRs 0.
+- Runner management:
+  - Verified single n300 worker on wh-04 is healthy and actively processing n300 queue (`scripts/worker.sh agent3 n300` + live `codexapi task`).
+  - Extended reservation timeout from ~5h to 8h; headroom now ~7h59m (>4h requirement).
+  - No n150/t3000 workers active because no remaining tasks on those systems.
+- Assessment: remaining release scope is two n300 optimized issues (#151 active, #154 queued).
