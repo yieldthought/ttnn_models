@@ -24,24 +24,26 @@ check: |
   {"success": false, "reason": "FAIL: <single line reason>"}
 
   Do NOT run any tests or TT/TTNN workloads (no demo/eval, no tt-smi) and do NOT download models.
-  Only read these repo files (and nothing else), using the target path from the task prompt to locate <dir>:
+  Target directory (<dir>): {{item}}
+
+  Only read these repo files (and nothing else):
   - MODELS.md
-  - <dir>/model.py
-  - <dir>/MODEL_BRINGUP.md
-  - <dir>/metrics.json
-  - <dir>/demo.log
-  - <dir>/eval.log
+  - {{item}}/model.py
+  - {{item}}/MODEL_BRINGUP.md
+  - {{item}}/metrics.json
+  - {{item}}/demo.log
+  - {{item}}/eval.log
 
   Pass criteria:
-  1. Decode uses traced execution (evidence: <dir>/model.py and/or <dir>/MODEL_BRINGUP.md).
-  2. Long eval quality is >= 85 / 95 (evidence: <dir>/eval.log or <dir>/metrics.json).
+  1. Decode uses traced execution (evidence: {{item}}/model.py and/or {{item}}/MODEL_BRINGUP.md).
+  2. Long eval quality is >= 85 / 95 (evidence: {{item}}/eval.log or {{item}}/metrics.json).
   3. TTFT and tok/s are improved versus the corresponding functional model on the same system
-     (evidence: MODELS.md and/or <dir>/metrics.json).
+     (evidence: MODELS.md and/or {{item}}/metrics.json).
   4. MODELS.md is updated for the optimized model row with the new results.
   5. No capability regression: optimized max_seq_len is >= the corresponding functional model on the same system
-     (evidence: MODELS.md and/or <dir>/metrics.json).
+     (evidence: MODELS.md and/or {{item}}/metrics.json).
   6. demo.log and eval.log exist and include the command line + outputs, and demo output is coherent.
-  7. <dir>/MODEL_BRINGUP.md records baseline vs final metrics and kept vs rejected optimization decisions.
+  7. {{item}}/MODEL_BRINGUP.md records baseline vs final metrics and kept vs rejected optimization decisions.
 set_up: |
   Make sure you are in /localdev/moconnor/ttnn_models
   If there are any unsaved changes, stash them and be sure to mention it in your output.
