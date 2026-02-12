@@ -204,3 +204,11 @@
   - agent3 log shows Phi-3-mini-128k-instruct t3000 optimized passed earlier and it is now running optimize_model for Falcon3-7B-Instruct t3000.
   - agent1/agent2/agent4 logs are quiet due to `--quiet`, but processes are alive and issues remain In progress.
 - Local: fast-forward pulled main to `97e594a` (Phi-3-mini-128k-instruct t3000 optimized artifacts merged).
+
+## 2026-02-12 14:03
+
+- Project status: Done 65, In progress 3, Ready 13. No In review items.
+- Completed: #133 (AFM-4.5B n150 optimized) is merged and in Done; metrics.json shows acceptance met (Top-1 98%, Top-5 100%, TTFT 57ms, t/s/u 19.6, seq len 65536, traced decode enabled). Removed stale `owner: agent4` label from the closed issue.
+- In progress: #129 (Arcee-Spark n150), #130 (Arcee-Spark n300; PR #176 opened), #155 (Falcon3-7B-Instruct t3000; PR #175 open).
+- Runners/reservations: all `codexapi task` processes running; time remaining ~5:32 (t3000), ~5:33 (n150), ~4:48 (n300), ~5:25 (n150).
+- Local: fast-forward pulled main to `f0ea92a` (AFM-4.5B n150 optimized artifacts merged).
