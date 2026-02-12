@@ -1,0 +1,19 @@
+{
+  "model": "google/gemma-3-4b-it",
+  "system": "n300",
+  "variant": "optimized",
+  "date": "2026-02-12",
+  "max_seq_len": 40960,
+  "top1_pct": 94.0,
+  "top5_pct": 100.0,
+  "ttft_ms": 68.49209299252834,
+  "decode_tps_u": 18.533322706975106,
+  "decode_traced": true,
+  "baseline": {
+    "top1_pct": 94.0,
+    "top5_pct": 100.0,
+    "ttft_ms": 535.0,
+    "decode_tps_u": 3.2,
+    "max_seq_len": 40960
+  }
+}
