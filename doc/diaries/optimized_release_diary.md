@@ -171,4 +171,23 @@
   - agent3 is running optimize_model for gemma-3-4b-it t3000; PR #169 exists and is mergeable but issue still In progress.
   - agent1 is actively working on Arcee-Spark n150 optimized; session log shows a demo failure due to tokenizer repo id being set to the model.py path (HFValidationError). It is rerunning demo after verifying the file path exists.
   - agent2 is actively working on Llama-3.2-1B n300 optimized; session log shows it created the n300/optimized directory, copied the t3000 model.py as a starting point, and is running demo/eval with `TTNN_ALLOW_SYSTEM_MESH_FALLBACK=1` (host reports disconnected topology; effective mesh falls back to 1x1). It also added MODEL_BRINGUP.md and metrics.json.
+- Added a second n150 worker:
+  - Reserved aus-wh-20 (selection ID 4) and launched `scripts/worker.sh agent4 n150`.
+  - Setup initially failed `git pull` due to untracked `models/Qwen/Qwen3-0.6B/n150/functional/{demo,eval}.log`; removed them, fast-forwarded to origin/main, then restarted agent4 successfully.
 - Local: attempted `git pull --ff-only` but it hung; killed the `git pull`/`git fetch` processes and left the working tree clean.
+
+## 2026-02-12 11:43
+
+- Project status: Done 62, In progress 3, Ready 16.
+- Merged PR #169 (gemma-3-4b-it t3000 optimized): issue #149 auto-closed and project item moved to Done; MODELS.md now has t3000 optimized row (Top-1 91%, Top-5 100%, TTFT 78ms, 19.4 t/s/u, seq len 40960) with demo/eval logs, metrics.json, and traced decode in code.
+- Closed PR #170 (Llama-3.2-1B n300 optimized): results were collected with `TTNN_ALLOW_SYSTEM_MESH_FALLBACK=1` causing a 1x1 mesh; added watcher note to #139, removed owner label, and moved #139 back to Ready for rerun on real n300 mesh (expected 1x2).
+- Runners: wh-lb-44 (t3000 agent3 working on #152 Phi-3-mini-128k-instruct t3000 optimized), aus-wh-08 (n150 agent1 running demo for #129 Arcee-Spark n150 optimized), aus-wh-20 (n150 agent4 running eval for #135 ALLaM n150 optimized), wh-03 (n300 agent2 codexapi still running; now unblocked to pick up another Ready item). All reservations >5h remaining.
+- Local: pulled main to merge commit `3954638` after merging PR #169.
+
+## 2026-02-12 12:13
+
+- Project status: Done 62, In progress 4, Ready 15.
+- Found #139 incorrectly moved to In review with ✓ label and a new PR #172, but artifacts still used `TTNN_ALLOW_SYSTEM_MESH_FALLBACK=1` and the discovered mesh downgraded to 1x1 (per demo.log).
+- Closed PR #172 and reset #139 back to Ready: removed ✓ label, removed stale `## Progress` section, kept watcher note requiring a real n300 mesh run (expected 1x2).
+- Open PRs: #171 (ALLaM-7B-Instruct-preview n150 optimized) is open while issue #135 remains In progress.
+- Runners/reservations: wh-lb-44 (t3000), aus-wh-08 (n150), wh-03 (n300), aus-wh-20 (n150); all reservations still >5h remaining (no timeout extensions needed this pass).

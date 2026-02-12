@@ -1,0 +1,26 @@
+{
+  "model": "humain-ai/ALLaM-7B-Instruct-preview",
+  "hardware": "n150",
+  "variant": "optimized",
+  "functional_baseline": {
+    "top1_pct": 97.0,
+    "top5_pct": 100.0,
+    "ttft_ms": 76.0,
+    "decode_tps_u": 14.9,
+    "seq_len": 4096
+  },
+  "optimized_final": {
+    "top1_pct": 97.0,
+    "top5_pct": 100.0,
+    "ttft_ms": 68.50344999975277,
+    "decode_tps_u": 15.82085263445955,
+    "seq_len": 4096
+  },
+  "acceptance": {
+    "top1_top5_pass": true,
+    "decode_trace_enabled": true,
+    "ttft_improved": true,
+    "decode_tps_improved": true,
+    "seq_len_non_regressed": true
+  }
+}
