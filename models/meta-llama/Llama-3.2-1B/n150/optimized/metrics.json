@@ -10,10 +10,10 @@
     "seq_len": 131072
   },
   "optimized_final": {
-    "top1_pct": 90.0,
+    "top1_pct": 92.0,
     "top5_pct": 100.0,
-    "ttft_ms": 27.17082799972559,
-    "decode_tps_u": 63.03591640632349,
+    "ttft_ms": 22.08250500007125,
+    "decode_tps_u": 64.77399210585106,
     "seq_len": 131072
   },
   "acceptance": {
@@ -24,4 +24,3 @@
     "seq_len_non_regressed": true
   }
 }
-
