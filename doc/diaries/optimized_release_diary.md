@@ -263,3 +263,13 @@
   - aus-wh-08 (n150 agent1) and aus-wh-20 (n150 agent2) extended to 6h to keep >4h headroom; wh-04 (n300 agent3) still has >6h remaining.
   - `codexapi task` still running on all three hosts; current In progress items are #147 (gemma-3-4b-it n150) and #141 (Mistral-7B n150).
 - Local: pulled main to include merged PRs #176 and #180; open PRs now: #181 only.
+
+## 2026-02-12 17:24
+
+- Reviewed PR #181 (gemma-3-4b-it n150 optimized): fixed MODELS.md drift in-PR (it was missing newly merged rows) and merged; issue #147 auto-closed. Removed stale `owner: agent1` label and added ✓; project item already in Done.
+- Fixed project drift:
+  - #130 (Arcee-Spark n300 optimized) had drifted back into In review; took/moved/released it back to Done.
+  - #86 (Phi-3-mini-128k-instruct n150 functional) was closed but had drifted into Ready; moved it to Done so workers don't pick it.
+- Runners/reservations:
+  - Extended wh-04 (n300) timeout; IRD capped at 10h and now shows ~10h remaining.
+  - Current In progress: #139 (Llama-3.2-1B n300 optimized, owner: agent3), #141 (Mistral-7B n150 optimized, owner: agent2). Ready: #142/#145/#148/#150/#151/#153/#154.
