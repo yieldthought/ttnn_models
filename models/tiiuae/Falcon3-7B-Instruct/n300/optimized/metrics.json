@@ -1,0 +1,26 @@
+{
+  "model": "tiiuae/Falcon3-7B-Instruct",
+  "hardware": "n300",
+  "variant": "optimized",
+  "functional_baseline": {
+    "top1_pct": 97.0,
+    "top5_pct": 100.0,
+    "ttft_ms": 661.0,
+    "decode_tps_u": 5.6,
+    "seq_len": 32768
+  },
+  "optimized_final": {
+    "top1_pct": 97.0,
+    "top5_pct": 100.0,
+    "ttft_ms": 72.32366500829812,
+    "decode_tps_u": 21.76519407117046,
+    "seq_len": 32768
+  },
+  "acceptance": {
+    "top1_top5_pass": true,
+    "decode_trace_enabled": true,
+    "ttft_improved": true,
+    "decode_tps_improved": true,
+    "seq_len_non_regressed": true
+  }
+}

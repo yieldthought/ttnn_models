@@ -1,0 +1,92 @@
+Command: HF_HOME=/proj_sw/user_dev/moconnor/hf-cache TRANSFORMERS_CACHE=/proj_sw/user_dev/moconnor/hf-cache HF_HUB_CACHE=/proj_sw/user_dev/moconnor/hf-cache/hub TT_VISIBLE_DEVICES=0 TT_MESH_GRAPH_DESC_PATH=/proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/n300_mesh_graph_descriptor.textproto TT_METAL_CACHE=/tmp/tt-metal-cache TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-metal TT_METAL_INSPECTOR_LOG_PATH=/tmp/tt-metal-inspector TT_METAL_INSPECTOR_INITIALIZATION_IS_IMPORTANT=0 python demo.py models/tiiuae/Falcon3-7B-Instruct/n300/optimized/model.py --prompt-file prompts/bringup_eval_long.txt --max-new-tokens 100 --temperature 0 --device-id 0 --max_seq_len 32768
+/proj_sw/user_dev/moconnor/tt-metal/python_env/lib/python3.10/site-packages/transformers/utils/hub.py:111: FutureWarning: Using `TRANSFORMERS_CACHE` is deprecated and will be removed in v5 of Transformers. Use `HF_HOME` instead.
+  warnings.warn(
+2026-02-12 23:28:15.807 | DEBUG    | ttnn:<module>:77 - Initial ttnn.CONFIG:
+Config{cache_path=/home/moconnor/.cache/ttnn,model_cache_path=/home/moconnor/.cache/ttnn/models,tmp_dir=/tmp/ttnn,enable_model_cache=false,enable_fast_runtime_mode=true,throw_exception_on_fallback=false,enable_logging=false,enable_graph_report=false,enable_detailed_buffer_report=false,enable_detailed_tensor_report=false,enable_comparison_mode=false,comparison_mode_should_raise_exception=false,comparison_mode_pcc=0.9999,root_report_path=generated/ttnn/reports,report_name=std::nullopt,std::nullopt}
+Loading tokenizer: tiiuae/Falcon3-7B-Instruct
+Opening TT device...
+2026-02-12 23:28:16.559 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-12 23:28:16.568 | info     |          Device | Opening user mode device driver (tt_cluster.cpp:223)
+2026-02-12 23:28:16.571 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-12 23:28:16.599 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-12 23:28:16.621 | info     |             UMD | Harvesting masks for chip 0 tensix: 0x210 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-12 23:28:16.711 | info     |             UMD | Harvesting masks for chip 1 tensix: 0x210 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-12 23:28:16.738 | info     |             UMD | Opening local chip ids/PCIe ids: {0}/[0] and remote chip ids {1} (cluster.cpp:186)
+2026-02-12 23:28:16.738 | info     |             UMD | IOMMU: disabled (cluster.cpp:161)
+2026-02-12 23:28:16.738 | info     |             UMD | KMD version: 2.4.1 (cluster.cpp:164)
+2026-02-12 23:28:16.741 | info     |             UMD | Starting devices in cluster (cluster.cpp:965)
+2026-02-12 23:28:16.742 | info     |             UMD | Mapped hugepage 0x180000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-12 23:28:16.743 | info     |             UMD | Mapped hugepage 0x1c0000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
+2026-02-12 23:28:16.829 | info     |     Distributed | Using custom mesh graph descriptor: /proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/n300_mesh_graph_descriptor.textproto (metal_context.cpp:858)
+2026-02-12 23:28:16.831 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=2, n_phys=2, log_deg_hist={1:2}, phys_deg_hist={1:2} (topology_mapper_utils.cpp:171)
+2026-02-12 23:28:16.831 | info     |          Fabric | Fast-path path-graph mapping succeeded for mesh 0 (topology_mapper_utils.cpp:401)
+2026-02-12 23:28:16.833 | DEBUG    | ttnn.device:__init__:150 - Using default dispatch core type for this system: DispatchCoreType.ETH
+2026-02-12 23:28:16.833 | DEBUG    | ttnn.device:__init__:152 - Using default dispatch core axis for this system: DispatchCoreAxis.ROW
+2026-02-12 23:28:16.839 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-12 23:28:16.840 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-12 23:28:22.025 | warning  |           Metal | Got num_routing_planes: 1, which is less than current value: 255, ignoring the override (metal_context.cpp:748)
+2026-02-12 23:28:22.025 | info     |           Metal | Dispatch on FabricConfig::FABRIC_1D with 1 Command Queues
+ (device_manager.cpp:331)
+2026-02-12 23:28:22.026 | warning  |           Metal | Unable to bind worker thread to CPU Core. May see performance degradation. Error Code: 22 (hardware_command_queue.cpp:65)
+2026-02-12 23:28:22.026 | warning  |           Metal | Unable to bind worker thread to CPU Core. May see performance degradation. Error Code: 22 (hardware_command_queue.cpp:65)
+2026-02-12 23:28:22.026 | warning  |           Metal | Unable to bind worker thread to CPU Core. May see performance degradation. Error Code: 22 (thread_pool.cpp:81)
+2026-02-12 23:28:22.026 | warning  |           Metal | Unable to bind worker thread to CPU Core. May see performance degradation. Error Code: 22 (thread_pool.cpp:81)
+2026-02-12 23:28:22.027 | warning  |           Metal | Unable to bind worker thread to CPU Core. May see performance degradation. Error Code: 22 (thread_pool.cpp:81)
+2026-02-12 23:28:22.027 | warning  |           Metal | Unable to bind worker thread to CPU Core. May see performance degradation. Error Code: 22 (thread_pool.cpp:81)
+2026-02-12 23:28:22.027 | info     |           Metal | Initializing Fabric (device_manager.cpp:409)
+2026-02-12 23:28:27.607 | info     |           Metal | Fabric initialized on Device 0 (device.cpp:392)
+2026-02-12 23:28:27.611 | info     |           Metal | Fabric initialized on Device 1 (device.cpp:392)
+2026-02-12 23:28:27.611 | info     |           Metal | Fabric Initialized with config FabricConfig::FABRIC_1D (device_manager.cpp:414)
+2026-02-12 23:28:32.744 | info     |           Metal | Command Queue initialized on Device 1 (device_manager.cpp:510)
+Loading HuggingFace reference model on CPU: tiiuae/Falcon3-7B-Instruct
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards:  25%|██▌       | 1/4 [00:00<00:02,  1.06it/s]Loading checkpoint shards:  50%|█████     | 2/4 [00:01<00:02,  1.01s/it]Loading checkpoint shards:  75%|███████▌  | 3/4 [00:02<00:00,  1.09it/s]Loading checkpoint shards: 100%|██████████| 4/4 [00:02<00:00,  1.62it/s]Loading checkpoint shards: 100%|██████████| 4/4 [00:02<00:00,  1.35it/s]
+Building TT model...
+  Loading embeddings...
+  Computing RoPE cache...
+  Loading 28 layers...
+Running one warmup prefill+decode pass (kernel compile warmup)...
+2026-02-12 23:32:26.191 | warning  |    BuildKernels | Compute kernel 'pack_untilize_variable_num_blocks/3239472229600800110/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 23:32:31.329 | warning  |    BuildKernels | Compute kernel 'tilize/2041682259927893536/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 23:32:36.423 | warning  |    BuildKernels | Compute kernel 'layernorm/15569129055188517540/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 23:32:36.531 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/998168109046579054/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 23:32:42.152 | warning  |    BuildKernels | Compute kernel 'rotary_embedding/15853697996820749355/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 23:32:42.264 | warning  |    BuildKernels | Compute kernel 'sdpa/8983908121543341119/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 23:32:42.405 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/5372257263245572608/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 23:32:47.674 | warning  |    BuildKernels | Compute kernel 'line_reduction/17263434165235172306/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 23:33:03.063 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/840013299412831832/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 23:33:18.412 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/1837752945338390828/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 23:33:23.573 | warning  |    BuildKernels | Compute kernel 'pack_untilize_wh/8335810609264856305/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 23:33:23.574 | warning  |    BuildKernels | Compute kernel 'pack_untilize_wh/242462412140333972/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 23:33:28.720 | warning  |    BuildKernels | Compute kernel 'tilize_wh/9461268070916909176/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 23:33:34.302 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/9245244728743644118/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 23:33:39.508 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/5571440542823229903/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 23:33:55.815 | warning  |    BuildKernels | Compute kernel 'update_cache/5122497133562958664/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 23:34:00.911 | warning  |    BuildKernels | Compute kernel 'sdpa_flash_decode/9017028842988373215/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 23:34:01.090 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/1683587644416069469/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 23:34:01.335 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/9514245894506731107/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 23:34:11.678 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/8598041964662653697/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+TT demo (n300)
+Model: tiiuae/Falcon3-7B-Instruct
+Mesh shape: 1x2
+Prompt tokens: 138 | Generated tokens: 100
+TTFT: 72 ms | Decode: 21.8 t/s/u (98 tokens)
+
+Prompt:
+Write a concise internal update for the ttnn model bringup team. Yesterday we validated the Llama pipeline end to end and fixed a cache indexing bug. Today we want to run a longer teacher forcing eval with a realistic prompt. Summarize the goal in one sentence, then provide two sections: Risks and Plan. In Risks list three bullets: device contention, prompt length exceeding cache, and slow reference generation. In Plan list five bullets: prepare the prompt file, verify token count, run the HF reference, inspect output for coherence, then run the TT model and record top-1 and top-5. Close with a short reminder to keep logs and stop on unexpected behavior.
+
+
+Output:
+
+<|assistant|>
+**Goal:** Run a longer teacher forcing evaluation with a realistic prompt to assess model performance.
+
+**Risks:**
+- **Device Contention:** Multiple processes might compete for GPU resources, affecting performance.
+- **Prompt Length Exceeding Cache:** Longer prompts could lead to cache inefficiencies or failures.
+- **Slow Reference Generation:** The reference model might take longer than expected, impacting the evaluation timeline.
+
+**Plan:**
+- **Prepare
+YT_METRICS={"mode": "tt_demo", "model": "tiiuae/Falcon3-7B-Instruct", "system": "n300", "mesh_shape": [1, 2], "prompt_tokens": 138, "generated_tokens": 100, "ttft_ms": 72.32366500829812, "decode_tps_u": 21.76519407117046, "decode_tokens": 98, "max_seq_len": 32768}
+2026-02-12 23:34:25.938 | info     |          Device | Closing user mode device drivers (tt_cluster.cpp:472)
+2026-02-12 23:34:25.938 | info     |             UMD | Closing devices in cluster (cluster.cpp:976)
