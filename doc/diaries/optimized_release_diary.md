@@ -147,3 +147,14 @@
 - Reviewed PR #168 (Qwen3-0.6B t3000 optimized): MODELS.md adds optimized row (Top-1 98%, Top-5 100%, TTFT 59ms, 61.9 t/s/u, seq len 40960) with demo/eval logs and metrics.json; decode trace confirmed in code. Merged PR #168; issue #146 auto-closed and project item moved to Done.
 - Runners: extended all three IRD reservations back to 6 hours (were ~4h40 remaining). Tailed logs on aus-wh-08/wh-lb-44; agent2 log tailed via ird connect-to (direct SSH still not usable).
 - Actions: merged PR #168, pulled main, refreshed project counts, extended reservations, tailed worker logs.
+
+## 2026-02-12 10:43
+
+- Project status: Done 61, In progress 3, Ready 17. No In review items.
+- Detected dead workers: agent1 (n150) and agent2 (n300) processes were not running on their reservations; only agent3 (t3000) was healthy.
+- Recovery:
+  - Restarted agent1 on aus-wh-08 (n150): `scripts/worker.sh agent1 n150` is running and `codexapi task` is active.
+  - Released broken n300 reservation (aus-wh-09) which lacked `ttnn_models_setup.sh` and `codexapi`.
+  - Reserved new n300 host (wh-03, tt_aus, wormhole_b0 --num-pcie-chips 2) and started agent2 there; `scripts/worker.sh agent2 n300` and `codexapi task` are active.
+- Cleaned up stale project state: issues #135 (ALLaM n150 optimized) and #130 (Arcee-Spark n300 optimized) had very old `updatedAt` timestamps and no PRs; removed owner labels and moved both back to Ready so active workers can re-claim.
+- Runners now: wh-lb-44 (t3000), aus-wh-08 (n150), wh-03 (n300), all with >5h remaining.
