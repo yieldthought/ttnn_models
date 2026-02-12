@@ -1,0 +1,62 @@
+CMD: env HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 TT_METAL_CACHE=/tmp/tt-metal-cache python eval.py models/google/gemma-3-4b-it/n150/optimized/model.py --model google/gemma-3-4b-it --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100 --max_seq_len 40960
+2026-02-12 15:30:07.325 | DEBUG    | ttnn:<module>:77 - Initial ttnn.CONFIG:
+Config{cache_path=/home/moconnor/.cache/ttnn,model_cache_path=/home/moconnor/.cache/ttnn/models,tmp_dir=/tmp/ttnn,enable_model_cache=false,enable_fast_runtime_mode=true,throw_exception_on_fallback=false,enable_logging=false,enable_graph_report=false,enable_detailed_buffer_report=false,enable_detailed_tensor_report=false,enable_comparison_mode=false,comparison_mode_should_raise_exception=false,comparison_mode_pcc=0.9999,root_report_path=generated/ttnn/reports,report_name=std::nullopt,std::nullopt}
+/proj_sw/user_dev/moconnor/tt-metal/python_env/lib/python3.10/site-packages/transformers/utils/hub.py:111: FutureWarning: Using `TRANSFORMERS_CACHE` is deprecated and will be removed in v5 of Transformers. Use `HF_HOME` instead.
+  warnings.warn(
+Loading model module: /localdev/moconnor/ttnn_models_worktrees/opt_google-gemma-3-4b-it-n150-optimized/models/google/gemma-3-4b-it/n150/optimized/model.py
+Loading HuggingFace tokenizer...
+Loading HuggingFace reference model on CPU...
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:01<00:01,  1.01s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:01<00:00,  1.23it/s]Loading checkpoint shards: 100%|██████████| 2/2 [00:01<00:00,  1.19it/s]
+Generating reference tokens...
+The following generation flags are not valid and may be ignored: ['top_p', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+Opening device (1x1)...
+2026-02-12 15:32:41.598 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-12 15:32:41.599 | info     |          Device | Opening user mode device driver (tt_cluster.cpp:223)
+2026-02-12 15:32:41.603 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-12 15:32:41.624 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-12 15:32:41.624 | info     |             UMD | Harvesting masks for chip 0 tensix: 0x40 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-12 15:32:41.712 | info     |             UMD | Opening local chip ids/PCIe ids: {0}/[3] and remote chip ids {} (cluster.cpp:186)
+2026-02-12 15:32:41.712 | info     |             UMD | IOMMU: disabled (cluster.cpp:161)
+2026-02-12 15:32:41.712 | info     |             UMD | KMD version: 2.4.1 (cluster.cpp:164)
+2026-02-12 15:32:41.714 | info     |             UMD | Starting devices in cluster (cluster.cpp:965)
+2026-02-12 15:32:41.719 | info     |             UMD | Mapped hugepage 0x4c0000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-12 15:32:41.782 | DEBUG    | ttnn.device:__init__:150 - Using default dispatch core type for this system: DispatchCoreType.WORKER
+2026-02-12 15:32:41.782 | DEBUG    | ttnn.device:__init__:152 - Using default dispatch core axis for this system: DispatchCoreAxis.ROW
+2026-02-12 15:32:41.782 | info     |     Distributed | Using auto discovery to generate mesh graph. (metal_context.cpp:863)
+2026-02-12 15:32:41.782 | info     |     Distributed | Constructing control plane using auto-discovery (no mesh graph descriptor). (metal_context.cpp:840)
+2026-02-12 15:32:41.782 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=1, n_phys=1, log_deg_hist={0:1}, phys_deg_hist={0:1} (topology_mapper_utils.cpp:171)
+2026-02-12 15:32:41.782 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=1, n_phys=1, log_deg_hist={0:1}, phys_deg_hist={0:1} (topology_mapper_utils.cpp:171)
+2026-02-12 15:32:41.799 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+Loading ttnn model...
+  Loading embeddings...
+  Computing RoPE cache...
+  Loading 34 layers...
+Running teacher-forcing eval (100 tokens)...
+2026-02-12 15:34:28.747 | warning  |    BuildKernels | Compute kernel 'pack_untilize_variable_num_blocks/17034524697084111984/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 15:34:28.853 | warning  |    BuildKernels | Compute kernel 'tilize/5093718140287559204/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 15:34:32.506 | warning  |    BuildKernels | Compute kernel 'layernorm/13511610728398130800/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 15:34:32.629 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/17370997577839759727/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 15:34:40.677 | warning  |    BuildKernels | Compute kernel 'layernorm/319938462059653120/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 15:34:40.833 | warning  |    BuildKernels | Compute kernel 'rotary_embedding/2691564283362306897/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 15:34:48.583 | warning  |    BuildKernels | Compute kernel 'sdpa/10753613373238740544/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 15:34:56.543 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/13324352521775747225/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 15:35:00.642 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/18256066286748491143/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 15:35:08.056 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/3306047891188344015/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 15:35:12.086 | warning  |    BuildKernels | Compute kernel 'pack_untilize_wh/12783016731784767080/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 15:35:12.086 | warning  |    BuildKernels | Compute kernel 'pack_untilize_wh/970310489497273055/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 15:35:12.086 | warning  |    BuildKernels | Compute kernel 'pack_untilize_wh/7086840538318172595/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 15:35:12.086 | warning  |    BuildKernels | Compute kernel 'pack_untilize_wh/9801006690367367760/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 15:35:16.032 | warning  |    BuildKernels | Compute kernel 'tilize_wh/4709288304851342762/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 15:35:16.118 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/2129723873948213316/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 15:35:16.225 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/4649585658210585725/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 15:35:16.513 | warning  |    BuildKernels | Compute kernel 'update_cache/16197251149772846519/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 15:35:16.569 | warning  |    BuildKernels | Compute kernel 'sdpa_flash_decode/11854597060658193279/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 15:35:16.716 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/17459587300299374375/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 15:35:16.762 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/10397164108515631098/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 15:35:16.867 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/13216957136056777182/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+Top-1 accuracy: 92.00% (0.9200)
+Top-5 accuracy: 100.00% (1.0000)
+YT_METRICS={"mode": "tt_eval", "model": "google/gemma-3-4b-it", "top1": 0.92, "top5": 1.0, "top1_pct": 92.0, "top5_pct": 100.0, "total_tokens": 100, "max_new_tokens": 100, "max_seq_len": 40960}
+2026-02-12 15:35:25.575 | info     |          Device | Closing user mode device drivers (tt_cluster.cpp:472)
+2026-02-12 15:35:25.575 | info     |             UMD | Closing devices in cluster (cluster.cpp:976)
+EXIT_CODE:0
