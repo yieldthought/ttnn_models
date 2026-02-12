@@ -922,16 +922,37 @@ class TtnnLlamaForCausalLM(torch.nn.Module, GenerationMixin):
         )
 
     def next_token_device(self, input_ids: torch.Tensor, past_key_values=None, use_cache: bool = True) -> tuple[int, object]:
-        logits, seq_len, padded_seq, past = self._forward_device_logits(input_ids, past_key_values, use_cache)
-        token_idx = seq_len - 1
-        if seq_len == 1:
+        batch, seq_len = input_ids.shape
+        assert batch == 1, "Only batch=1 supported"
+
+        if past_key_values is None and seq_len > 1:
+            # Prefill: we only need the final prompt token logits to pick the next token.
+            # Avoid materializing the full [seq_len, vocab] logits tensor.
+            self.reset()
+            start_pos = self._pos
+            if start_pos + seq_len > self.cache_seq_len:
+                raise ValueError(
+                    f"sequence length {start_pos + seq_len} exceeds cache length {self.cache_seq_len}; "
+                    "increase max_seq_len"
+                )
+            padded_seq = pad_to_tile(seq_len)
+            if seq_len < padded_seq:
+                input_ids = torch.nn.functional.pad(input_ids, (0, padded_seq - seq_len), value=0)
+            logits = self._forward_prefill_last_logits(input_ids, start_pos, seq_len)
+            self._pos = start_pos + seq_len
+            past = self._tt_past_key_values if use_cache else None
             logits_token = logits
         else:
-            logits_token = ttnn.slice(
-                logits,
-                (0, 0, token_idx, 0),
-                (logits.shape[0], logits.shape[1], token_idx + 1, logits.shape[-1]),
-            )
+            logits, seq_len, padded_seq, past = self._forward_device_logits(input_ids, past_key_values, use_cache)
+            token_idx = seq_len - 1
+            if seq_len == 1:
+                logits_token = logits
+            else:
+                logits_token = ttnn.slice(
+                    logits,
+                    (0, 0, token_idx, 0),
+                    (logits.shape[0], logits.shape[1], token_idx + 1, logits.shape[-1]),
+                )
 
         # Argmax supports TILE inputs only in single-core mode; this avoids an expensive untilize.
         token_ids = ttnn.argmax(

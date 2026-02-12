@@ -25,7 +25,7 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | humain-ai/ALLaM-7B-Instruct-preview |  t3000   | functional |   95% |  100% |  127ms |   9.1 |    4096 |
 | humain-ai/ALLaM-7B-Instruct-preview |  t3000   | optimized  |   97% |  100% |   61ms |  24.3 |    4096 |
 | meta-llama/Llama-3.2-1B             |   n150   | functional |   92% |  100% |   34ms |  39.5 |  131072 |
-| meta-llama/Llama-3.2-1B             |   n150   | optimized  |   90% |  100% |   21ms |  68.0 |    2048 |
+| meta-llama/Llama-3.2-1B             |   n150   | optimized  |   90% |  100% |   27ms |  63.0 |  131072 |
 | meta-llama/Llama-3.2-1B             |   n300   | functional |   90% |  100% |  610ms |   6.7 |  131072 |
 | meta-llama/Llama-3.2-1B             |  t3000   | functional |   92% |  100% |  267ms |   6.6 |  131072 |
 | meta-llama/Llama-3.2-1B             |  t3000   | optimized  |   94% |  100% |   36ms |  57.5 |  131072 |

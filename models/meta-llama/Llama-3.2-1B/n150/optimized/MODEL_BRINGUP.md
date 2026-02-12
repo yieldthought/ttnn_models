@@ -1,60 +1,64 @@
-# MODEL_BRINGUP.md — Llama 3.2 1B (n150 optimized)
+# MODEL_BRINGUP.md - Llama 3.2 1B (n150 optimized)
 
 ## Overview
 This is the optimized TTNN bringup of `meta-llama/Llama-3.2-1B` for `n150`.
-It is the maintained reference for this directory.
 
 - Model code: `models/meta-llama/Llama-3.2-1B/n150/optimized/model.py`
-- Eval harness: `eval.py`
-- Demo harness: `demo.py`
-- Optimization notes and decisions: `models/meta-llama/Llama-3.2-1B/n150/optimized/TODO.txt`
+- Demo log: `models/meta-llama/Llama-3.2-1B/n150/optimized/demo.log`
+- Eval log: `models/meta-llama/Llama-3.2-1B/n150/optimized/eval.log`
+- Machine-readable metrics: `models/meta-llama/Llama-3.2-1B/n150/optimized/metrics.json`
+- Decode path uses traced execution (`ttnn.begin_trace_capture` + `ttnn.execute_trace`)
 
 ## Model API contract
 - Exposes `build_model(hf_model, tt_device, max_seq_len)`.
-- Returns a `torch.nn.Module` + `GenerationMixin` model compatible with HF `generate()`.
-- Returns `CausalLMOutputWithPast(logits=..., past_key_values=...)`.
+- Returns a HuggingFace `generate()`-compatible model (`torch.nn.Module` + `GenerationMixin`).
+- Returns `CausalLMOutputWithPast(logits=..., past_key_values=...)` with on-device KV cache managed inside the TT model.
 
-## What this optimized path includes
-- Paged KV cache:
-  - K/V layout: `[max_num_blocks, n_kv_heads, block_size, head_dim]`
-  - `page_table`: `[32, max_num_blocks]` int32, row-major
-  - Prefill: `ttnn.experimental.paged_fill_cache`
-  - Decode: `ttnn.experimental.paged_update_cache` + `ttnn.transformer.paged_scaled_dot_product_attention_decode`
-- Fused QKV projection.
-- Decode trace path with allocation-safe decode logits trimming in traced region.
-- Decode-only DRAM-sharded matmuls for:
-  - MLP (`w1`, `w3`, `w2`)
-  - Attention output projection (`o_proj`)
-- Tuned LM head decode program config (`8x7` grid on n150) for better K blocking.
-- `prefill_logits_last_device()` fast path used by `eval.py` and `demo.py` when available.
+## Baseline vs final
+| Metric | Functional baseline (`MODELS.md`) | Starting optimized baseline (this pass) | Final optimized |
+| --- | ---: | ---: | ---: |
+| Top-1 | 92% | 90% | 90% |
+| Top-5 | 100% | 100% | 100% |
+| TTFT | 34 ms | 29 ms | 27 ms |
+| t/s/u | 39.5 | 63.1 | 63.0 |
+| Seq len | 131072 | 131072 | 131072 |
 
-## Correctness and runtime constraints
-- Keep `max_seq_len >= 2048` for the eval contract.
-- Decode uses tile-padded batch (`B=32`), and padded entries must use `cur_pos_tensor=-1`.
-- `decode_pos_buffer` must stay in DRAM (`paged_update_cache` requirement for `update_idxs_tensor`).
-- For GQA decode:
-  - SDPA decode output is interleaved.
-  - Reshard before `ttnn.experimental.nlp_concat_heads_decode`.
-- `ttnn.swiglu` is not used in decode MLP sharded path; decode MLP uses separate gate/up matmuls + `ttnn.mul(..., SILU)`.
+## Kept optimization decisions
+1. Paged KV cache for long-seq decode.
+- K/V layout: `[max_num_blocks, n_kv_heads, block_size, head_dim]`.
+- Prefill: `ttnn.experimental.paged_fill_cache`.
+- Decode: `ttnn.experimental.paged_update_cache` + `ttnn.transformer.paged_scaled_dot_product_attention_decode`.
 
-## Performance measurement notes
-- `demo.py` performs one prefill+decode warmup pass before timing to compile first-use kernels.
-- Decode throughput in recent runs is typically mid/high 60s t/s/u on this box; best recorded run is about 68 t/s/u.
+2. Decode trace with preallocated decode buffers.
+- Avoids per-token allocations in the decode loop.
 
-## Validation commands
+3. Decode-only DRAM-sharded matmuls for attention `o_proj` and MLP (w1/w3/w2).
+
+4. Prefill-last-logits fast paths.
+- `prefill_logits_last_device()` is used by `eval.py`/`demo.py` when host logits are needed.
+- `next_token_device()` uses a prefill-last-logits path so greedy TT demo does not materialize full prefill logits.
+
+## Constraints and gotchas
+- `eval.py` enforces `max_seq_len >= 2048`.
+- Decode uses a tile-padded batch (`B=32`); inactive lanes must use `cur_pos_tensor=-1`.
+- `decode_pos_buffer` must stay in DRAM (`paged_update_cache` requires DRAM `update_idxs_tensor`).
+- For GQA decode, SDPA output is interleaved and must be resharded before `ttnn.experimental.nlp_concat_heads_decode`.
+- Decode MLP sharded path avoids `ttnn.swiglu` and uses separate gate/up matmuls + `ttnn.mul(..., SILU)`.
+
+## Commands used
 ```bash
-python eval.py models/meta-llama/Llama-3.2-1B/n150/optimized/model.py --max_new_tokens 100 --prompt_file prompts/bringup_eval_long.txt --seed 0
-python demo.py models/meta-llama/Llama-3.2-1B/n150/optimized/model.py --seed 0
+python demo.py models/meta-llama/Llama-3.2-1B/n150/optimized/model.py \
+  --prompt-file prompts/bringup_eval_long.txt \
+  --max-new-tokens 100 \
+  --temperature 0 \
+  --seed 0 \
+  --max_seq_len 131072
+
+python eval.py models/meta-llama/Llama-3.2-1B/n150/optimized/model.py \
+  --prompt_file prompts/bringup_eval_long.txt \
+  --max_new_tokens 100 \
+  --seed 0 \
+  --max_seq_len 131072
 ```
 
-Expected current behavior:
-- `eval.py` 100-token teacher-forcing around Top-1 90%, Top-5 100%.
-- `demo.py` output coherent with decode throughput in the expected range above.
-
-## Deferred/rejected optimization directions
-- DRAM-sharded decode QKV: micro-op gain, negligible layer-level win for added complexity.
-- DRAM-sharded one-shot LM head: blocked by sharding/L1 static-CB constraints (would need chunking or another path).
-- SDPA decode LoFi / `packer_l1_acc=False` variants: slower on this setup.
-- Decode core grid below 32 cores: incompatible with decode sharding requirements.
-
-See `doc/ttnn.md` ("Optimizing models") for the generalized optimization workflow and reusable constraints.
+See `doc/ttnn.md` for the general optimization workflow and the paged-KV + decode-trace constraints we rely on here.
