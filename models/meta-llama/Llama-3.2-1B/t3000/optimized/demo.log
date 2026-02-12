@@ -1,0 +1,76 @@
+TT_MESH_GRAPH_DESC_PATH=/proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/t3k_mesh_graph_descriptor.textproto TT_VISIBLE_DEVICES=0,1,2,3 TT_METAL_CACHE=/tmp/tt-metal-cache PYTHONUNBUFFERED=1 python -u demo.py models/meta-llama/Llama-3.2-1B/t3000/optimized/model.py --seed 0
+Loading tokenizer: meta-llama/Llama-3.2-1B
+Opening TT device...
+2026-02-12 04:55:52.557 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-12 04:55:52.588 | info     |          Device | Opening user mode device driver (tt_cluster.cpp:223)
+2026-02-12 04:55:52.597 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-12 04:55:52.672 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-12 04:55:52.734 | info     |             UMD | Harvesting masks for chip 3 tensix: 0x201 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-12 04:55:52.789 | info     |             UMD | Harvesting masks for chip 2 tensix: 0x208 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-12 04:55:52.800 | info     |             UMD | Harvesting masks for chip 1 tensix: 0x210 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-12 04:55:52.810 | info     |             UMD | Harvesting masks for chip 0 tensix: 0x41 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-12 04:55:52.821 | info     |             UMD | Harvesting masks for chip 7 tensix: 0x280 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-12 04:55:52.835 | info     |             UMD | Harvesting masks for chip 6 tensix: 0x208 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-12 04:55:52.848 | info     |             UMD | Harvesting masks for chip 5 tensix: 0x300 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-12 04:55:52.862 | info     |             UMD | Harvesting masks for chip 4 tensix: 0x42 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-12 04:55:52.875 | info     |             UMD | Opening local chip ids/PCIe ids: {0, 1, 2, 3}/[0, 1, 2, 3] and remote chip ids {4, 5, 6, 7} (cluster.cpp:186)
+2026-02-12 04:55:52.876 | info     |             UMD | IOMMU: disabled (cluster.cpp:161)
+2026-02-12 04:55:52.876 | info     |             UMD | KMD version: 2.4.1 (cluster.cpp:164)
+2026-02-12 04:55:52.884 | info     |             UMD | Starting devices in cluster (cluster.cpp:965)
+2026-02-12 04:55:52.885 | info     |             UMD | Mapped hugepage 0x340000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-12 04:55:52.885 | info     |             UMD | Mapped hugepage 0x300000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
+2026-02-12 04:55:52.886 | info     |             UMD | Mapped hugepage 0x440000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-12 04:55:52.887 | info     |             UMD | Mapped hugepage 0x400000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
+2026-02-12 04:55:52.888 | info     |             UMD | Mapped hugepage 0x4240000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-12 04:55:52.889 | info     |             UMD | Mapped hugepage 0x4200000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
+2026-02-12 04:55:52.890 | info     |             UMD | Mapped hugepage 0x4340000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-12 04:55:52.891 | info     |             UMD | Mapped hugepage 0x4300000000 to NOC address 0x840000000 (silicon_sysmem_manager.cpp:207)
+2026-02-12 04:55:52.945 | info     |     Distributed | Using custom mesh graph descriptor: /proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/t3k_mesh_graph_descriptor.textproto (metal_context.cpp:822)
+2026-02-12 04:55:52.946 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=8, n_phys=8, log_deg_hist={2:4, 3:4}, phys_deg_hist={2:4, 3:4} (topology_mapper_utils.cpp:171)
+2026-02-12 04:55:52.955 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-12 04:55:52.958 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-12 04:55:52.958 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-12 04:55:52.958 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-12 04:55:52.959 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-12 04:55:52.959 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-12 04:55:52.959 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-12 04:55:52.959 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-12 04:55:53.268 | warning  |           Metal | Got num_routing_planes: 1, which is less than current value: 255, ignoring the override (metal_context.cpp:719)
+2026-02-12 04:55:53.268 | info     |           Metal | Dispatch on FabricConfig::FABRIC_2D with 1 Command Queues
+ (device_manager.cpp:328)
+2026-02-12 04:55:53.290 | info     |           Metal | Initializing Fabric (device_manager.cpp:404)
+2026-02-12 04:55:53.466 | info     |           Metal | Fabric initialized on Device 0 (device.cpp:386)
+2026-02-12 04:55:53.467 | info     |           Metal | Fabric initialized on Device 1 (device.cpp:386)
+2026-02-12 04:55:53.468 | info     |           Metal | Fabric initialized on Device 2 (device.cpp:386)
+2026-02-12 04:55:53.468 | info     |           Metal | Fabric initialized on Device 3 (device.cpp:386)
+2026-02-12 04:55:53.471 | info     |           Metal | Fabric initialized on Device 4 (device.cpp:386)
+2026-02-12 04:55:53.474 | info     |           Metal | Fabric initialized on Device 5 (device.cpp:386)
+2026-02-12 04:55:53.481 | info     |           Metal | Fabric initialized on Device 6 (device.cpp:386)
+2026-02-12 04:55:53.487 | info     |           Metal | Fabric initialized on Device 7 (device.cpp:386)
+2026-02-12 04:55:53.487 | info     |           Metal | Fabric Initialized with config FabricConfig::FABRIC_2D (device_manager.cpp:409)
+2026-02-12 04:55:53.564 | info     |           Metal | Command Queue initialized on Device 5 (device_manager.cpp:500)
+2026-02-12 04:55:53.566 | info     |           Metal | Command Queue initialized on Device 4 (device_manager.cpp:500)
+2026-02-12 04:55:53.568 | info     |           Metal | Command Queue initialized on Device 6 (device_manager.cpp:500)
+2026-02-12 04:55:53.568 | info     |           Metal | Command Queue initialized on Device 7 (device_manager.cpp:500)
+Loading HuggingFace reference model on CPU: meta-llama/Llama-3.2-1B
+Building TT model...
+  Loading embeddings...
+  Computing RoPE cache...
+  Loading 16 layers...
+Running one warmup prefill+decode pass (kernel compile warmup)...
+TT demo (t3000)
+Model: meta-llama/Llama-3.2-1B
+Mesh shape: 2x4
+Prompt tokens: 55 | Generated tokens: 128
+TTFT: 37 ms | Decode: 58.5 t/s/u (126 tokens)
+
+Prompt:
+Journal entry, 1957: Tonight a tiny sphere called Sputnik 1 crossed the sky, beeping like a metronome for a new era. The neighbors gathered on the roof, listening and arguing about what comes next. I wrote in my notebook that
+
+Output:
+ I didn’t know what the fuss was all about.
+The same thing happened in the year 2000. I had to stop everything and write down something. It was the year of change.
+I wrote in my notebook that I was looking forward to a time when a new wave of technology would come in, and we would all be better off. That the world would get smaller as we got more connected. That everything would be online, and that we would all be able to have access to everything. And that everything would be better.
+I wrote in my notebook that this new wave would come in the form of the Internet, and that
+2026-02-12 04:56:20.128 | info     |          Device | Closing user mode device drivers (tt_cluster.cpp:472)
+2026-02-12 04:56:20.128 | info     |             UMD | Closing devices in cluster (cluster.cpp:976)
