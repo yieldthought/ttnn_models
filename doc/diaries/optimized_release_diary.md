@@ -335,3 +335,13 @@
   - Confirmed worker process and `codexapi task` are running (`scripts/worker.sh agent3 n300`), and active session files continue updating in `~/.codex/sessions`, indicating ongoing progress on #142.
   - No n150/t3000 tasks remain, so no additional workers were started.
 - Assessment: release completion is now fully gated on clearing the remaining n300 queue (5 items including #142).
+
+## 2026-02-12 20:57
+
+- Reviewed and merged PR #187 for #142 (Mistral-7B-Instruct-v0.3 n300 optimized): artifacts show real n300 mesh (`Mesh shape: 1x2`), long eval Top-1 97% / Top-5 100%, TTFT 44ms, decode 24.8 t/s/u, seq len 32768, and traced decode in `model.py`. Issue #142 is now closed and moved to Done.
+- Current board state after merge: In progress #145 (Qwen3-0.6B n300 optimized), Ready #148/#151/#154, In review 0, open PRs 0.
+- Runner management:
+  - Single n300 reservation on wh-04 remains healthy with ~6h26m remaining (>4h threshold); no extension needed this pass.
+  - Verified active worker/codex processes for `agent3` and confirmed live progress from session logs (currently running Qwen n300 baseline/demo measurements).
+  - No n150/t3000 workers active since no remaining tasks for those types.
+- Assessment: release finish remains n300-only with four items left (one active + three ready).
