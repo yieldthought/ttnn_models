@@ -273,3 +273,13 @@
 - Runners/reservations:
   - Extended wh-04 (n300) timeout; IRD capped at 10h and now shows ~10h remaining.
   - Current In progress: #139 (Llama-3.2-1B n300 optimized, owner: agent3), #141 (Mistral-7B n150 optimized, owner: agent2). Ready: #142/#145/#148/#150/#151/#153/#154.
+
+## 2026-02-12 17:53
+
+- Project status changes:
+  - Drift cleanup: #147 (gemma-3-4b-it n150 optimized) is closed with ✓ but had drifted into In review; moved back to Done.
+  - In progress: #139 (agent3, n300), #141 (agent2, n150), #142 (agent4, n300), #150 (agent1, n150).
+  - Ready: #145/#148/#151/#153/#154.
+- Runners/reservations:
+  - Restarted agent1 on aus-wh-08 after it appeared idle; cleaned up an orphaned `codexapi task` process that caused agent1 to temporarily own both #150 and #153, and moved #153 back to Ready.
+  - Reserved a second n300 host (wh-03) and started `agent4` to reduce n300 backlog. Initial start failed because the repo had diverged on main (ff-only pull failed); fixed by resetting the remote clone to `origin/main` (saved a backup branch) and relaunched the worker.
