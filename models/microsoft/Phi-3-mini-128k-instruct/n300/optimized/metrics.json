@@ -1,0 +1,26 @@
+{
+  "model": "microsoft/Phi-3-mini-128k-instruct",
+  "hardware": "n300",
+  "variant": "optimized",
+  "functional_baseline": {
+    "top1_pct": 90.0,
+    "top5_pct": 100.0,
+    "ttft_ms": 193.0,
+    "decode_tps_u": 6.7,
+    "seq_len": 12288
+  },
+  "optimized_final": {
+    "top1_pct": 91.0,
+    "top5_pct": 100.0,
+    "ttft_ms": 93.78017899871338,
+    "decode_tps_u": 18.273293932618802,
+    "seq_len": 12288
+  },
+  "acceptance": {
+    "top1_top5_pass": true,
+    "decode_trace_enabled": true,
+    "ttft_improved": true,
+    "decode_tps_improved": true,
+    "seq_len_non_regressed": true
+  }
+}
