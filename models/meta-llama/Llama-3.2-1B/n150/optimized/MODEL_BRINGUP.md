@@ -43,6 +43,9 @@ Note: TTFT and t/s/u depend on the demo prompt and sampling settings. See `demo.
 ## Changes in this pass
 - Set `LM_HEAD_WEIGHT_DTYPE=ttnn.bfloat8_b` to recover long-eval accuracy while keeping decode throughput high.
 
+## Rejected directions
+- LM head weights at `ttnn.bfloat4_b`: regressed teacher-forcing Top-1 too much on this setup.
+
 ## Constraints and gotchas
 - `eval.py` enforces `max_seq_len >= 2048`.
 - Decode uses a tile-padded batch (`B=32`); inactive lanes must use `cur_pos_tensor=-1`.
