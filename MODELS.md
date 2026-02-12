@@ -29,6 +29,7 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | mistralai/Mistral-7B-Instruct-v0.3  |   n150   | functional |   93% |  100% |  105ms |  16.5 |   32768 |
 | mistralai/Mistral-7B-Instruct-v0.3  |   n300   | functional |   96% |  100% |  112ms |  11.1 |   32768 |
 | mistralai/Mistral-7B-Instruct-v0.3  |  t3000   | functional |   95% |  100% |  104ms |   9.9 |   32768 |
+| mistralai/Mistral-7B-Instruct-v0.3  |  t3000   | optimized  |   98% |  100% |   60ms |  26.6 |   32768 |
 | Qwen/Qwen3-0.6B                     |   n150   | functional |   99% |  100% |   52ms |  28.0 |   40960 |
 | Qwen/Qwen3-0.6B                     |   n300   | functional |   99% |  100% |  943ms |   2.0 |   40960 |
 | Qwen/Qwen3-0.6B                     |  t3000   | functional |   98% |  100% |  229ms |   6.2 |   40960 |
