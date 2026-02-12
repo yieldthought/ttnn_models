@@ -191,3 +191,16 @@
 - Closed PR #172 and reset #139 back to Ready: removed ✓ label, removed stale `## Progress` section, kept watcher note requiring a real n300 mesh run (expected 1x2).
 - Open PRs: #171 (ALLaM-7B-Instruct-preview n150 optimized) is open while issue #135 remains In progress.
 - Runners/reservations: wh-lb-44 (t3000), aus-wh-08 (n150), wh-03 (n300), aus-wh-20 (n150); all reservations still >5h remaining (no timeout extensions needed this pass).
+
+## 2026-02-12 13:41
+
+- Project status: Done 64, In progress 4, Ready 13. No In review items after cleanup.
+- Cleaned up stale In review: took #135 (ALLaM-7B-Instruct-preview n150 optimized), moved its project item to Done, and left a closing comment (issue was already closed; related PR was redundant/closed).
+- In progress: #129 (Arcee-Spark n150, owner: agent1), #130 (Arcee-Spark n300, owner: agent2), #133 (AFM-4.5B n150, owner: agent4; PR #174 open), #155 (Falcon3-7B-Instruct t3000, owner: agent3; PR #175 open).
+- Runners/reservations:
+  - wh-lb-44 (t3000, running `agent3`), aus-wh-08 (n150, `agent1`), wh-03 (n300, `agent2`), aus-wh-20 (n150, `agent4`); all `codexapi task` processes running.
+  - Time remaining: ~5:55, ~5:55, ~5:10, ~5:47 (no extensions needed).
+- Worker notes:
+  - agent3 log shows Phi-3-mini-128k-instruct t3000 optimized passed earlier and it is now running optimize_model for Falcon3-7B-Instruct t3000.
+  - agent1/agent2/agent4 logs are quiet due to `--quiet`, but processes are alive and issues remain In progress.
+- Local: fast-forward pulled main to `97e594a` (Phi-3-mini-128k-instruct t3000 optimized artifacts merged).
