@@ -1,0 +1,26 @@
+{
+  "model": "meta-llama/Llama-3.2-1B",
+  "hardware": "t3000",
+  "variant": "optimized",
+  "functional_baseline": {
+    "top1_pct": 92.0,
+    "top5_pct": 100.0,
+    "ttft_ms": 267.0,
+    "decode_tps_u": 6.6,
+    "seq_len": 131072
+  },
+  "optimized_final": {
+    "top1_pct": 94.0,
+    "top5_pct": 100.0,
+    "ttft_ms": 37.0,
+    "decode_tps_u": 58.5,
+    "seq_len": 131072
+  },
+  "acceptance": {
+    "top1_top5_pass": true,
+    "decode_trace_enabled": true,
+    "ttft_improved": true,
+    "decode_tps_improved": true,
+    "seq_len_non_regressed": true
+  }
+}

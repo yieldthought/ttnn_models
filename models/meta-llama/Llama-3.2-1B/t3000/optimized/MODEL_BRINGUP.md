@@ -6,6 +6,7 @@ This is the optimized TTNN bringup of `meta-llama/Llama-3.2-1B` for `t3000`.
 - Model code: `models/meta-llama/Llama-3.2-1B/t3000/optimized/model.py`
 - Demo log: `models/meta-llama/Llama-3.2-1B/t3000/optimized/demo.log`
 - Eval log: `models/meta-llama/Llama-3.2-1B/t3000/optimized/eval.log`
+- Machine-readable metrics: `models/meta-llama/Llama-3.2-1B/t3000/optimized/metrics.json`
 - Decode path uses traced execution (`ttnn.begin_trace_capture` + `ttnn.execute_trace`)
 
 ## Baseline vs final
