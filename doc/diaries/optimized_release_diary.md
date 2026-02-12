@@ -305,3 +305,14 @@
   - #145 and #148 had been briefly taken by `agent4` and drifted to In progress; reset both back to Ready and removed stale owner labels.
 - Closed PR #183 as blocked-by-topology (issue remains Ready for rerun on a healthy n300 host).
 - Current state: In progress #139/#150/#153; Ready #142/#145/#148/#151/#154; no In review. New PR #184 opened for #139 and pending watcher review once item reaches In review.
+
+## 2026-02-12 19:29
+
+- Reviewed and merged PR #184 (Llama-3.2-1B n300 optimized) after confirming acceptance artifacts on a real n300 mesh: Top-1 91%, Top-5 100%, TTFT 31ms, t/s/u 50.0, seq len 131072, traced decode enabled. Issue #139 auto-closed and project item moved to Done.
+- Current project state: In progress #142/#150/#153; Ready #145/#148/#151/#154; In review 0.
+- Open PRs: none.
+- Runners/reservations:
+  - n150: aus-wh-08 (agent1) and aus-wh-20 (agent2) both running `scripts/worker.sh` + `codexapi task` for active n150 work.
+  - n300: wh-04 (agent3) running `scripts/worker.sh` + `codexapi task` for active n300 work.
+  - No t3000 worker is running (no remaining t3000 Ready/In progress items).
+  - Reservation headroom remains above the 4h floor (~6h42, ~6h43, ~7h54), so no extensions were needed this pass.
