@@ -32,8 +32,8 @@ Changes kept:
 Final results (this optimized model):
 - Top-1: 91%
 - Top-5: 100%
-- TTFT: 32ms
-- t/s/u: 41.8
+- TTFT: 31ms
+- t/s/u: 50.0
 - Seq len: 131072
 
 Decode notes:
@@ -46,11 +46,13 @@ Decode notes:
 Eval (teacher forcing, 100 tokens):
 ```
 TT_VISIBLE_DEVICES=0 TT_MESH_GRAPH_DESC_PATH=/proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/n300_mesh_graph_descriptor.textproto \
-python eval.py models/meta-llama/Llama-3.2-1B/n300/optimized/model.py --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100 --seed 0
+TT_METAL_CACHE=/tmp/tt-metal-cache PYTHONUNBUFFERED=1 \
+python -u eval.py models/meta-llama/Llama-3.2-1B/n300/optimized/model.py --model meta-llama/Llama-3.2-1B --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100 --max_seq_len 131072 --seed 0
 ```
 
 Demo (timed):
 ```
 TT_VISIBLE_DEVICES=0 TT_MESH_GRAPH_DESC_PATH=/proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/n300_mesh_graph_descriptor.textproto \
-python demo.py models/meta-llama/Llama-3.2-1B/n300/optimized/model.py --prompt-file prompts/bringup_eval_long.txt --max-new-tokens 100 --seed 0
+TT_METAL_CACHE=/tmp/tt-metal-cache PYTHONUNBUFFERED=1 \
+python -u demo.py models/meta-llama/Llama-3.2-1B/n300/optimized/model.py --prompt-file prompts/bringup_eval_long.txt --max-new-tokens 100 --temperature 0 --seed 0 --max_seq_len 131072
 ```
