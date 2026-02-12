@@ -13,13 +13,26 @@ prompt: |
   - Updated `MODELS.md` if reported metrics changed.
   - `<dir>/demo.log` and `<dir>/eval.log` with command line + output.
 check: |
-  1. Decode uses traced execution.
-  2. Top-1 / Top-5 accuracy is >= 85 / 95.
-  3. TTFT and tok/s are improved versus the corresponding functional model on the same system.
-  4. Main optimization recommendations from `doc/ttnn.md` are implemented, or tried and explicitly rejected with evidence.
+  Return a single JSON object (no code fences, no extra text) with keys:
+  - success: boolean
+  - reason: string
+
+  Your output must start with "{" and end with "}".
+
+  Do NOT run any TT/TTNN workloads (no demo/eval, no tt-smi) and do NOT download models.
+  Verify by reading repo files only, using the target path from the task prompt to locate <dir>.
+
+  Checks:
+  1. Decode uses traced execution (evidence: model code and/or `MODEL_BRINGUP.md`).
+  2. Long eval quality is >= 85 / 95 (evidence: `<dir>/eval.log` or `<dir>/metrics.json`).
+  3. TTFT and tok/s are improved versus the corresponding functional model on the same system
+     (evidence: `MODELS.md` and/or `<dir>/metrics.json`).
+  4. Main optimization recommendations from `doc/ttnn.md` are implemented, or tried and explicitly rejected with evidence
+     (evidence: `<dir>/MODEL_BRINGUP.md`).
   5. `MODELS.md` is updated for the optimized model row with the new results.
-  6. No capability regression: optimized `max_seq_len` is >= the corresponding functional model on the same system.
-  7. `demo.log` and `eval.log` exist, include commands and results, and demo output is coherent.
+  6. No capability regression: optimized `max_seq_len` is >= the corresponding functional model on the same system
+     (evidence: `MODELS.md` row or `<dir>/metrics.json`).
+  7. `demo.log` and `eval.log` exist and include the command line + outputs, and demo output is coherent.
   8. `<dir>/MODEL_BRINGUP.md` records baseline vs final metrics and kept vs rejected optimization decisions.
 set_up: |
   Make sure you are in /localdev/moconnor/ttnn_models
