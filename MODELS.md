@@ -47,6 +47,7 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | google/gemma-3-4b-it                |   n150   | functional |   92% |  100% |   98ms |  13.9 |   40960 |
 | google/gemma-3-4b-it                |   n150   | optimized  |   92% |  100% |   70ms |  14.5 |   40960 |
 | google/gemma-3-4b-it                |   n300   | functional |   94% |  100% |  535ms |   3.2 |   40960 |
+| google/gemma-3-4b-it                |   n300   | optimized  |   94% |  100% |   68ms |  18.5 |   40960 |
 | google/gemma-3-4b-it                |  t3000   | functional |   92% |  100% |  330ms |   4.7 |   40960 |
 | google/gemma-3-4b-it                |  t3000   | optimized  |   91% |  100% |   78ms |  19.4 |   40960 |
 | microsoft/Phi-3-mini-128k-instruct  |   n150   | functional |   92% |   99% |   80ms |  13.7 |   12288 |
