@@ -1,0 +1,71 @@
+COMMAND: TT_METAL_CACHE=/tmp/tt-metal-cache PYTHONUNBUFFERED=1 python -u demo.py models/humain-ai/ALLaM-7B-Instruct-preview/n150/optimized/model.py --max_seq_len 4096 --seed 0
+/proj_sw/user_dev/moconnor/tt-metal/python_env/lib/python3.10/site-packages/transformers/utils/hub.py:111: FutureWarning: Using `TRANSFORMERS_CACHE` is deprecated and will be removed in v5 of Transformers. Use `HF_HOME` instead.
+  warnings.warn(
+2026-02-12 10:46:52.290 | DEBUG    | ttnn:<module>:77 - Initial ttnn.CONFIG:
+Config{cache_path=/home/moconnor/.cache/ttnn,model_cache_path=/home/moconnor/.cache/ttnn/models,tmp_dir=/tmp/ttnn,enable_model_cache=false,enable_fast_runtime_mode=true,throw_exception_on_fallback=false,enable_logging=false,enable_graph_report=false,enable_detailed_buffer_report=false,enable_detailed_tensor_report=false,enable_comparison_mode=false,comparison_mode_should_raise_exception=false,comparison_mode_pcc=0.9999,root_report_path=generated/ttnn/reports,report_name=std::nullopt,std::nullopt}
+Loading tokenizer: humain-ai/ALLaM-7B-Instruct-preview
+Opening TT device...
+2026-02-12 10:46:54.185 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-12 10:46:54.185 | info     |          Device | Opening user mode device driver (tt_cluster.cpp:223)
+2026-02-12 10:46:54.189 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-12 10:46:54.211 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-12 10:46:54.211 | info     |             UMD | Harvesting masks for chip 0 tensix: 0x200 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-12 10:46:54.576 | info     |             UMD | Opening local chip ids/PCIe ids: {0}/[5] and remote chip ids {} (cluster.cpp:186)
+2026-02-12 10:46:54.576 | info     |             UMD | IOMMU: disabled (cluster.cpp:161)
+2026-02-12 10:46:54.576 | info     |             UMD | KMD version: 2.4.1 (cluster.cpp:164)
+2026-02-12 10:46:54.577 | info     |             UMD | Starting devices in cluster (cluster.cpp:965)
+2026-02-12 10:46:54.578 | info     |             UMD | Mapped hugepage 0x4200000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-12 10:46:54.691 | DEBUG    | ttnn.device:__init__:150 - Using default dispatch core type for this system: DispatchCoreType.WORKER
+2026-02-12 10:46:54.692 | DEBUG    | ttnn.device:__init__:152 - Using default dispatch core axis for this system: DispatchCoreAxis.ROW
+2026-02-12 10:46:54.692 | info     |     Distributed | Using auto discovery to generate mesh graph. (metal_context.cpp:863)
+2026-02-12 10:46:54.692 | info     |     Distributed | Constructing control plane using auto-discovery (no mesh graph descriptor). (metal_context.cpp:840)
+2026-02-12 10:46:54.692 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=1, n_phys=1, log_deg_hist={0:1}, phys_deg_hist={0:1} (topology_mapper_utils.cpp:171)
+2026-02-12 10:46:54.692 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=1, n_phys=1, log_deg_hist={0:1}, phys_deg_hist={0:1} (topology_mapper_utils.cpp:171)
+2026-02-12 10:46:54.708 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-12 10:47:00.561 | warning  |           Metal | Unable to bind worker thread to CPU Core. May see performance degradation. Error Code: 22 (hardware_command_queue.cpp:65)
+Loading HuggingFace reference model on CPU: humain-ai/ALLaM-7B-Instruct-preview
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards:  33%|███▎      | 1/3 [00:53<01:47, 53.53s/it]Loading checkpoint shards:  67%|██████▋   | 2/3 [01:58<01:00, 60.21s/it]Loading checkpoint shards: 100%|██████████| 3/3 [02:47<00:00, 54.92s/it]Loading checkpoint shards: 100%|██████████| 3/3 [02:47<00:00, 55.68s/it]
+Building TT model...
+  Loading embeddings...
+  Computing RoPE cache...
+  Loading 32 layers...
+Running one warmup prefill+decode pass (kernel compile warmup)...
+2026-02-12 10:53:20.205 | warning  |    BuildKernels | Compute kernel 'pack_untilize_variable_num_blocks/18021495543364167813/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 10:53:24.231 | warning  |    BuildKernels | Compute kernel 'tilize/18251814608165832562/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 10:53:28.230 | warning  |    BuildKernels | Compute kernel 'layernorm/17132337866544620763/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 10:53:32.720 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/9984058517180339019/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 10:53:44.675 | warning  |    BuildKernels | Compute kernel 'rotary_embedding/15977828201954068243/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 10:53:52.537 | warning  |    BuildKernels | Compute kernel 'sdpa/89646819859773288/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 10:54:00.703 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/10871277992888585774/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 10:54:20.678 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/14368278037435521175/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 10:54:25.092 | warning  |    BuildKernels | Compute kernel 'pack_untilize_wh/7086840538318172595/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 10:54:25.092 | warning  |    BuildKernels | Compute kernel 'pack_untilize_wh/12783016731784767080/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 10:54:25.092 | warning  |    BuildKernels | Compute kernel 'pack_untilize_wh/3852363199925462906/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 10:54:33.694 | warning  |    BuildKernels | Compute kernel 'tilize_wh/4709288304851342762/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 10:54:33.694 | warning  |    BuildKernels | Compute kernel 'tilize_wh/12714357955689313488/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 10:54:33.694 | warning  |    BuildKernels | Compute kernel 'tilize_wh/7242876147893395727/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 10:54:38.357 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/4404026160441986435/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 10:54:50.801 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/6155824524306476405/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 10:55:03.130 | warning  |    BuildKernels | Compute kernel 'update_cache/13768511706347252700/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 10:55:07.397 | warning  |    BuildKernels | Compute kernel 'sdpa_flash_decode/18089812707812935173/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 10:55:20.109 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/7127569624077686788/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 10:55:36.861 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/4391359061119251671/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+TT demo (n150)
+Model: humain-ai/ALLaM-7B-Instruct-preview
+Mesh shape: 1x1
+Prompt tokens: 57 | Generated tokens: 128
+TTFT: 69 ms | Decode: 15.8 t/s/u (126 tokens)
+
+Prompt:
+Journal entry, 1957: Tonight a tiny sphere called Sputnik 1 crossed the sky, beeping like a metronome for a new era. The neighbors gathered on the roof, listening and arguing about what comes next. I wrote in my notebook that
+
+Output:
+I’m not afraid. We’ll adapt as we always do. But this new device is a reminder that humanity’s presence in the cosmos is not just a hope, that our reach extends beyond Earth.
+
+Entry #52
+The U.S.S. Discovery: November 20, 2120
+
+The first Earth-orbit space station, the U.S.S. Discovery was launched in 2000 as part of the Space Station Freedom program. It was the first human space habitat entirely outside of Earth’s atmosphere. In the decades since its launch,
+YT_METRICS={"mode": "tt_demo", "model": "humain-ai/ALLaM-7B-Instruct-preview", "system": "n150", "mesh_shape": [1, 1], "prompt_tokens": 57, "generated_tokens": 128, "ttft_ms": 68.50344999975277, "decode_tps_u": 15.82085263445955, "decode_tokens": 126, "max_seq_len": 4096}
+2026-02-12 10:56:00.770 | info     |          Device | Closing user mode device drivers (tt_cluster.cpp:472)
+2026-02-12 10:56:00.770 | info     |             UMD | Closing devices in cluster (cluster.cpp:976)
