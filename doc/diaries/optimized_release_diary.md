@@ -387,3 +387,13 @@
   - Checked recent remote session logs; current task activity shows long eval/reference generation in progress for #151, so no intervention was needed.
 - No merge/retry/scheduling actions were required this pass because no item reached In review and no new blockers were detected.
 - Assessment: release remains gated by two remaining n300 optimized issues (#151 active, #154 queued).
+
+## 2026-02-12 23:24
+
+- Project hygiene fix: #148 had drifted from Done back to In review even though PR #189 was already merged and the issue was closed; moved the project item back to Done.
+- Current project state after cleanup: In progress #151 (Phi-3-mini-128k-instruct n300 optimized, owner: agent3), Ready #154 (Falcon3-7B-Instruct n300 optimized), In review 0, open PRs 0.
+- Runner management:
+  - Verified single n300 reservation on wh-04 remains healthy with ~7h00m left (>4h threshold), so no timeout extension was needed.
+  - Verified active worker and task processes (`scripts/worker.sh agent3 n300` and `codexapi task`).
+  - Checked latest remote Codex session tail; it is actively compiling/running eval workloads for #151 (kernel-build warnings streaming), so worker is making forward progress.
+- Assessment: release remains gated by the final two n300 optimized tickets (#151 in progress, #154 queued).
