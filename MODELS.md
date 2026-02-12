@@ -11,6 +11,7 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | arcee-ai/Arcee-Spark                |   n150   | functional |   92% |  100% |   99ms |  13.9 |   29952 |
 | arcee-ai/Arcee-Spark                |   n150   | optimized  |   91% |  100% |   77ms |  14.5 |   29952 |
 | arcee-ai/Arcee-Spark                |   n300   | functional |   91% |  100% |  338ms |   5.0 |   32768 |
+| arcee-ai/Arcee-Spark                |   n300   | optimized  |   85% |  100% |  101ms |  16.0 |   32768 |
 | arcee-ai/Arcee-Spark                |  t3000   | functional |   90% |  100% |  343ms |   4.9 |   32768 |
 | arcee-ai/Arcee-Spark                |  t3000   | optimized  |   90% |  100% |   72ms |  17.6 |   32768 |
 | arcee-ai/AFM-4.5B                   |  t3000   | functional |   98% |  100% |  181ms |   7.1 |   65536 |

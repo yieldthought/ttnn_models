@@ -2,9 +2,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Simple Arcee-Spark (Qwen2) implementation in ttnn on N300.
+Optimized Arcee-Spark (Qwen2) implementation in ttnn on N300.
 
-This is a minimal bringup with 1D tensor parallel across a 1x2 mesh.
+This version keeps the functional model structure but reduces overhead by:
+- Traced decode execution with preallocated token/position/RoPE buffers
+- LM head slicing in decode to avoid computing logits for the tile-padded batch
+- `prefill_logits_last_device()` to avoid transferring full prefill logits to host
+
+The model uses 1D tensor parallel across a 2x1 mesh (N300).
 """
 
 import math
@@ -28,6 +33,7 @@ ATTN_WEIGHT_DTYPE = ttnn.bfloat16
 MLP_WEIGHT_DTYPE = ttnn.bfloat8_b
 EMBED_DTYPE = ttnn.bfloat16
 LM_HEAD_DTYPE = ttnn.bfloat16
+USE_DECODE_TRACE = True
 ATTN_KERNEL_CONFIG = ttnn.WormholeComputeKernelConfig(
     math_fidelity=ttnn.MathFidelity.HiFi4,
     math_approx_mode=False,
@@ -42,13 +48,11 @@ def pad_to_tile(x: int) -> int:
 
 def mesh_shape_to_axis(mesh_shape: tuple[int, int]) -> int:
     """Return the mesh axis used for 1D tensor parallel."""
-    if mesh_shape == (1, 1):
-        return 0
     if mesh_shape[0] == 1 and mesh_shape[1] > 1:
         return 1
     if mesh_shape[1] == 1 and mesh_shape[0] > 1:
         return 0
-    raise ValueError(f"Expected 1D mesh shape for N300 compatibility path, got {mesh_shape}")
+    raise ValueError(f"Expected 1D mesh shape for N300, got {mesh_shape}")
 
 
 def num_mesh_devices(mesh_shape: tuple[int, int]) -> int:
@@ -118,8 +122,8 @@ class ParallelConfig:
 
 
 def validate_parallel_config(config: ModelConfig, num_devices: int) -> None:
-    if num_devices < 1:
-        raise ValueError("num_devices must be >= 1")
+    if num_devices < 2:
+        raise ValueError("N300 model expects a 2-device mesh")
     if config.num_attention_heads % num_devices != 0:
         raise ValueError("num_attention_heads must divide evenly across devices")
     if config.num_key_value_heads % num_devices != 0:
@@ -283,6 +287,9 @@ class Attention:
         start_pos: int,
         seq_len: int,
         cur_pos_tensor: Optional[ttnn.Tensor] = None,
+        decode_cos: Optional[ttnn.Tensor] = None,
+        decode_sin: Optional[ttnn.Tensor] = None,
+        trace_decode: bool = False,
     ) -> ttnn.Tensor:
         """Forward pass for prefill (seq_len > 1) or decode (seq_len == 1)."""
         is_prefill = seq_len > 1
@@ -352,14 +359,23 @@ class Attention:
                 num_kv_heads=num_kv_heads,
                 memory_config=ttnn.DRAM_MEMORY_CONFIG,
             )
-            ttnn.deallocate(qkv)
+            if not trace_decode:
+                ttnn.deallocate(qkv)
+
+            rope_cos = self.cos_cache
+            rope_sin = self.sin_cache
+            rope_pos = start_pos
+            if decode_cos is not None and decode_sin is not None:
+                rope_cos = decode_cos
+                rope_sin = decode_sin
+                rope_pos = 0
 
             q_batch = q.shape[1]
             q_heads = q.shape[2]
             q_bh = q_batch * q_heads
             q_bh_padded = pad_to_tile(q_bh)
             q = ttnn.reshape(q, (1, 1, q_bh, self.head_dim), (1, 1, q_bh_padded, self.head_dim))
-            q = ttnn.experimental.rotary_embedding(q, self.cos_cache, self.sin_cache, start_pos)
+            q = ttnn.experimental.rotary_embedding(q, rope_cos, rope_sin, rope_pos)
             q = ttnn.reshape(q, (1, q_batch, q_heads, self.head_dim), (1, q_batch, q_heads, self.head_dim))
 
             k_batch = k.shape[1]
@@ -367,7 +383,7 @@ class Attention:
             k_bh = k_batch * k_heads
             k_bh_padded = pad_to_tile(k_bh)
             k = ttnn.reshape(k, (1, 1, k_bh, self.head_dim), (1, 1, k_bh_padded, self.head_dim))
-            k = ttnn.experimental.rotary_embedding(k, self.cos_cache, self.sin_cache, start_pos)
+            k = ttnn.experimental.rotary_embedding(k, rope_cos, rope_sin, rope_pos)
             k = ttnn.reshape(k, (1, k_batch, k_heads, self.head_dim), (1, k_batch, k_heads, self.head_dim))
 
             ttnn.experimental.paged_update_cache(
@@ -484,7 +500,7 @@ class DecoderLayer:
             paged_attention_config,
             page_table,
         )
-        # Keep tail MLPs in BF16 to hit long-eval accuracy on n300.
+        # Keep tail MLPs in BF16 to hit long-eval accuracy on N300.
         mlp_weight_dtype = MLP_WEIGHT_DTYPE
         if layer_idx >= config.num_hidden_layers - 8:
             mlp_weight_dtype = ttnn.bfloat16
@@ -496,8 +512,14 @@ class DecoderLayer:
         start_pos: int,
         seq_len: int,
         cur_pos_tensor: Optional[ttnn.Tensor] = None,
+        decode_cos: Optional[ttnn.Tensor] = None,
+        decode_sin: Optional[ttnn.Tensor] = None,
+        trace_decode: bool = False,
     ) -> ttnn.Tensor:
-        x = ttnn.add(x, self.attn(self.attn_norm(x), start_pos, seq_len, cur_pos_tensor=cur_pos_tensor))
+        x = ttnn.add(
+            x,
+            self.attn(self.attn_norm(x), start_pos, seq_len, cur_pos_tensor, decode_cos, decode_sin, trace_decode),
+        )
         x = ttnn.add(x, self.mlp(self.ffn_norm(x)))
         return x
 
@@ -555,7 +577,7 @@ class TtnnQwen2ForCausalLM(torch.nn.Module, GenerationMixin):
         self.embed = ttnn.as_tensor(
             state_dict["model.embed_tokens.weight"].unsqueeze(0).unsqueeze(0).to(torch.bfloat16),
             dtype=EMBED_DTYPE,
-            layout=WEIGHT_LAYOUT,
+            layout=ttnn.ROW_MAJOR_LAYOUT,
             device=tt_device,
             memory_config=ttnn.DRAM_MEMORY_CONFIG,
             mesh_mapper=self.parallel.replicate_mapper,
@@ -563,6 +585,8 @@ class TtnnQwen2ForCausalLM(torch.nn.Module, GenerationMixin):
 
         print("  Computing RoPE cache...")
         cos, sin = compute_rope_cache(self.tt_config, self.max_seq_len)
+        self.cos_cache_host = cos
+        self.sin_cache_host = sin
         self.cos_cache = ttnn.as_tensor(
             cos,
             dtype=ttnn.bfloat16,
@@ -579,6 +603,42 @@ class TtnnQwen2ForCausalLM(torch.nn.Module, GenerationMixin):
             memory_config=ttnn.DRAM_MEMORY_CONFIG,
             mesh_mapper=self.parallel.replicate_mapper,
         )
+
+        self.decode_token_buffer = ttnn.from_torch(
+            torch.zeros((1, 1, 1, TILE_SIZE), dtype=torch.int32),
+            dtype=ttnn.uint32,
+            layout=ttnn.ROW_MAJOR_LAYOUT,
+            device=tt_device,
+            memory_config=ttnn.L1_MEMORY_CONFIG,
+            mesh_mapper=self.parallel.replicate_mapper,
+        )
+        self.decode_pos_buffer = ttnn.from_torch(
+            torch.zeros((TILE_SIZE,), dtype=torch.int32),
+            dtype=ttnn.int32,
+            layout=ttnn.ROW_MAJOR_LAYOUT,
+            device=tt_device,
+            memory_config=ttnn.DRAM_MEMORY_CONFIG,
+            mesh_mapper=self.parallel.replicate_mapper,
+        )
+        self.decode_cos_buffer = ttnn.from_torch(
+            torch.zeros((1, 1, 1, self.tt_config.head_dim), dtype=torch.bfloat16),
+            dtype=ttnn.bfloat16,
+            layout=ttnn.TILE_LAYOUT,
+            device=tt_device,
+            memory_config=ttnn.L1_MEMORY_CONFIG,
+            mesh_mapper=self.parallel.replicate_mapper,
+        )
+        self.decode_sin_buffer = ttnn.from_torch(
+            torch.zeros((1, 1, 1, self.tt_config.head_dim), dtype=torch.bfloat16),
+            dtype=ttnn.bfloat16,
+            layout=ttnn.TILE_LAYOUT,
+            device=tt_device,
+            memory_config=ttnn.L1_MEMORY_CONFIG,
+            mesh_mapper=self.parallel.replicate_mapper,
+        )
+        self.use_decode_trace = USE_DECODE_TRACE
+        self.decode_trace_id = None
+        self.decode_trace_logits = None
 
         max_num_blocks = math.ceil(self.max_seq_len / PAGED_BLOCK_SIZE)
         self.paged_attention_config = PagedAttentionConfig(PAGED_BLOCK_SIZE, max_num_blocks)
@@ -627,6 +687,10 @@ class TtnnQwen2ForCausalLM(torch.nn.Module, GenerationMixin):
     def reset(self):
         """Reset position counter for new sequence."""
         self._pos = 0
+        if self.decode_trace_id is not None:
+            ttnn.release_trace(self.tt_device, self.decode_trace_id)
+            self.decode_trace_id = None
+            self.decode_trace_logits = None
 
     def prepare_inputs_for_generation(self, input_ids, past_key_values=None, **kwargs):
         if past_key_values is not None:
@@ -635,6 +699,137 @@ class TtnnQwen2ForCausalLM(torch.nn.Module, GenerationMixin):
 
     def _reorder_cache(self, past_key_values, beam_idx):
         return past_key_values
+
+    def _update_decode_token_buffer(self, input_ids: torch.Tensor) -> None:
+        token_ids = torch.zeros((TILE_SIZE,), dtype=torch.int32)
+        token_ids[: input_ids.numel()] = input_ids.view(-1).to(torch.int32)
+        token_ids = token_ids.reshape(1, 1, 1, -1)
+        host_tokens = ttnn.from_torch(
+            token_ids,
+            dtype=ttnn.uint32,
+            layout=ttnn.ROW_MAJOR_LAYOUT,
+        )
+        ttnn.copy_host_to_device_tensor(host_tokens, self.decode_token_buffer)
+
+    def _update_decode_pos_buffer(self, start_pos: int) -> None:
+        pos = torch.full((TILE_SIZE,), -1, dtype=torch.int32)
+        pos[0] = start_pos
+        host_pos = ttnn.from_torch(
+            pos,
+            dtype=ttnn.int32,
+            layout=ttnn.ROW_MAJOR_LAYOUT,
+        )
+        ttnn.copy_host_to_device_tensor(host_pos, self.decode_pos_buffer)
+
+    def _update_decode_rope_buffers(self, start_pos: int) -> None:
+        cos_slice = self.cos_cache_host[:, :, start_pos : start_pos + 1, :]
+        sin_slice = self.sin_cache_host[:, :, start_pos : start_pos + 1, :]
+        host_cos = ttnn.from_torch(
+            cos_slice,
+            dtype=ttnn.bfloat16,
+            layout=ttnn.TILE_LAYOUT,
+        )
+        host_sin = ttnn.from_torch(
+            sin_slice,
+            dtype=ttnn.bfloat16,
+            layout=ttnn.TILE_LAYOUT,
+        )
+        ttnn.copy_host_to_device_tensor(host_cos, self.decode_cos_buffer)
+        ttnn.copy_host_to_device_tensor(host_sin, self.decode_sin_buffer)
+
+    def _forward_prefill_last_logits(self, input_ids: torch.Tensor, start_pos: int, seq_len: int) -> ttnn.Tensor:
+        tokens = ttnn.from_torch(
+            input_ids.reshape(1, 1, 1, -1),
+            dtype=ttnn.uint32,
+            device=self.tt_device,
+            mesh_mapper=self.parallel.replicate_mapper,
+        )
+        h = ttnn.embedding(tokens, self.embed, layout=ttnn.TILE_LAYOUT)
+        for layer in self.layers:
+            h = layer(h, start_pos, seq_len)
+        h = self.norm(h)
+
+        token_idx = seq_len - 1
+        h = ttnn.slice(
+            h,
+            (0, 0, token_idx, 0),
+            (h.shape[0], h.shape[1], token_idx + 1, h.shape[-1]),
+            memory_config=ttnn.DRAM_MEMORY_CONFIG,
+        )
+        return ttnn.linear(h, self.lm_head, memory_config=ttnn.DRAM_MEMORY_CONFIG)
+
+    def prefill_logits_last_device(self, input_ids: torch.Tensor, use_cache: bool = True) -> tuple[torch.Tensor, object]:
+        batch, seq_len = input_ids.shape
+        assert batch == 1, "Only batch=1 supported"
+
+        self.reset()
+        start_pos = self._pos
+        if start_pos != 0:
+            raise ValueError("prefill_logits_last_device must be called at start_pos=0")
+        if start_pos + seq_len > self.max_seq_len:
+            raise ValueError(
+                f"sequence length {start_pos + seq_len} exceeds max sequence length {self.max_seq_len}"
+            )
+
+        padded_seq = pad_to_tile(seq_len)
+        if seq_len < padded_seq:
+            input_ids = torch.nn.functional.pad(input_ids, (0, padded_seq - seq_len), value=0)
+
+        logits = self._forward_prefill_last_logits(input_ids, start_pos, seq_len)
+        self._pos = start_pos + seq_len
+
+        if self.parallel.num_devices > 1:
+            logits_torch = ttnn.to_torch(logits, mesh_composer=self.parallel.vocab_composer)
+        else:
+            logits_torch = ttnn.to_torch(logits)
+        logits_torch = logits_torch.reshape(batch, 1, -1)[:, 0, :].float()
+        ttnn.deallocate(logits)
+        past = self._tt_past_key_values if use_cache else None
+        return logits_torch, past
+
+    def _forward_decode_device(self, start_pos: int, trace_decode: bool) -> ttnn.Tensor:
+        h = ttnn.embedding(self.decode_token_buffer, self.embed, layout=ttnn.TILE_LAYOUT)
+        for layer in self.layers:
+            h = layer(
+                h,
+                start_pos,
+                1,
+                self.decode_pos_buffer,
+                self.decode_cos_buffer,
+                self.decode_sin_buffer,
+                trace_decode,
+            )
+        h = self.norm(h)
+        h = ttnn.slice(
+            h,
+            (0, 0, 0, 0),
+            (h.shape[0], h.shape[1], 1, h.shape[-1]),
+            memory_config=ttnn.L1_MEMORY_CONFIG,
+        )
+        logits = ttnn.linear(h, self.lm_head, memory_config=ttnn.DRAM_MEMORY_CONFIG)
+        if not trace_decode:
+            ttnn.deallocate(h)
+        return logits
+
+    def _forward_decode(self, input_ids: torch.Tensor, start_pos: int) -> ttnn.Tensor:
+        self._update_decode_token_buffer(input_ids)
+        self._update_decode_pos_buffer(start_pos)
+        self._update_decode_rope_buffers(start_pos)
+
+        if self.use_decode_trace:
+            if self.decode_trace_id is None:
+                warmup_logits = self._forward_decode_device(start_pos, False)
+                ttnn.deallocate(warmup_logits)
+                self.decode_trace_id = ttnn.begin_trace_capture(self.tt_device)
+                self.decode_trace_logits = self._forward_decode_device(start_pos, True)
+                ttnn.end_trace_capture(self.tt_device, self.decode_trace_id)
+            else:
+                ttnn.execute_trace(self.tt_device, self.decode_trace_id, blocking=False)
+            logits = self.decode_trace_logits
+        else:
+            logits = self._forward_decode_device(start_pos, False)
+
+        return logits
 
     def forward(
         self,
@@ -660,45 +855,38 @@ class TtnnQwen2ForCausalLM(torch.nn.Module, GenerationMixin):
                 f"sequence length {start_pos + seq_len} exceeds max sequence length {self.max_seq_len}"
             )
 
-        cur_pos_tensor = None
         if seq_len == 1:
-            cur_pos = torch.full((TILE_SIZE,), -1, dtype=torch.int32)
-            cur_pos[0] = start_pos
-            cur_pos_tensor = ttnn.from_torch(
-                cur_pos,
-                dtype=ttnn.int32,
+            logits_device = self._forward_decode(input_ids, start_pos)
+            padded_seq = 1
+        else:
+            padded_seq = pad_to_tile(seq_len)
+            if seq_len < padded_seq:
+                input_ids = torch.nn.functional.pad(input_ids, (0, padded_seq - seq_len), value=0)
+
+            tokens = ttnn.from_torch(
+                input_ids.reshape(1, 1, 1, -1),
+                dtype=ttnn.uint32,
                 device=self.tt_device,
                 mesh_mapper=self.parallel.replicate_mapper,
             )
-
-        padded_seq = pad_to_tile(seq_len)
-        if seq_len < padded_seq:
-            input_ids = torch.nn.functional.pad(input_ids, (0, padded_seq - seq_len), value=0)
-
-        tokens = ttnn.from_torch(
-            input_ids.reshape(1, 1, 1, -1),
-            dtype=ttnn.uint32,
-            device=self.tt_device,
-            mesh_mapper=self.parallel.replicate_mapper,
-        )
-        h = ttnn.embedding(tokens, self.embed, layout=ttnn.TILE_LAYOUT)
-
-        for layer in self.layers:
-            h = layer(h, start_pos, seq_len, cur_pos_tensor=cur_pos_tensor)
-
-        h = self.norm(h)
-        logits = ttnn.linear(h, self.lm_head)
+            h = ttnn.embedding(tokens, self.embed, layout=ttnn.TILE_LAYOUT)
+            for layer in self.layers:
+                h = layer(h, start_pos, seq_len)
+            h = self.norm(h)
+            logits_device = ttnn.linear(h, self.lm_head)
 
         if self.parallel.num_devices > 1:
-            logits = ttnn.to_torch(logits, mesh_composer=self.parallel.vocab_composer)
+            logits_torch = ttnn.to_torch(logits_device, mesh_composer=self.parallel.vocab_composer)
         else:
-            logits = ttnn.to_torch(logits)
-        logits = logits.reshape(batch, padded_seq, -1)[:, :seq_len, :]
+            logits_torch = ttnn.to_torch(logits_device)
+        logits_torch = logits_torch.reshape(batch, padded_seq, -1)[:, :seq_len, :]
+        if seq_len > 1 or not self.use_decode_trace:
+            ttnn.deallocate(logits_device)
 
         self._pos = start_pos + seq_len
 
         return CausalLMOutputWithPast(
-            logits=logits.float(),
+            logits=logits_torch.float(),
             past_key_values=(self._tt_past_key_values if use_cache else None),
         )
 

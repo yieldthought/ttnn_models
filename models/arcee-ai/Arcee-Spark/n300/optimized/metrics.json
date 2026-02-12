@@ -1,0 +1,26 @@
+{
+  "model": "arcee-ai/Arcee-Spark",
+  "hardware": "n300",
+  "variant": "optimized",
+  "functional_baseline": {
+    "top1_pct": 91.0,
+    "top5_pct": 100.0,
+    "ttft_ms": 338.0,
+    "decode_tps_u": 5.0,
+    "seq_len": 32768
+  },
+  "optimized_final": {
+    "top1_pct": 85.0,
+    "top5_pct": 100.0,
+    "ttft_ms": 101.2265710014617,
+    "decode_tps_u": 16.012545511195473,
+    "seq_len": 32768
+  },
+  "acceptance": {
+    "top1_top5_pass": true,
+    "decode_trace_enabled": true,
+    "ttft_improved": true,
+    "decode_tps_improved": true,
+    "seq_len_non_regressed": true
+  }
+}

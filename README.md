@@ -54,7 +54,8 @@ python eval.py models/meta-llama/Llama-3.2-1B/n150/functional/model.py \
 
 ## scripts/run_eval.py
 
-Wrapper around `eval.py` (or HF-only eval) that emits a `YT_METRICS=` JSON line.
+Wrapper around `eval.py` (or HF-only eval) that emits machine-readable JSON.
+Default output is raw JSON; use `--output-format yt_metrics` for `YT_METRICS=...`.
 
 Example:
 ```bash
