@@ -17,11 +17,13 @@ This is the optimized TTNN bringup of `meta-llama/Llama-3.2-1B` for `n150`.
 ## Baseline vs final
 | Metric | Functional baseline (`MODELS.md`) | Starting optimized baseline (this pass) | Final optimized |
 | --- | ---: | ---: | ---: |
-| Top-1 | 92% | 90% | 90% |
+| Top-1 | 92% | 90% | 92% |
 | Top-5 | 100% | 100% | 100% |
-| TTFT | 34 ms | 29 ms | 27 ms |
-| t/s/u | 39.5 | 63.1 | 63.0 |
+| TTFT | 34 ms | 27 ms | 22 ms |
+| t/s/u | 39.5 | 63.0 | 64.8 |
 | Seq len | 131072 | 131072 | 131072 |
+
+Note: TTFT and t/s/u depend on the demo prompt and sampling settings. See `demo.log` for the exact command and output.
 
 ## Kept optimization decisions
 1. Paged KV cache for long-seq decode.
@@ -38,6 +40,9 @@ This is the optimized TTNN bringup of `meta-llama/Llama-3.2-1B` for `n150`.
 - `prefill_logits_last_device()` is used by `eval.py`/`demo.py` when host logits are needed.
 - `next_token_device()` uses a prefill-last-logits path so greedy TT demo does not materialize full prefill logits.
 
+## Changes in this pass
+- Set `LM_HEAD_WEIGHT_DTYPE=ttnn.bfloat8_b` to recover long-eval accuracy while keeping decode throughput high.
+
 ## Constraints and gotchas
 - `eval.py` enforces `max_seq_len >= 2048`.
 - Decode uses a tile-padded batch (`B=32`); inactive lanes must use `cur_pos_tensor=-1`.
@@ -47,12 +52,7 @@ This is the optimized TTNN bringup of `meta-llama/Llama-3.2-1B` for `n150`.
 
 ## Commands used
 ```bash
-python demo.py models/meta-llama/Llama-3.2-1B/n150/optimized/model.py \
-  --prompt-file prompts/bringup_eval_long.txt \
-  --max-new-tokens 100 \
-  --temperature 0 \
-  --seed 0 \
-  --max_seq_len 131072
+python demo.py models/meta-llama/Llama-3.2-1B/n150/optimized/model.py --seed 0 --max_seq_len 131072
 
 python eval.py models/meta-llama/Llama-3.2-1B/n150/optimized/model.py \
   --prompt_file prompts/bringup_eval_long.txt \

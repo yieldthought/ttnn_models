@@ -7,7 +7,7 @@ Optimized Llama 3.2 1B implementation in ttnn - 100% device execution.
 This version keeps the HF RoPE format but reduces math overhead by:
 - Fused QKV projection
 - DRAM-sharded decode matmuls for the MLP
-- Lower-precision weights (BFP8/BFP4) where safe
+- Lower-precision weights (BFP8) where safe
 
 This file defines the ttnn model only. Use `eval.py` at repo root for
 teacher-forcing accuracy checks against the HuggingFace reference.
@@ -31,7 +31,7 @@ WEIGHT_LAYOUT = ttnn.TILE_LAYOUT
 MLP_GATE_UP_DTYPE = ttnn.bfloat8_b
 MLP_DOWN_DTYPE = ttnn.bfloat8_b
 QKV_WEIGHT_DTYPE = ttnn.bfloat8_b
-LM_HEAD_WEIGHT_DTYPE = ttnn.bfloat4_b
+LM_HEAD_WEIGHT_DTYPE = ttnn.bfloat8_b
 USE_DECODE_TRACE = True
 HIFI2_MATMUL_CONFIG = ttnn.WormholeComputeKernelConfig(
     math_fidelity=ttnn.MathFidelity.HiFi2,
