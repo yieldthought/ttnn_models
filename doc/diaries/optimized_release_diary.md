@@ -252,3 +252,14 @@
 - Fixed project drift: #138 (Llama-3.2-1B n150 optimized) is closed but had drifted to In review; took/moved/released it back to Done.
 - Verified Arcee-Spark n300 rerun is using a real 2-chip mesh on wh-04: `demo.log` reports mesh shape 2x1 and no `TTNN_ALLOW_SYSTEM_MESH_FALLBACK` in the command; demo metrics show TTFT 101ms and 16.0 t/s/u at seq len 32768 (functional baseline: 338ms, 5.0 t/s/u).
 - Current state: In progress 3 (#130 n300, #144/#147 n150), In review 0, Ready 10. Open PRs: #176 only (waiting for updated eval artifacts).
+
+## 2026-02-12 17:00
+
+- Reviewed PR #176 (Arcee-Spark n300 optimized) after agent3 reran on a healthy discovered 2x1 mesh (no fallback): `metrics.json` shows Top-1 85%, Top-5 100%, TTFT 101ms, decode 16.0 t/s/u, seq len 32768, traced decode enabled.
+  - PR branch had drifted and was unintentionally removing other MODELS.md rows; fixed MODELS.md in-PR to match main + add only the new n300 optimized row, then merged.
+  - Issue #130 auto-closed by the PR; moved its project item to Done and released ownership.
+- #144 (Qwen3-0.6B n150 optimized) had moved to In review but PR #180 was already merged and the issue was closed with ✓; moved the project item to Done and released ownership.
+- Runners/reservations:
+  - aus-wh-08 (n150 agent1) and aus-wh-20 (n150 agent2) extended to 6h to keep >4h headroom; wh-04 (n300 agent3) still has >6h remaining.
+  - `codexapi task` still running on all three hosts; current In progress items are #147 (gemma-3-4b-it n150) and #141 (Mistral-7B n150).
+- Local: pulled main to include merged PRs #176 and #180; open PRs now: #181 only.
