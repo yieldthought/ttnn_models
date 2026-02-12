@@ -6,6 +6,7 @@ This is the optimized path for `humain-ai/ALLaM-7B-Instruct-preview` under `n150
 - Model code: `models/humain-ai/ALLaM-7B-Instruct-preview/n150/optimized/model.py`
 - Demo log: `models/humain-ai/ALLaM-7B-Instruct-preview/n150/optimized/demo.log`
 - Eval log: `models/humain-ai/ALLaM-7B-Instruct-preview/n150/optimized/eval.log`
+- Machine-readable metrics: `models/humain-ai/ALLaM-7B-Instruct-preview/n150/optimized/metrics.json`
 - Target max sequence length: `4096` (no capability regression)
 - Decode path: traced execution (`ttnn.begin_trace_capture` / `ttnn.execute_trace`)
 
