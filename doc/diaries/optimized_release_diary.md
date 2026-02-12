@@ -171,4 +171,7 @@
   - agent3 is running optimize_model for gemma-3-4b-it t3000; PR #169 exists and is mergeable but issue still In progress.
   - agent1 is actively working on Arcee-Spark n150 optimized; session log shows a demo failure due to tokenizer repo id being set to the model.py path (HFValidationError). It is rerunning demo after verifying the file path exists.
   - agent2 is actively working on Llama-3.2-1B n300 optimized; session log shows it created the n300/optimized directory, copied the t3000 model.py as a starting point, and is running demo/eval with `TTNN_ALLOW_SYSTEM_MESH_FALLBACK=1` (host reports disconnected topology; effective mesh falls back to 1x1). It also added MODEL_BRINGUP.md and metrics.json.
+- Added a second n150 worker:
+  - Reserved aus-wh-20 (selection ID 4) and launched `scripts/worker.sh agent4 n150`.
+  - Setup initially failed `git pull` due to untracked `models/Qwen/Qwen3-0.6B/n150/functional/{demo,eval}.log`; removed them, fast-forwarded to origin/main, then restarted agent4 successfully.
 - Local: attempted `git pull --ff-only` but it hung; killed the `git pull`/`git fetch` processes and left the working tree clean.
