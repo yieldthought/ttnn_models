@@ -4,10 +4,13 @@
 """\
 Optimized Arcee-Spark (Qwen2) implementation in ttnn - 100% device execution.
 
-Optimizations:
+Optimizations (n150):
 - Decode uses traced execution.
 - Prefill computes only last-token logits for TTFT.
-- Fuse Q/K/V projections into a single matmul.
+- Slice decode hidden-state down to 1 token before LM head.
+
+Correctness notes:
+- Decode RoPE uses a host-updated cos/sin buffer so trace capture does not depend on start_pos.
 """
 
 import math
@@ -171,16 +174,13 @@ class Attention:
         self.sin_cache = sin_cache
 
         p = f"model.layers.{layer_idx}.self_attn."
-        q_weight = state_dict[f"{p}q_proj.weight"]
-        k_weight = state_dict[f"{p}k_proj.weight"]
-        v_weight = state_dict[f"{p}v_proj.weight"]
-        self.qkv_proj = self._load_weight(torch.cat([q_weight, k_weight, v_weight], dim=0))
+        self.q_proj = self._load_weight(state_dict[f"{p}q_proj.weight"])
+        self.k_proj = self._load_weight(state_dict[f"{p}k_proj.weight"])
+        self.v_proj = self._load_weight(state_dict[f"{p}v_proj.weight"])
         self.o_proj = self._load_weight(state_dict[f"{p}o_proj.weight"])
-
-        q_bias = state_dict[f"{p}q_proj.bias"]
-        k_bias = state_dict[f"{p}k_proj.bias"]
-        v_bias = state_dict[f"{p}v_proj.bias"]
-        self.qkv_bias = self._load_bias(torch.cat([q_bias, k_bias, v_bias], dim=0))
+        self.q_bias = self._load_bias(state_dict[f"{p}q_proj.bias"])
+        self.k_bias = self._load_bias(state_dict[f"{p}k_proj.bias"])
+        self.v_bias = self._load_bias(state_dict[f"{p}v_proj.bias"])
 
         cache_shape = (
             self.paged_attention_config.max_num_blocks,
@@ -237,13 +237,28 @@ class Attention:
         padded_seq = pad_to_tile(seq_len)
 
         x = ttnn.to_dtype(x, dtype=ttnn.bfloat16)
-        qkv = ttnn.linear(
+        q = ttnn.linear(
             x,
-            self.qkv_proj,
-            bias=self.qkv_bias,
+            self.q_proj,
+            bias=self.q_bias,
             dtype=ttnn.bfloat16,
             compute_kernel_config=ATTN_KERNEL_CONFIG,
         )
+        k = ttnn.linear(
+            x,
+            self.k_proj,
+            bias=self.k_bias,
+            dtype=ttnn.bfloat16,
+            compute_kernel_config=ATTN_KERNEL_CONFIG,
+        )
+        v = ttnn.linear(
+            x,
+            self.v_proj,
+            bias=self.v_bias,
+            dtype=ttnn.bfloat16,
+            compute_kernel_config=ATTN_KERNEL_CONFIG,
+        )
+        qkv = ttnn.concat([q, k, v], dim=-1)
 
         if is_prefill:
             q, k, v = ttnn.experimental.nlp_create_qkv_heads(
@@ -285,12 +300,27 @@ class Attention:
             if not trace_decode:
                 ttnn.deallocate(qkv)
 
-            if decode_cos is not None and decode_sin is not None:
-                q = ttnn.experimental.rotary_embedding(q, decode_cos, decode_sin, 0)
-                k = ttnn.experimental.rotary_embedding(k, decode_cos, decode_sin, 0)
-            else:
+            q_batch = q.shape[1]
+            q_heads = q.shape[2]
+            q_bh = q_batch * q_heads
+            q_bh_padded = pad_to_tile(q_bh)
+            q = ttnn.reshape(q, (1, 1, q_bh, self.head_dim), (1, 1, q_bh_padded, self.head_dim))
+            if decode_cos is None or decode_sin is None:
                 q = ttnn.experimental.rotary_embedding(q, self.cos_cache, self.sin_cache, start_pos)
+            else:
+                q = ttnn.experimental.rotary_embedding(q, decode_cos, decode_sin)
+            q = ttnn.reshape(q, (1, q_batch, q_heads, self.head_dim), (1, q_batch, q_heads, self.head_dim))
+
+            k_batch = k.shape[1]
+            k_heads = k.shape[2]
+            k_bh = k_batch * k_heads
+            k_bh_padded = pad_to_tile(k_bh)
+            k = ttnn.reshape(k, (1, 1, k_bh, self.head_dim), (1, 1, k_bh_padded, self.head_dim))
+            if decode_cos is None or decode_sin is None:
                 k = ttnn.experimental.rotary_embedding(k, self.cos_cache, self.sin_cache, start_pos)
+            else:
+                k = ttnn.experimental.rotary_embedding(k, decode_cos, decode_sin)
+            k = ttnn.reshape(k, (1, k_batch, k_heads, self.head_dim), (1, k_batch, k_heads, self.head_dim))
 
             ttnn.experimental.paged_update_cache(
                 self.k_cache,
@@ -507,20 +537,23 @@ class TtnnQwen2ForCausalLM(torch.nn.Module, GenerationMixin):
             device=tt_device,
             memory_config=ttnn.DRAM_MEMORY_CONFIG,
         )
+
+        self.decode_rope_seq = self.tt_config.num_attention_heads * TILE_SIZE
         self.decode_cos_buffer = ttnn.from_torch(
-            torch.zeros((1, 1, 1, self.tt_config.head_dim), dtype=torch.bfloat16),
+            torch.zeros((1, 1, self.decode_rope_seq, self.tt_config.head_dim), dtype=torch.bfloat16),
             dtype=ttnn.bfloat16,
             layout=ttnn.TILE_LAYOUT,
             device=tt_device,
             memory_config=ttnn.L1_MEMORY_CONFIG,
         )
         self.decode_sin_buffer = ttnn.from_torch(
-            torch.zeros((1, 1, 1, self.tt_config.head_dim), dtype=torch.bfloat16),
+            torch.zeros((1, 1, self.decode_rope_seq, self.tt_config.head_dim), dtype=torch.bfloat16),
             dtype=ttnn.bfloat16,
             layout=ttnn.TILE_LAYOUT,
             device=tt_device,
             memory_config=ttnn.L1_MEMORY_CONFIG,
         )
+
         self.use_decode_trace = USE_DECODE_TRACE
         self.decode_trace_id = None
         self.decode_trace_logits = None
@@ -579,42 +612,6 @@ class TtnnQwen2ForCausalLM(torch.nn.Module, GenerationMixin):
     def _reorder_cache(self, past_key_values, beam_idx):
         return past_key_values
 
-    def _update_decode_buffers(self, input_ids: torch.Tensor, start_pos: int) -> None:
-        token_ids = torch.zeros((TILE_SIZE,), dtype=torch.int32)
-        token_ids[: input_ids.numel()] = input_ids.view(-1).to(torch.int32)
-        token_ids = token_ids.reshape(1, 1, 1, -1)
-        host_tokens = ttnn.from_torch(
-            token_ids,
-            dtype=ttnn.uint32,
-            layout=ttnn.ROW_MAJOR_LAYOUT,
-        )
-        ttnn.copy_host_to_device_tensor(host_tokens, self.decode_token_buffer)
-
-        pos = torch.full((TILE_SIZE,), -1, dtype=torch.int32)
-        pos[0] = start_pos
-        host_pos = ttnn.from_torch(
-            pos,
-            dtype=ttnn.int32,
-            layout=ttnn.ROW_MAJOR_LAYOUT,
-        )
-        ttnn.copy_host_to_device_tensor(host_pos, self.decode_pos_buffer)
-
-    def _update_decode_rope_buffers(self, start_pos: int) -> None:
-        cos_slice = self.cos_cache_host[:, :, start_pos : start_pos + 1, :]
-        sin_slice = self.sin_cache_host[:, :, start_pos : start_pos + 1, :]
-        host_cos = ttnn.from_torch(
-            cos_slice,
-            dtype=ttnn.bfloat16,
-            layout=ttnn.TILE_LAYOUT,
-        )
-        host_sin = ttnn.from_torch(
-            sin_slice,
-            dtype=ttnn.bfloat16,
-            layout=ttnn.TILE_LAYOUT,
-        )
-        ttnn.copy_host_to_device_tensor(host_cos, self.decode_cos_buffer)
-        ttnn.copy_host_to_device_tensor(host_sin, self.decode_sin_buffer)
-
     def _forward_prefill(self, input_ids: torch.Tensor, start_pos: int, seq_len: int) -> ttnn.Tensor:
         tokens = ttnn.from_torch(
             input_ids.reshape(1, 1, 1, -1),
@@ -660,10 +657,46 @@ class TtnnQwen2ForCausalLM(torch.nn.Module, GenerationMixin):
             compute_kernel_config=ATTN_KERNEL_CONFIG,
         )
 
-    def _forward_decode_device(self, start_pos: int, trace_decode: bool, use_rope_buffer: bool) -> ttnn.Tensor:
-        decode_cos = self.decode_cos_buffer if use_rope_buffer else None
-        decode_sin = self.decode_sin_buffer if use_rope_buffer else None
+    def _update_decode_token_buffer(self, input_ids: torch.Tensor) -> None:
+        token_ids = torch.zeros((TILE_SIZE,), dtype=torch.int32)
+        token_ids[: input_ids.numel()] = input_ids.view(-1).to(torch.int32)
+        token_ids = token_ids.reshape(1, 1, 1, -1)
+        host_tokens = ttnn.from_torch(
+            token_ids,
+            dtype=ttnn.uint32,
+            layout=ttnn.ROW_MAJOR_LAYOUT,
+        )
+        ttnn.copy_host_to_device_tensor(host_tokens, self.decode_token_buffer)
 
+    def _update_decode_pos_buffer(self, start_pos: int) -> None:
+        pos = torch.full((TILE_SIZE,), -1, dtype=torch.int32)
+        pos[0] = start_pos
+        host_pos = ttnn.from_torch(
+            pos,
+            dtype=ttnn.int32,
+            layout=ttnn.ROW_MAJOR_LAYOUT,
+        )
+        ttnn.copy_host_to_device_tensor(host_pos, self.decode_pos_buffer)
+
+    def _update_decode_rope_buffers(self, start_pos: int) -> None:
+        cos_token = self.cos_cache_host[:, :, start_pos : start_pos + 1, :]
+        sin_token = self.sin_cache_host[:, :, start_pos : start_pos + 1, :]
+        cos_slice = cos_token.repeat(1, 1, self.decode_rope_seq, 1)
+        sin_slice = sin_token.repeat(1, 1, self.decode_rope_seq, 1)
+        host_cos = ttnn.from_torch(
+            cos_slice,
+            dtype=ttnn.bfloat16,
+            layout=ttnn.TILE_LAYOUT,
+        )
+        host_sin = ttnn.from_torch(
+            sin_slice,
+            dtype=ttnn.bfloat16,
+            layout=ttnn.TILE_LAYOUT,
+        )
+        ttnn.copy_host_to_device_tensor(host_cos, self.decode_cos_buffer)
+        ttnn.copy_host_to_device_tensor(host_sin, self.decode_sin_buffer)
+
+    def _forward_decode_device(self, start_pos: int, trace_decode: bool) -> ttnn.Tensor:
         h = ttnn.embedding(self.decode_token_buffer, self.embed, layout=ttnn.TILE_LAYOUT)
         for layer in self.layers:
             h = layer(
@@ -671,8 +704,8 @@ class TtnnQwen2ForCausalLM(torch.nn.Module, GenerationMixin):
                 start_pos,
                 1,
                 cur_pos_tensor=self.decode_pos_buffer,
-                decode_cos=decode_cos,
-                decode_sin=decode_sin,
+                decode_cos=self.decode_cos_buffer,
+                decode_sin=self.decode_sin_buffer,
                 trace_decode=trace_decode,
             )
         h = self.norm(h)
@@ -694,21 +727,23 @@ class TtnnQwen2ForCausalLM(torch.nn.Module, GenerationMixin):
         return logits
 
     def _forward_decode(self, input_ids: torch.Tensor, start_pos: int) -> ttnn.Tensor:
-        self._update_decode_buffers(input_ids, start_pos)
+        self._update_decode_token_buffer(input_ids)
+        self._update_decode_pos_buffer(start_pos)
 
         if self.use_decode_trace:
             self._update_decode_rope_buffers(start_pos)
             if self.decode_trace_id is None:
-                warmup_logits = self._forward_decode_device(start_pos, False, True)
+                warmup_logits = self._forward_decode_device(start_pos, False)
                 ttnn.deallocate(warmup_logits)
                 self.decode_trace_id = ttnn.begin_trace_capture(self.tt_device)
-                self.decode_trace_logits = self._forward_decode_device(start_pos, True, True)
+                self.decode_trace_logits = self._forward_decode_device(start_pos, True)
                 ttnn.end_trace_capture(self.tt_device, self.decode_trace_id)
             else:
                 ttnn.execute_trace(self.tt_device, self.decode_trace_id, blocking=False)
             return self.decode_trace_logits
 
-        return self._forward_decode_device(start_pos, False, False)
+        self._update_decode_rope_buffers(start_pos)
+        return self._forward_decode_device(start_pos, False)
 
     def _forward_device_logits(self, input_ids: torch.Tensor, past_key_values, use_cache: bool):
         batch, seq_len = input_ids.shape
