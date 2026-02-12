@@ -9,7 +9,7 @@ This version keeps the functional model structure but reduces overhead by:
 - LM head slicing in decode to avoid computing logits for the tile-padded batch
 - `prefill_logits_last_device()` to avoid transferring full prefill logits to host
 
-The model uses 1D tensor parallel across a 1x2 mesh (N300).
+The model uses 1D tensor parallel across a 2x1 mesh (N300).
 """
 
 import math
@@ -25,7 +25,7 @@ from transformers.modeling_outputs import CausalLMOutputWithPast
 
 TILE_SIZE = 32
 PAGED_BLOCK_SIZE = 64
-MESH_SHAPE = (1, 2)
+MESH_SHAPE = (2, 1)
 MESH_TOPOLOGY = ttnn.Topology.Linear
 MESH_NUM_LINKS = 1
 WEIGHT_LAYOUT = ttnn.TILE_LAYOUT
