@@ -23,11 +23,10 @@ Implemented in `models/meta-llama/Llama-3.2-1B/n300/optimized/model.py`.
 
 Changes kept:
 - Paged KV cache (`block_size=64`) + paged SDPA decode.
-- Fused QKV projection (single matmul per layer).
 - Decode uses traced execution (`ttnn.begin_trace_capture` / `ttnn.execute_trace`) with preallocated decode buffers:
   token ids, `cur_pos_tensor`, and RoPE cos/sin slices.
 - Prefill-last-logits fast path (`prefill_logits_last_device`) to avoid full-sequence logits transfers during TTFT measurement.
-- BFP8 weights for matmuls (`ttnn.bfloat8_b`) where supported.
+- BF16 weights (kept for correctness).
 
 ## Results
 Final results (this optimized model):

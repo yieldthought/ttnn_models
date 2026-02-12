@@ -6,10 +6,9 @@ Optimized Llama 3.2 1B implementation in ttnn on N300.
 
 Key optimizations versus the n300 functional model:
 - Paged KV cache + paged SDPA decode (removes the legacy [32, ...] cache tax)
-- Fused QKV projection (single matmul per layer)
 - Decode trace path with preallocated token/position/RoPE buffers
 - Prefill-last-logits fast path for TTFT measurement in demo/eval
-- Lower-precision weights (BFP8) for higher matmul throughput
+- Decode sets inactive `cur_pos_tensor` lanes to `-1` so kernels skip tile-padded users
 
 This file defines the ttnn model only. Use `eval.py` at repo root for
 teacher-forcing accuracy checks against the HuggingFace reference.
