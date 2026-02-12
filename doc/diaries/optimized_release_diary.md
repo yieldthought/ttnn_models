@@ -224,3 +224,13 @@
   - Released t3000 reservation (wh-lb-44 / agent3) since there are no remaining Ready tasks matching `/t3000/`.
   - Remaining reservations: aus-wh-08 (n150), wh-03 (n300), aus-wh-20 (n150). Time remaining ~4:56, ~4:11, ~4:48 respectively (n300 will need extension once <4h).
 - Local: fast-forward pulled main to include Falcon3 t3000 optimized artifacts (commit `f3070a1`).
+
+## 2026-02-12 15:40
+
+- Project status: In progress 1 (#129), Ready 13 (including #130 reset), In review 0.
+- Reviewed PR #176 (Arcee-Spark n300 optimized): not mergeable because `demo.log`/`eval.log` were collected with `TTNN_ALLOW_SYSTEM_MESH_FALLBACK=1` and the discovered mesh downgrades to 1x1 (single-chip fallback). Left watcher comment on the PR and reset #130 back to Ready (removed ✓ label, added watcher note to rerun on real 2-chip mesh).
+- Fixed drift: #138 (Llama-3.2-1B n150 optimized) was already closed but still in In progress and still had `owner: agent4`; moved it to Done and released the owner label.
+- Runners/reservations:
+  - Released the n300 reservation on wh-03 and reproed that it was an unconnected 2-chip topology (system_health showed all internal-trace links down).
+  - Reserved a new n300 host on wh-04 with `wormhole_b0 --model x2`, confirmed internal-trace links UP via system_health, and started a fresh n300 worker (`agent3`).
+  - Extended the remaining n150 reservations (aus-wh-08, aus-wh-20) to 6 hours to keep >4h headroom.
