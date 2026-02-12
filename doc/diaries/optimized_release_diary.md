@@ -345,3 +345,13 @@
   - Verified active worker/codex processes for `agent3` and confirmed live progress from session logs (currently running Qwen n300 baseline/demo measurements).
   - No n150/t3000 workers active since no remaining tasks for those types.
 - Assessment: release finish remains n300-only with four items left (one active + three ready).
+
+## 2026-02-12 21:24
+
+- Reviewed and merged PR #188 (Qwen3-0.6B n300 optimized): acceptance met with real n300 mesh (`Mesh shape: 1x2`), long eval Top-1 99% / Top-5 100%, TTFT 54ms, decode 55.3 t/s/u, seq len 40960, and traced decode in `model.py`. Issue #145 auto-closed and moved to Done.
+- Current project state: In progress #148 (gemma-3-4b-it n300 optimized, owner: agent3), Ready #151/#154, In review 0, open PRs 0.
+- Runner management:
+  - One n300 reservation on wh-04 remains healthy with ~5:58 remaining (>4h threshold), so no extension/restart required this pass.
+  - Verified worker process health (`scripts/worker.sh agent3` + `codexapi task`) and ongoing activity; worker immediately picked up #148 after #145 merged.
+  - No n150/t3000 tasks remain, so no additional workers were launched.
+- Assessment: release completion now depends on three remaining n300 optimized items (#148 in progress, #151 and #154 ready).
