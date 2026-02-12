@@ -295,3 +295,13 @@
 - Restarted agent1 worker on aus-wh-08 and verified `scripts/worker.sh agent1 n150` + `codexapi task` are running; agent1 reclaimed #150 and moved it back to In progress.
 - Extended IRD timeouts for aus-wh-08 and aus-wh-20 to 8h to keep >4h headroom.
 - Current project state: In progress #139/#142/#150; Ready #145/#148/#151/#153/#154; no In review items.
+
+## 2026-02-12 18:54
+
+- Investigated n300 runner instability for #142 (Mistral-7B n300): PR #183 explicitly reported internal-trace links DOWN and no valid 1x2 mesh on the worker host.
+- Reprovision attempt: released `wh-03` and reserved `yyzc-wh-02` for `agent4`, then verified `system_health` again; internal-trace links were also DOWN there, so I shut that reservation down as well to avoid wasting cycles on invalid n300 topology.
+- Cleaned stale project ownership after stopping `agent4`:
+  - Reset #142 back to Ready (removed `owner: agent4`).
+  - #145 and #148 had been briefly taken by `agent4` and drifted to In progress; reset both back to Ready and removed stale owner labels.
+- Closed PR #183 as blocked-by-topology (issue remains Ready for rerun on a healthy n300 host).
+- Current state: In progress #139/#150/#153; Ready #142/#145/#148/#151/#154; no In review. New PR #184 opened for #139 and pending watcher review once item reaches In review.
