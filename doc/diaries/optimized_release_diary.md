@@ -234,3 +234,9 @@
   - Released the n300 reservation on wh-03 and reproed that it was an unconnected 2-chip topology (system_health showed all internal-trace links down).
   - Reserved a new n300 host on wh-04 with `wormhole_b0 --model x2`, confirmed internal-trace links UP via system_health, and started a fresh n300 worker (`agent3`).
   - Extended the remaining n150 reservations (aus-wh-08, aus-wh-20) to 6 hours to keep >4h headroom.
+
+## 2026-02-12 15:53
+
+- Reviewed and merged PR #179 (Arcee-Spark n150 optimized): acceptance met (Top-1 91%, Top-5 100%, TTFT 77ms vs 99ms functional, t/s/u 14.5 vs 13.9 functional, seq len 29952, traced decode implemented via `ttnn.begin_trace_capture`/`ttnn.execute_trace`). Issue #129 was already closed; moved its project item to Done and removed stale ownership.
+- Project status: In progress 1 (#130), Ready 12, In review 0.
+- Runners/reservations: aus-wh-08 (n150 agent1), aus-wh-20 (n150 agent4), wh-04 (n300 agent3). All reservations still have >5h remaining; agent3 is actively running Arcee-Spark n300 demo on a real 2-chip mesh (auto-discovery shows 2 logical/2 physical devices).
