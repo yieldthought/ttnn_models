@@ -1,0 +1,88 @@
+env HF_HOME=/proj_sw/user_dev/moconnor/hf-cache TRANSFORMERS_CACHE=/proj_sw/user_dev/moconnor/hf-cache HF_HUB_CACHE=/proj_sw/user_dev/moconnor/hf-cache/hub TT_VISIBLE_DEVICES=5,6 TT_MESH_GRAPH_DESC_PATH=/proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/n300_mesh_graph_descriptor.textproto TT_METAL_CACHE=/tmp/tt-metal-cache TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-metal PYTHONUNBUFFERED=1 python -u demo.py models/mistralai/Mistral-7B-Instruct-v0.3/n300/optimized/model.py --max_seq_len 32768
+/proj_sw/user_dev/moconnor/tt-metal/python_env/lib/python3.10/site-packages/transformers/utils/hub.py:111: FutureWarning: Using `TRANSFORMERS_CACHE` is deprecated and will be removed in v5 of Transformers. Use `HF_HOME` instead.
+  warnings.warn(
+2026-02-12 17:24:12.807 | DEBUG    | ttnn:<module>:77 - Initial ttnn.CONFIG:
+Config{cache_path=/home/moconnor/.cache/ttnn,model_cache_path=/home/moconnor/.cache/ttnn/models,tmp_dir=/tmp/ttnn,enable_model_cache=false,enable_fast_runtime_mode=true,throw_exception_on_fallback=false,enable_logging=false,enable_graph_report=false,enable_detailed_buffer_report=false,enable_detailed_tensor_report=false,enable_comparison_mode=false,comparison_mode_should_raise_exception=false,comparison_mode_pcc=0.9999,root_report_path=generated/ttnn/reports,report_name=std::nullopt,std::nullopt}
+Loading tokenizer: mistralai/Mistral-7B-Instruct-v0.3
+Opening TT device...
+2026-02-12 17:24:13.853 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-12 17:24:13.855 | info     |          Device | Opening user mode device driver (tt_cluster.cpp:223)
+2026-02-12 17:24:13.862 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-12 17:24:13.898 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-12 17:24:13.899 | info     |             UMD | Harvesting masks for chip 1 tensix: 0x20 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-12 17:24:13.988 | info     |             UMD | Harvesting masks for chip 0 tensix: 0x80 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-12 17:24:14.006 | info     |             UMD | Opening local chip ids/PCIe ids: {0, 1}/[6, 5] and remote chip ids {} (cluster.cpp:186)
+2026-02-12 17:24:14.006 | info     |             UMD | IOMMU: disabled (cluster.cpp:161)
+2026-02-12 17:24:14.006 | info     |             UMD | KMD version: 2.4.1 (cluster.cpp:164)
+2026-02-12 17:24:14.009 | info     |             UMD | Starting devices in cluster (cluster.cpp:965)
+2026-02-12 17:24:14.010 | info     |             UMD | Mapped hugepage 0x4180000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-12 17:24:14.012 | info     |             UMD | Mapped hugepage 0x4140000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-12 17:24:14.109 | info     |     Distributed | Using custom mesh graph descriptor: /proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/n300_mesh_graph_descriptor.textproto (metal_context.cpp:858)
+2026-02-12 17:24:14.110 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=2, n_phys=2, log_deg_hist={1:2}, phys_deg_hist={0:2} (topology_mapper_utils.cpp:171)
+2026-02-12 17:24:14.110 | critical |          Always | TT_FATAL: The logical graph specified in the Mesh Graph Descriptor (MGD) could not fit in the discovered physical topology for mesh 0.
+The Mesh Graph Descriptor (MGD) file is located at: /proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/n300_mesh_graph_descriptor.textproto. 
+Could not find valid mapping for mesh 0 under the given constraints. Logical graph may not fit in the physical topology.
+Expected: The logical graph topology from the MGD.
+Found: The physical topology discovered from the system.
+Either relax pinnings in the MGD or modify the MGD to match the physical topology.
+To debug this issue, you can run with TT_METAL_LOGGER_LEVEL=debug to view the logical and physical adjacency graphs.
+If this is unexpected, run ./build/test/tt_metal/tt_fabric/test_system_health to check connectivity. (assert.hpp:104)
+Traceback (most recent call last):
+  File "/localdev/moconnor/ttnn_models/demo.py", line 506, in <module>
+    main()
+  File "/localdev/moconnor/ttnn_models/demo.py", line 482, in main
+    run_tt_demo(
+  File "/localdev/moconnor/ttnn_models/demo.py", line 393, in run_tt_demo
+    tt_device, is_mesh, fabric_config = open_tt_device(mesh_shape, device_id)
+  File "/localdev/moconnor/ttnn_models/device_utils.py", line 95, in open_tt_device
+    system_mesh_desc = ttnn._ttnn.multi_device.SystemMeshDescriptor()
+RuntimeError: TT_FATAL @ /proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/topology_mapper.cpp:676: result.success
+info:
+The logical graph specified in the Mesh Graph Descriptor (MGD) could not fit in the discovered physical topology for mesh 0.
+The Mesh Graph Descriptor (MGD) file is located at: /proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/n300_mesh_graph_descriptor.textproto. 
+Could not find valid mapping for mesh 0 under the given constraints. Logical graph may not fit in the physical topology.
+Expected: The logical graph topology from the MGD.
+Found: The physical topology discovered from the system.
+Either relax pinnings in the MGD or modify the MGD to match the physical topology.
+To debug this issue, you can run with TT_METAL_LOGGER_LEVEL=debug to view the logical and physical adjacency graphs.
+If this is unexpected, run ./build/test/tt_metal/tt_fabric/test_system_health to check connectivity.
+backtrace:
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(+0x8af5fa) [0x78432a3b95fa]
+ --- /proj_sw/user_dev/moconnor/tt-metal/build_Release/lib/libtt_metal.so(_ZN2tt9tt_fabric14TopologyMapper43populate_fabric_node_id_to_asic_id_mappingsEN4ttsl10StrongTypeIjNS0_9MeshIdTagEEERKSt3mapINS3_ImNS_8tt_metal9AsicIDTagEEESt6vectorIS9_SaIS9_EESt4lessIS9_ESaISt4pairIKS9_SC_EEERKS6_INS0_12FabricNodeIdESA_ISM_SaISM_EESD_ISM_ESaISF_IKSM_SO_EEERKS6_IS9_NS3_IjNS0_11HostRankTagEEESE_SaISF_ISG_SX_EEERKS6_ISM_SX_SP_SaISF_ISQ_SX_EEE+0xa52) [0x78432a3a5d62]
+ --- tt::tt_fabric::TopologyMapper::build_mapping()
+ --- tt::tt_fabric::TopologyMapper::TopologyMapper(tt::tt_fabric::MeshGraph const&, tt::tt_metal::PhysicalSystemDescriptor const&, tt::tt_fabric::LocalMeshBinding const&, std::vector<std::pair<std::pair<ttsl::StrongType<unsigned int, tt::tt_metal::TrayIDTag>, ttsl::StrongType<unsigned int, tt::tt_metal::ASICLocationTag> >, tt::tt_fabric::FabricNodeId>, std::allocator<std::pair<std::pair<ttsl::StrongType<unsigned int, tt::tt_metal::TrayIDTag>, ttsl::StrongType<unsigned int, tt::tt_metal::ASICLocationTag> >, tt::tt_fabric::FabricNodeId> > > const&)
+ --- tt::tt_fabric::ControlPlane::init_control_plane(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::optional<std::reference_wrapper<std::map<tt::tt_fabric::FabricNodeId, int, std::less<tt::tt_fabric::FabricNodeId>, std::allocator<std::pair<tt::tt_fabric::FabricNodeId const, int> > > const> >)
+ --- tt::tt_fabric::ControlPlane::ControlPlane(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)
+ --- tt::tt_metal::MetalContext::construct_control_plane(std::filesystem::__cxx11::path const&)
+ --- tt::tt_metal::MetalContext::initialize_control_plane_impl()
+ --- tt::tt_metal::MetalContext::get_control_plane()
+ --- tt::tt_metal::distributed::SystemMesh::Impl::Impl()
+ --- tt::tt_metal::distributed::SystemMesh::SystemMesh()
+ --- tt::tt_metal::distributed::SystemMesh::instance()
+ --- /proj_sw/user_dev/moconnor/tt-metal/ttnn/ttnn/_ttnn.so(+0x5dcc18) [0x78432d279c18]
+ --- /proj_sw/user_dev/moconnor/tt-metal/ttnn/ttnn/_ttnn.so(+0x239431) [0x78432ced6431]
+ --- python(_PyObject_FastCallDictTstate+0x253) [0x602bb06af423]
+ --- python(+0x194474) [0x602bb06c3474]
+ --- python(_PyObject_MakeTpCall+0x1fc) [0x602bb06b005c]
+ --- python(_PyEval_EvalFrameDefault+0x60ae) [0x602bb06a9dfe]
+ --- python(_PyFunction_Vectorcall+0x7c) [0x602bb06ba02c]
+ --- python(_PyEval_EvalFrameDefault+0x6c0) [0x602bb06a4410]
+ --- python(_PyFunction_Vectorcall+0x7c) [0x602bb06ba02c]
+ --- python(_PyEval_EvalFrameDefault+0x6c0) [0x602bb06a4410]
+ --- python(_PyFunction_Vectorcall+0x7c) [0x602bb06ba02c]
+ --- python(_PyEval_EvalFrameDefault+0x6c0) [0x602bb06a4410]
+ --- python(+0x259a86) [0x602bb0788a86]
+ --- python(PyEval_EvalCode+0x86) [0x602bb0788956]
+ --- python(+0x280678) [0x602bb07af678]
+ --- python(+0x27accf) [0x602bb07a9ccf]
+ --- python(+0x280415) [0x602bb07af415]
+ --- python(_PyRun_SimpleFileObject+0x1a8) [0x602bb07ae958]
+ --- python(_PyRun_AnyFileObject+0x47) [0x602bb07ae637]
+ --- python(Py_RunMain+0x2be) [0x602bb07a29be]
+ --- python(Py_BytesMain+0x2d) [0x602bb077c99d]
+ --- /lib/x86_64-linux-gnu/libc.so.6(+0x29d90) [0x7843e403cd90]
+ --- /lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x80) [0x7843e403ce40]
+ --- python(_start+0x25) [0x602bb077c895]
+
+2026-02-12 17:24:14.871 | info     |          Device | Closing user mode device drivers (tt_cluster.cpp:472)
+2026-02-12 17:24:14.871 | info     |             UMD | Closing devices in cluster (cluster.cpp:976)
