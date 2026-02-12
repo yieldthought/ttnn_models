@@ -326,3 +326,12 @@
   - Kept one healthy n300 runner on wh-04 (`agent3`) with >7h remaining.
   - Verified active work via process/session evidence: #142 is still running long eval on a real 1x2 n300 mesh (device open 1x2, eval process active).
 - Assessment: release is now entirely n300-bound; remaining work is the five n300 optimized items in/behind #142.
+
+## 2026-02-12 20:24
+
+- Project status remains n300-only: In progress #142 (Mistral-7B-Instruct-v0.3 n300 optimized), Ready #145/#148/#151/#154, In review 0, open PRs 0.
+- Runner management:
+  - Verified single n300 reservation on wh-04 is healthy with ~6:58 remaining (well above 4h threshold); no timeout extension needed.
+  - Confirmed worker process and `codexapi task` are running (`scripts/worker.sh agent3 n300`), and active session files continue updating in `~/.codex/sessions`, indicating ongoing progress on #142.
+  - No n150/t3000 tasks remain, so no additional workers were started.
+- Assessment: release completion is now fully gated on clearing the remaining n300 queue (5 items including #142).
