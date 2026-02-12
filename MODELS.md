@@ -32,6 +32,7 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | meta-llama/Llama-3.2-1B             |  t3000   | functional |   92% |  100% |  267ms |   6.6 |  131072 |
 | meta-llama/Llama-3.2-1B             |  t3000   | optimized  |   94% |  100% |   36ms |  57.5 |  131072 |
 | mistralai/Mistral-7B-Instruct-v0.3  |   n150   | functional |   93% |  100% |  105ms |  16.5 |   32768 |
+| mistralai/Mistral-7B-Instruct-v0.3  |   n150   | optimized  |   96% |  100% |   90ms |  17.9 |   32768 |
 | mistralai/Mistral-7B-Instruct-v0.3  |   n300   | functional |   96% |  100% |  112ms |  11.1 |   32768 |
 | mistralai/Mistral-7B-Instruct-v0.3  |  t3000   | functional |   95% |  100% |  104ms |   9.9 |   32768 |
 | mistralai/Mistral-7B-Instruct-v0.3  |  t3000   | optimized  |   98% |  100% |   60ms |  26.6 |   32768 |
