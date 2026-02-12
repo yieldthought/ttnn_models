@@ -43,3 +43,6 @@ python -u eval.py models/arcee-ai/AFM-4.5B/n150/optimized/model.py \
 3. Added traced decode execution with preallocated decode token/position/RoPE buffers and `ttnn.execute_trace` replay.
 4. Moved decode attention intermediates to L1 (`ttnn.linear` decode QKV output, `nlp_create_qkv_heads_decode`, decode SDPA, and decode `nlp_concat_heads`) to reduce decode-path memory traffic.
 
+## Rejected / Deferred optimizations
+1. Decode MLP DRAM-sharded matmuls: likely a further decode throughput win, but higher code complexity; deferred since current results already meet the acceptance bar.
+2. Decode `o_proj` DRAM-sharded matmul: similar complexity tradeoff; deferred pending a clear need for additional decode throughput.
