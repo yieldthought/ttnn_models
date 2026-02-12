@@ -13,14 +13,37 @@ prompt: |
   - Updated `MODELS.md` if reported metrics changed.
   - `<dir>/demo.log` and `<dir>/eval.log` with command line + output.
 check: |
-  1. Decode uses traced execution.
-  2. Top-1 / Top-5 accuracy is >= 85 / 95.
-  3. TTFT and tok/s are improved versus the corresponding functional model on the same system.
-  4. Main optimization recommendations from `doc/ttnn.md` are implemented, or tried and explicitly rejected with evidence.
-  5. `MODELS.md` is updated for the optimized model row with the new results.
-  6. No capability regression: optimized `max_seq_len` is >= the corresponding functional model on the same system.
-  7. `demo.log` and `eval.log` exist, include commands and results, and demo output is coherent.
-  8. `<dir>/MODEL_BRINGUP.md` records baseline vs final metrics and kept vs rejected optimization decisions.
+  Output EXACTLY one line of JSON, and nothing else.
+  - First character MUST be "{"
+  - Last character MUST be "}"
+  - No code fences, no markdown, no extra text
+  - 'reason' must be a single line (no newlines)
+
+  Choose exactly one output (copy the format exactly):
+  {"success": true, "reason": "PASS"}
+  {"success": false, "reason": "FAIL: <single line reason>"}
+
+  Do NOT run any tests or TT/TTNN workloads (no demo/eval, no tt-smi) and do NOT download models.
+  Target directory (<dir>): {{item}}
+
+  Only read these repo files (and nothing else):
+  - MODELS.md
+  - {{item}}/model.py
+  - {{item}}/MODEL_BRINGUP.md
+  - {{item}}/metrics.json
+  - {{item}}/demo.log
+  - {{item}}/eval.log
+
+  Pass criteria:
+  1. Decode uses traced execution (evidence: {{item}}/model.py and/or {{item}}/MODEL_BRINGUP.md).
+  2. Long eval quality is >= 85 / 95 (evidence: {{item}}/eval.log or {{item}}/metrics.json).
+  3. TTFT and tok/s are improved versus the corresponding functional model on the same system
+     (evidence: MODELS.md and/or {{item}}/metrics.json).
+  4. MODELS.md is updated for the optimized model row with the new results.
+  5. No capability regression: optimized max_seq_len is >= the corresponding functional model on the same system
+     (evidence: MODELS.md and/or {{item}}/metrics.json).
+  6. demo.log and eval.log exist and include the command line + outputs, and demo output is coherent.
+  7. {{item}}/MODEL_BRINGUP.md records baseline vs final metrics and kept vs rejected optimization decisions.
 set_up: |
   Make sure you are in /localdev/moconnor/ttnn_models
   If there are any unsaved changes, stash them and be sure to mention it in your output.
