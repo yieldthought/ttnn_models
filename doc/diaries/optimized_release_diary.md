@@ -246,3 +246,9 @@
 - Restarted the n150 workers to clear idle state and align agent IDs with IRD selection IDs (agent1 on aus-wh-08, agent2 on aus-wh-20). Cleaned up an accidental double-worker start by killing the older worker/codexapi processes on each host.
 - Reset #141 (Mistral-7B-Instruct-v0.3 n150 optimized) back to Ready after it was briefly claimed by a now-stopped agent4 (owner label drift).
 - In progress now: #130 (n300 agent3), #144 (n150 agent2), #147 (n150 agent1).
+
+## 2026-02-12 16:17
+
+- Fixed project drift: #138 (Llama-3.2-1B n150 optimized) is closed but had drifted to In review; took/moved/released it back to Done.
+- Verified Arcee-Spark n300 rerun is using a real 2-chip mesh on wh-04: `demo.log` reports mesh shape 2x1 and no `TTNN_ALLOW_SYSTEM_MESH_FALLBACK` in the command; demo metrics show TTFT 101ms and 16.0 t/s/u at seq len 32768 (functional baseline: 338ms, 5.0 t/s/u).
+- Current state: In progress 3 (#130 n300, #144/#147 n150), In review 0, Ready 10. Open PRs: #176 only (waiting for updated eval artifacts).
