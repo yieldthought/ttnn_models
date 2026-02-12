@@ -397,3 +397,17 @@
   - Verified active worker and task processes (`scripts/worker.sh agent3 n300` and `codexapi task`).
   - Checked latest remote Codex session tail; it is actively compiling/running eval workloads for #151 (kernel-build warnings streaming), so worker is making forward progress.
 - Assessment: release remains gated by the final two n300 optimized tickets (#151 in progress, #154 queued).
+
+## 2026-02-12 23:54
+
+- Reviewed PR #190 (#151, Phi-3-mini-128k-instruct n300 optimized) and merged after checking acceptance artifacts:
+  - Long eval Top-1 91% / Top-5 100% (meets quality gate).
+  - TTFT 93.8ms vs 193ms functional (improved) and decode 18.3 t/s/u vs 6.7 functional (improved).
+  - Seq len 12288 matches functional baseline (no capability regression).
+  - Decode trace enabled in `model.py` (`USE_DECODE_TRACE = True` + trace capture/execute path).
+  - `demo.log`, `eval.log`, and `MODELS.md` optimized row present and consistent.
+- Post-merge state: #151 auto-closed and moved to Done; only #154 (Falcon3-7B-Instruct n300 optimized) remains In progress under agent3; In review 0; open PRs 0.
+- Runner management:
+  - Verified single n300 reservation on wh-04 remains healthy with ~6h30m headroom (>4h threshold), no timeout extension needed.
+  - Verified active worker and task processes (`scripts/worker.sh agent3 n300` and live `codexapi task`) and fresh remote session updates while #154 runs.
+- Assessment: final release completion is now gated by the single remaining n300 optimized issue (#154).
