@@ -1,0 +1,27 @@
+{
+  "model": "tiiuae/Falcon3-7B-Instruct",
+  "hardware": "t3000",
+  "variant": "optimized",
+  "functional_baseline": {
+    "top1_pct": 97.0,
+    "top5_pct": 100.0,
+    "ttft_ms": 199.0,
+    "decode_tps_u": 7.3,
+    "seq_len": 32768
+  },
+  "optimized_final": {
+    "top1_pct": 97.0,
+    "top5_pct": 100.0,
+    "ttft_ms": 58.37411247193813,
+    "decode_tps_u": 26.268630519509294,
+    "seq_len": 32768
+  },
+  "acceptance": {
+    "top1_top5_pass": true,
+    "decode_trace_enabled": true,
+    "ttft_improved": true,
+    "decode_tps_improved": true,
+    "seq_len_non_regressed": true
+  }
+}
+

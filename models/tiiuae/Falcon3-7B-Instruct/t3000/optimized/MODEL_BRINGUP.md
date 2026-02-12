@@ -6,6 +6,7 @@ Optimized TTNN implementation of `tiiuae/Falcon3-7B-Instruct` for T3000 using 1D
 - Model code: `models/tiiuae/Falcon3-7B-Instruct/t3000/optimized/model.py`
 - Demo log: `models/tiiuae/Falcon3-7B-Instruct/t3000/optimized/demo.log`
 - Eval log: `models/tiiuae/Falcon3-7B-Instruct/t3000/optimized/eval.log`
+- Machine-readable metrics: `models/tiiuae/Falcon3-7B-Instruct/t3000/optimized/metrics.json`
 
 ## Baseline vs Final Metrics (T3000)
 Functional baseline (from `MODELS.md`):
@@ -43,4 +44,3 @@ Optimized results (this directory):
 
 ## Repro
 See `demo.log` and `eval.log` for exact commands and outputs used to produce the final metrics.
-
