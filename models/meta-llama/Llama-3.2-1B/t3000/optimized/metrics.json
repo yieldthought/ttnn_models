@@ -12,8 +12,8 @@
   "optimized_final": {
     "top1_pct": 94.0,
     "top5_pct": 100.0,
-    "ttft_ms": 37.0,
-    "decode_tps_u": 58.5,
+    "ttft_ms": 36.04504372924566,
+    "decode_tps_u": 57.53004068446343,
     "seq_len": 131072
   },
   "acceptance": {

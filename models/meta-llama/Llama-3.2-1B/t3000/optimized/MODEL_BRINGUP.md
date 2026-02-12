@@ -7,6 +7,7 @@ This is the optimized TTNN bringup of `meta-llama/Llama-3.2-1B` for `t3000`.
 - Demo log: `models/meta-llama/Llama-3.2-1B/t3000/optimized/demo.log`
 - Eval log: `models/meta-llama/Llama-3.2-1B/t3000/optimized/eval.log`
 - Machine-readable metrics: `models/meta-llama/Llama-3.2-1B/t3000/optimized/metrics.json`
+- Logs include a first-line JSON payload and a `YT_METRICS=...` line for strict parsers.
 - Decode path uses traced execution (`ttnn.begin_trace_capture` + `ttnn.execute_trace`)
 
 ## Baseline vs final
@@ -14,8 +15,8 @@ This is the optimized TTNN bringup of `meta-llama/Llama-3.2-1B` for `t3000`.
 | --- | ---: | ---: | ---: |
 | Top-1 | 92% | 93% | 94% |
 | Top-5 | 100% | 100% | 100% |
-| TTFT | 267 ms | 36 ms | 37 ms |
-| t/s/u | 6.6 | 52.6 | 58.5 |
+| TTFT | 267 ms | 36 ms | 36 ms |
+| t/s/u | 6.6 | 52.6 | 57.5 |
 | Seq len | 131072 | 131072 | 131072 |
 
 ## Kept optimization decisions
@@ -30,7 +31,11 @@ This is the optimized TTNN bringup of `meta-llama/Llama-3.2-1B` for `t3000`.
 3. Fused QKV projection with tensor-parallel-safe shard ordering.
 - Replaced three attention projection matmuls (`q_proj`, `k_proj`, `v_proj`) plus concat with one `qkv_proj` matmul.
 - Built fused weight by chunking Q/K/V per TP shard and concatenating per-shard (`[q_i, k_i, v_i]`) before global pack.
-- Result: decode throughput improved from 52.6 to 58.5 t/s/u with no correctness regression.
+- Result: decode throughput improved from 52.6 to 57.5 t/s/u with no correctness regression.
+
+4. Structured metrics output in eval/demo tooling.
+- Added `--output-format {text,json,yt_metrics}` to `eval.py` and `demo.py`.
+- Text mode now also emits a `YT_METRICS=...` line for automation parsing.
 
 ## Rejected optimization attempts
 1. `lm_head` weights in `bfloat8_b`.
@@ -48,7 +53,9 @@ TT_MESH_GRAPH_DESC_PATH=/proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh
 TT_VISIBLE_DEVICES=0,1,2,3 \
 TT_METAL_CACHE=/tmp/tt-metal-cache \
 PYTHONUNBUFFERED=1 \
-python -u demo.py models/meta-llama/Llama-3.2-1B/t3000/optimized/model.py --seed 0
+python -u demo.py models/meta-llama/Llama-3.2-1B/t3000/optimized/model.py \
+  --seed 0 \
+  --max_seq_len 131072
 
 TT_MESH_GRAPH_DESC_PATH=/proj_sw/user_dev/moconnor/tt-metal/tt_metal/fabric/mesh_graph_descriptors/t3k_mesh_graph_descriptor.textproto \
 TT_VISIBLE_DEVICES=0,1,2,3 \

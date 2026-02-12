@@ -14,6 +14,7 @@ import pathlib
 import os
 import sys
 import time
+import json
 from typing import Optional, Tuple
 
 import torch
@@ -258,9 +259,16 @@ def run_hf_demo(
     temperature: float,
     top_k: int,
     cache_dir: Optional[str],
+    output_format: str,
 ):
     """Run HF CPU model generation with timing."""
-    print(f"Loading tokenizer: {model_id}")
+    structured_output = output_format != "text"
+
+    def log(line: str) -> None:
+        if not structured_output:
+            print(line)
+
+    log(f"Loading tokenizer: {model_id}")
     tokenizer = AutoTokenizer.from_pretrained(model_id, cache_dir=cache_dir)
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token_id = tokenizer.eos_token_id
@@ -269,7 +277,7 @@ def run_hf_demo(
     input_ids = encoded["input_ids"]
     attention_mask = encoded.get("attention_mask")
 
-    print(f"Loading HuggingFace model on CPU: {model_id}")
+    log(f"Loading HuggingFace model on CPU: {model_id}")
     hf_model = AutoModelForCausalLM.from_pretrained(model_id, torch_dtype=torch.float32, cache_dir=cache_dir)
     hf_model.eval()
 
@@ -288,19 +296,36 @@ def run_hf_demo(
     )
     ttft_ms = prefill_time * 1000
     decode_tps = 0.0 if decode_time <= 0.0 else decode_tokens / decode_time
-    print_report(
-        "hf",
-        model_id,
-        None,
-        None,
-        prompt,
-        output,
-        input_ids.shape[1],
-        generated_tokens,
-        ttft_ms,
-        decode_tps,
-        decode_tokens,
-    )
+    metrics = {
+        "mode": "hf_demo",
+        "model": model_id,
+        "prompt_tokens": int(input_ids.shape[1]),
+        "generated_tokens": int(generated_tokens),
+        "ttft_ms": float(ttft_ms),
+        "decode_tps_u": float(decode_tps),
+        "decode_tokens": int(decode_tokens),
+    }
+    payload = json.dumps(metrics)
+    if output_format == "text":
+        print_report(
+            "hf",
+            model_id,
+            None,
+            None,
+            prompt,
+            output,
+            input_ids.shape[1],
+            generated_tokens,
+            ttft_ms,
+            decode_tps,
+            decode_tokens,
+        )
+        print(f"YT_METRICS={payload}")
+    else:
+        if output_format == "json":
+            print(payload)
+        else:
+            print(f"YT_METRICS={payload}")
 
 
 def run_tt_demo(
@@ -312,16 +337,23 @@ def run_tt_demo(
     cache_dir: Optional[str],
     device_id: int,
     max_seq_len: Optional[int],
+    output_format: str,
 ):
     """Run TT model generation with timing."""
     import ttnn
+
+    structured_output = output_format != "text"
+
+    def log(line: str) -> None:
+        if not structured_output:
+            print(line)
 
     model_path = model_path.resolve()
     model_module = load_model_module(model_path)
     model_id, system = resolve_tt_metadata(model_path)
     mesh_shape = pick_mesh_shape(system, model_module)
 
-    print(f"Loading tokenizer: {model_id}")
+    log(f"Loading tokenizer: {model_id}")
     tokenizer = AutoTokenizer.from_pretrained(model_id, cache_dir=cache_dir)
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token_id = tokenizer.eos_token_id
@@ -341,17 +373,17 @@ def run_tt_demo(
         limit_name = "MAX_CACHE_SEQ_LEN"
     if max_total is not None and input_ids.shape[1] + max_new_tokens > max_total:
         max_new_tokens = max(0, max_total - input_ids.shape[1])
-        print(f"Adjusting max_new_tokens to {max_new_tokens} to fit {limit_name}={max_total}")
+        log(f"Adjusting max_new_tokens to {max_new_tokens} to fit {limit_name}={max_total}")
 
     if max_seq_len is None:
         max_seq_len = max(2048, input_ids.shape[1] + max_new_tokens)
     elif max_seq_len < input_ids.shape[1] + max_new_tokens:
-        print(
+        log(
             "Warning: max_seq_len is smaller than prompt + max_new_tokens; "
             "generation may fail if cache limits are exceeded."
         )
 
-    print("Opening TT device...")
+    log("Opening TT device...")
     ttnn.CONFIG.throw_exception_on_fallback = True
     tt_device = None
     is_mesh = False
@@ -361,15 +393,15 @@ def run_tt_demo(
         tt_device, is_mesh, fabric_config = open_tt_device(mesh_shape, device_id)
         runtime_mesh_shape = tuple(tt_device.shape) if hasattr(tt_device, "shape") else (1, 1)
 
-        print(f"Loading HuggingFace reference model on CPU: {model_id}")
+        log(f"Loading HuggingFace reference model on CPU: {model_id}")
         hf_model = AutoModelForCausalLM.from_pretrained(model_id, torch_dtype=torch.float32, cache_dir=cache_dir)
         hf_model.eval()
 
-        print("Building TT model...")
+        log("Building TT model...")
         tt_model = build_tt_model(model_module, hf_model, tt_device, max_seq_len)
         tt_model.eval()
 
-        print("Running one warmup prefill+decode pass (kernel compile warmup)...")
+        log("Running one warmup prefill+decode pass (kernel compile warmup)...")
         warmup_model(tt_model, input_ids, True, tt_device, warmup_device_sampling=temperature <= 0.0)
 
         output, generated_tokens, prefill_time, decode_time, decode_tokens = generate_with_timing(
@@ -385,19 +417,39 @@ def run_tt_demo(
         )
         ttft_ms = prefill_time * 1000
         decode_tps = 0.0 if decode_time <= 0.0 else decode_tokens / decode_time
-        print_report(
-            "tt",
-            model_id,
-            system,
-            runtime_mesh_shape,
-            prompt,
-            output,
-            input_ids.shape[1],
-            generated_tokens,
-            ttft_ms,
-            decode_tps,
-            decode_tokens,
-        )
+        metrics = {
+            "mode": "tt_demo",
+            "model": model_id,
+            "system": system,
+            "mesh_shape": [int(runtime_mesh_shape[0]), int(runtime_mesh_shape[1])],
+            "prompt_tokens": int(input_ids.shape[1]),
+            "generated_tokens": int(generated_tokens),
+            "ttft_ms": float(ttft_ms),
+            "decode_tps_u": float(decode_tps),
+            "decode_tokens": int(decode_tokens),
+            "max_seq_len": int(max_seq_len),
+        }
+        payload = json.dumps(metrics)
+        if output_format == "text":
+            print_report(
+                "tt",
+                model_id,
+                system,
+                runtime_mesh_shape,
+                prompt,
+                output,
+                input_ids.shape[1],
+                generated_tokens,
+                ttft_ms,
+                decode_tps,
+                decode_tokens,
+            )
+            print(f"YT_METRICS={payload}")
+        else:
+            if output_format == "json":
+                print(payload)
+            else:
+                print(f"YT_METRICS={payload}")
     finally:
         if tt_device is not None:
             close_tt_device(tt_device, is_mesh, fabric_config)
@@ -415,6 +467,11 @@ def main():
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--device-id", type=int, default=0)
     parser.add_argument("--cache-dir", default=None)
+    parser.add_argument(
+        "--output-format",
+        choices=["text", "json", "yt_metrics"],
+        default=os.environ.get("YT_OUTPUT_FORMAT", "text"),
+    )
     args = parser.parse_args()
 
     torch.manual_seed(args.seed)
@@ -431,6 +488,7 @@ def main():
             args.cache_dir,
             args.device_id,
             args.max_seq_len,
+            args.output_format,
         )
     else:
         run_hf_demo(
@@ -440,6 +498,7 @@ def main():
             args.temperature,
             args.top_k,
             args.cache_dir,
+            args.output_format,
         )
 
 
