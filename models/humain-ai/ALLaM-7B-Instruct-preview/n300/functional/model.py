@@ -32,11 +32,13 @@ def pad_to_tile(x: int) -> int:
 
 def mesh_shape_to_axis(mesh_shape: tuple[int, int]) -> int:
     """Return the mesh axis used for 1D tensor parallel."""
+    if mesh_shape == (1, 1):
+        return 0
     if mesh_shape[0] == 1 and mesh_shape[1] > 1:
         return 1
     if mesh_shape[1] == 1 and mesh_shape[0] > 1:
         return 0
-    raise ValueError(f"Expected 1D mesh shape for N300, got {mesh_shape}")
+    raise ValueError(f"Expected 1D mesh shape for N300 compatibility path, got {mesh_shape}")
 
 
 def num_mesh_devices(mesh_shape: tuple[int, int]) -> int:
@@ -106,8 +108,8 @@ class ParallelConfig:
 
 
 def validate_parallel_config(config: ModelConfig, num_devices: int) -> None:
-    if num_devices < 2:
-        raise ValueError("N300 model expects a 2-device mesh")
+    if num_devices < 1:
+        raise ValueError("num_devices must be >= 1")
     if config.num_attention_heads % num_devices != 0:
         raise ValueError("num_attention_heads must divide evenly across devices")
     if config.num_key_value_heads % num_devices != 0:

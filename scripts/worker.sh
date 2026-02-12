@@ -90,8 +90,8 @@ while true; do
         continue
     fi
     only_matching="/${system}/"
-    # Ensure codexapi output is flushed promptly to nohup logs.
-    # Use --quiet to avoid progress-estimate JSON parsing failures in codexapi.
+    # Ensure codexapi output is flushed promptly to nohup logs. Use --quiet to
+    # reduce verifier parsing noise in worker logs.
     PYTHONUNBUFFERED=1 codexapi task --quiet -p https://github.com/users/yieldthought/projects/6 -n "$agent_name" --only-matching "$only_matching" "${task_files[@]}"
     sleep 60
 done

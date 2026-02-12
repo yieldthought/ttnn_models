@@ -1,7 +1,5 @@
-#!/usr/bin/env python3
-"""Run eval.py in HF or TT mode and emit machine-readable JSON."""
-
-from __future__ import annotations
+#!/usr/bin/env python
+"""Run eval.py in HF or TT mode and emit YT_METRICS JSON."""
 
 import argparse
 import json
@@ -12,29 +10,37 @@ import sys
 import tempfile
 import warnings
 
-warnings.filterwarnings("ignore", message="Using `TRANSFORMERS_CACHE` is deprecated.*", category=FutureWarning)
+warnings.filterwarnings(
+    "ignore",
+    message="Using `TRANSFORMERS_CACHE` is deprecated and will be removed in v5 of Transformers. Use `HF_HOME` instead.",
+    category=FutureWarning,
+)
+warnings.filterwarnings(
+    "ignore",
+    message="Passing a tuple of `past_key_values` is deprecated",
+)
+os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+os.environ.setdefault("TRANSFORMERS_NO_ADVISORY_WARNINGS", "1")
+
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers.utils import logging as hf_logging
+
+hf_logging.disable_progress_bar()
+hf_logging.set_verbosity_error()
 
 
 DEFAULT_PREFILL_LEN = 20
 DEFAULT_DECODE_LEN = 20
-DEFAULT_EVAL_TIMEOUT_SECONDS = int(os.environ.get("YT_EVAL_TIMEOUT_SECONDS", "300"))
-DEFAULT_OUTPUT_FORMAT = "json"
-
-
-class MetricsArgumentParser(argparse.ArgumentParser):
-    """Argument parser that raises instead of exiting so we can emit metrics on failures."""
-
-    def error(self, message: str):
-        raise ValueError(message)
 
 
 def emit_metrics(metrics: dict, output_format: str) -> None:
-    """Emit one machine-readable metrics line for automation."""
+    """Emit metrics in the requested output format."""
     payload = json.dumps(metrics)
-    if output_format == "yt_metrics":
-        print(f"YT_METRICS={payload}")
+    if output_format == "json":
+        print(payload)
         return
-    print(payload)
+    print(f"YT_METRICS={payload}")
 
 
 def resolve_model_path(repo_root: pathlib.Path, hf_model_id: str, system: str) -> pathlib.Path:
@@ -104,8 +110,8 @@ def parse_max_seq_len_range(spec: str) -> list:
     return list(range(start, end + 1, step))
 
 
-def score_step(logits, target_id: int) -> tuple[int, int]:
-    top5 = logits.topk(k=5).indices
+def score_step(logits: torch.Tensor, target_id: int) -> tuple[int, int]:
+    top5 = torch.topk(logits, k=5).indices
     top1 = int(top5[0].item() == target_id)
     top5_hit = int((top5 == target_id).any().item())
     return top1, top5_hit
@@ -113,9 +119,6 @@ def score_step(logits, target_id: int) -> tuple[int, int]:
 
 def run_hf_eval(hf_model_id: str, tokenizer, prompt_ids: list, decode_len: int, cache_dir):
     """Compute teacher-forcing accuracy using the HF reference model only."""
-    import torch
-    from transformers import AutoModelForCausalLM
-
     if decode_len < 1:
         return 0.0, 0.0, 0
 
@@ -198,19 +201,6 @@ def write_prompt_ids(prompt_ids: list, directory: pathlib.Path) -> pathlib.Path:
     return path
 
 
-def summarize_failure(details: str) -> str:
-    """Return the most informative single-line error from stderr/stdout."""
-    lines = [line.strip() for line in details.splitlines() if line.strip()]
-    if not lines:
-        return ""
-
-    preferred_tokens = ("RuntimeError:", "ValueError:", "AssertionError:", "TT_THROW")
-    for line in reversed(lines):
-        if any(token in line for token in preferred_tokens):
-            return line[:240]
-    return lines[-1][:240]
-
-
 def run_tt_eval(
     repo_root: pathlib.Path,
     hf_model_id: str,
@@ -219,7 +209,6 @@ def run_tt_eval(
     decode_len: int,
     cache_dir,
     max_seq_len: int,
-    timeout_seconds: int,
 ) -> tuple[float, float]:
     """Run eval.py and parse top1/top5."""
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -239,24 +228,18 @@ def run_tt_eval(
         ]
         if cache_dir:
             cmd.extend(["--cache_dir", cache_dir])
-        try:
-            result = subprocess.run(cmd, cwd=repo_root, capture_output=True, text=True, timeout=timeout_seconds)
-        except subprocess.TimeoutExpired as exc:
-            raise RuntimeError(f"eval.py timed out after {timeout_seconds} seconds")
+        result = subprocess.run(cmd, cwd=repo_root, capture_output=True, text=True)
 
     if result.returncode != 0:
-        details = (result.stderr or result.stdout or "").strip()
-        if details:
-            summary = summarize_failure(details)
-            raise RuntimeError(f"eval.py failed with exit code {result.returncode}: {summary}")
-        raise RuntimeError(f"eval.py failed with exit code {result.returncode}")
+        sys.stdout.write(result.stdout)
+        sys.stderr.write(result.stderr)
+        raise RuntimeError("eval.py failed")
 
     return parse_eval_output(result.stdout)
 
 
 def main():
-    parser = MetricsArgumentParser(description="Wrapper for eval.py with machine-readable output", add_help=False)
-    parser.add_argument("-h", "--help", action="store_true", default=False)
+    parser = argparse.ArgumentParser(description="Wrapper for eval.py with YT_METRICS output")
     parser.add_argument("--mode", choices=["hf", "tt"], required=True)
     parser.add_argument("--hf-model", required=True)
     parser.add_argument("--system", default=os.environ.get("YT_SYSTEM", "n150"))
@@ -268,172 +251,97 @@ def main():
     parser.add_argument("--batch", type=int, default=1)
     parser.add_argument("--trace", type=int, default=0)
     parser.add_argument("--cache-dir", default=None)
-    parser.add_argument("--timeout-seconds", type=int, default=DEFAULT_EVAL_TIMEOUT_SECONDS)
-    parser.add_argument("--output-format", choices=["json", "yt_metrics"], default=DEFAULT_OUTPUT_FORMAT)
-    args = None
-    had_error = False
+    parser.add_argument(
+        "--output-format",
+        choices=["yt_metrics", "json"],
+        default=os.environ.get("YT_OUTPUT_FORMAT", "json"),
+    )
+    args = parser.parse_args()
 
-    try:
-        args = parser.parse_args()
-    except Exception as exc:
-        emit_metrics(
-            {
-                "mode": "unknown",
-                "trace": False,
-                "top1": 0.0,
-                "top5": 0.0,
-                "prefill_len": DEFAULT_PREFILL_LEN,
-                "decode_len": DEFAULT_DECODE_LEN,
-                "batch": 1,
-                "total": 0,
-                "status": "error",
-                "error": str(exc),
-            },
-            DEFAULT_OUTPUT_FORMAT,
-        )
-        sys.exit(1)
+    if args.batch != 1:
+        raise ValueError("Only batch=1 is supported by the bringup eval")
+    if args.prefill_len < 1 and args.prefill_len_range is None:
+        raise ValueError("--prefill-len must be >= 1")
+    if args.decode_len < 0:
+        raise ValueError("--decode-len must be >= 0")
+    if args.trace not in (0, 1):
+        raise ValueError("--trace must be 0 or 1")
+    if args.max_seq_len is not None and args.max_seq_len < 1:
+        raise ValueError("--max-seq-len must be >= 1")
+    if args.prefill_len_range is not None and args.max_seq_len_range is not None:
+        raise ValueError("Use --prefill-len-range or --max-seq-len-range, not both")
 
     repo_root = pathlib.Path(__file__).resolve().parents[1]
 
-    try:
-        if args.batch != 1:
-            raise ValueError("Only batch=1 is supported by the bringup eval")
-        if args.prefill_len < 1 and args.prefill_len_range is None:
-            raise ValueError("--prefill-len must be >= 1")
-        if args.decode_len < 0:
-            raise ValueError("--decode-len must be >= 0")
-        if args.trace not in (0, 1):
-            raise ValueError("--trace must be 0 or 1")
-        if args.max_seq_len is not None and args.max_seq_len < 1:
-            raise ValueError("--max-seq-len must be >= 1")
-        if args.prefill_len_range is not None and args.max_seq_len_range is not None:
-            raise ValueError("Use --prefill-len-range or --max-seq-len-range, not both")
-        if args.timeout_seconds < 1:
-            raise ValueError("--timeout-seconds must be >= 1")
+    tokenizer = AutoTokenizer.from_pretrained(args.hf_model, cache_dir=args.cache_dir)
+    if tokenizer.pad_token_id is None:
+        tokenizer.pad_token_id = tokenizer.eos_token_id
 
-        from transformers import AutoTokenizer
+    prefill_lens = [args.prefill_len]
+    if args.prefill_len_range is not None:
+        prefill_lens = parse_prefill_len_range(args.prefill_len_range)
 
-        tokenizer = AutoTokenizer.from_pretrained(args.hf_model, cache_dir=args.cache_dir)
-        if tokenizer.pad_token_id is None:
-            tokenizer.pad_token_id = tokenizer.eos_token_id
+    max_seq_lens = None
+    if args.max_seq_len_range is not None:
+        max_seq_lens = parse_max_seq_len_range(args.max_seq_len_range)
+    elif args.max_seq_len is not None:
+        max_seq_lens = [args.max_seq_len]
 
-        prefill_lens = [args.prefill_len]
-        if args.prefill_len_range is not None:
-            prefill_lens = parse_prefill_len_range(args.prefill_len_range)
+    for prefill_len in prefill_lens:
+        prompt_ids = build_prompt_ids(tokenizer, prefill_len)
 
-        max_seq_lens = None
-        if args.max_seq_len_range is not None:
-            max_seq_lens = parse_max_seq_len_range(args.max_seq_len_range)
-        elif args.max_seq_len is not None:
-            max_seq_lens = [args.max_seq_len]
+        top1 = 0.0
+        top5 = 0.0
+        total = 0
 
-        for prefill_len in prefill_lens:
-            prompt_ids = build_prompt_ids(tokenizer, prefill_len)
+        if args.mode == "hf":
+            top1, top5, total = run_hf_eval(args.hf_model, tokenizer, prompt_ids, args.decode_len, args.cache_dir)
+            metrics = {
+                "mode": args.mode,
+                "trace": bool(args.trace),
+                "top1": float(top1),
+                "top5": float(top5),
+                "prefill_len": prefill_len,
+                "decode_len": args.decode_len,
+                "batch": args.batch,
+                "total": int(total),
+            }
+            emit_metrics(metrics, args.output_format)
+            continue
 
-            if args.mode == "hf":
-                try:
-                    top1, top5, total = run_hf_eval(
-                        args.hf_model, tokenizer, prompt_ids, args.decode_len, args.cache_dir
-                    )
-                    metrics = {
-                        "mode": args.mode,
-                        "trace": bool(args.trace),
-                        "top1": float(top1),
-                        "top5": float(top5),
-                        "prefill_len": prefill_len,
-                        "decode_len": args.decode_len,
-                        "batch": args.batch,
-                        "total": int(total),
-                        "status": "ok",
-                    }
-                except Exception as exc:
-                    had_error = True
-                    metrics = {
-                        "mode": args.mode,
-                        "trace": bool(args.trace),
-                        "top1": 0.0,
-                        "top5": 0.0,
-                        "prefill_len": prefill_len,
-                        "decode_len": args.decode_len,
-                        "batch": args.batch,
-                        "total": 0,
-                        "status": "error",
-                        "error": str(exc),
-                    }
-                emit_metrics(metrics, args.output_format)
-                continue
+        model_path = resolve_model_path(repo_root, args.hf_model, args.system)
+        run_max_seq_lens = max_seq_lens
+        if run_max_seq_lens is None:
+            run_max_seq_lens = [max(2048, prefill_len + args.decode_len)]
 
-            model_path = resolve_model_path(repo_root, args.hf_model, args.system)
-            run_max_seq_lens = max_seq_lens
-            if run_max_seq_lens is None:
-                run_max_seq_lens = [max(2048, prefill_len + args.decode_len)]
+        for max_seq_len in run_max_seq_lens:
+            min_seq_len = prefill_len + args.decode_len
+            if max_seq_len < min_seq_len:
+                raise ValueError("--max-seq-len must be >= prefill_len + decode_len")
 
-            for max_seq_len in run_max_seq_lens:
-                min_seq_len = prefill_len + args.decode_len
-                if max_seq_len < min_seq_len:
-                    raise ValueError("--max-seq-len must be >= prefill_len + decode_len")
+            top1, top5 = run_tt_eval(
+                repo_root,
+                args.hf_model,
+                model_path,
+                prompt_ids,
+                args.decode_len,
+                args.cache_dir,
+                max_seq_len,
+            )
+            total = max(args.decode_len, 0)
 
-                try:
-                    top1, top5 = run_tt_eval(
-                        repo_root,
-                        args.hf_model,
-                        model_path,
-                        prompt_ids,
-                        args.decode_len,
-                        args.cache_dir,
-                        max_seq_len,
-                        args.timeout_seconds,
-                    )
-                    total = max(args.decode_len, 0)
-                    metrics = {
-                        "mode": args.mode,
-                        "trace": bool(args.trace),
-                        "top1": float(top1),
-                        "top5": float(top5),
-                        "prefill_len": prefill_len,
-                        "decode_len": args.decode_len,
-                        "max_seq_len": max_seq_len,
-                        "batch": args.batch,
-                        "total": int(total),
-                        "status": "ok",
-                    }
-                except Exception as exc:
-                    had_error = True
-                    metrics = {
-                        "mode": args.mode,
-                        "trace": bool(args.trace),
-                        "top1": 0.0,
-                        "top5": 0.0,
-                        "prefill_len": prefill_len,
-                        "decode_len": args.decode_len,
-                        "max_seq_len": max_seq_len,
-                        "batch": args.batch,
-                        "total": 0,
-                        "status": "error",
-                        "error": str(exc),
-                    }
-                emit_metrics(metrics, args.output_format)
-
-    except Exception as exc:
-        had_error = True
-        metrics = {
-            "mode": args.mode,
-            "trace": bool(args.trace),
-            "top1": 0.0,
-            "top5": 0.0,
-            "prefill_len": int(args.prefill_len),
-            "decode_len": int(args.decode_len),
-            "batch": int(args.batch),
-            "total": 0,
-            "status": "error",
-            "error": str(exc),
-        }
-        if args.max_seq_len is not None:
-            metrics["max_seq_len"] = int(args.max_seq_len)
-        emit_metrics(metrics, args.output_format)
-
-    if had_error:
-        sys.exit(1)
+            metrics = {
+                "mode": args.mode,
+                "trace": bool(args.trace),
+                "top1": float(top1),
+                "top5": float(top5),
+                "prefill_len": prefill_len,
+                "decode_len": args.decode_len,
+                "max_seq_len": max_seq_len,
+                "batch": args.batch,
+                "total": int(total),
+            }
+            emit_metrics(metrics, args.output_format)
 
 
 if __name__ == "__main__":

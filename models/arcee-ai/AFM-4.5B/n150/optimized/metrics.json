@@ -1,0 +1,27 @@
+{
+  "model": "arcee-ai/AFM-4.5B",
+  "hardware": "n150",
+  "variant": "optimized",
+  "functional_baseline": {
+    "top1_pct": 98.0,
+    "top5_pct": 100.0,
+    "ttft_ms": 72.0,
+    "decode_tps_u": 17.2,
+    "seq_len": 65536
+  },
+  "optimized_final": {
+    "top1_pct": 98.0,
+    "top5_pct": 100.0,
+    "ttft_ms": 57.278623999991396,
+    "decode_tps_u": 19.614037061527732,
+    "seq_len": 65536
+  },
+  "acceptance": {
+    "top1_top5_pass": true,
+    "decode_trace_enabled": true,
+    "ttft_improved": true,
+    "decode_tps_improved": true,
+    "seq_len_non_regressed": true
+  }
+}
+

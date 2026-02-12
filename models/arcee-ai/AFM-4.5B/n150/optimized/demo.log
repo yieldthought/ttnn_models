@@ -1,0 +1,65 @@
+TT_METAL_CACHE=/tmp/tt-metal-cache PYTHONUNBUFFERED=1 python -u demo.py models/arcee-ai/AFM-4.5B/n150/optimized/model.py --seed 0 --max_seq_len 65536
+/proj_sw/user_dev/moconnor/tt-metal/python_env/lib/python3.10/site-packages/transformers/utils/hub.py:111: FutureWarning: Using `TRANSFORMERS_CACHE` is deprecated and will be removed in v5 of Transformers. Use `HF_HOME` instead.
+  warnings.warn(
+2026-02-12 12:17:02.703 | DEBUG    | ttnn:<module>:77 - Initial ttnn.CONFIG:
+Config{cache_path=/home/moconnor/.cache/ttnn,model_cache_path=/home/moconnor/.cache/ttnn/models,tmp_dir=/tmp/ttnn,enable_model_cache=false,enable_fast_runtime_mode=true,throw_exception_on_fallback=false,enable_logging=false,enable_graph_report=false,enable_detailed_buffer_report=false,enable_detailed_tensor_report=false,enable_comparison_mode=false,comparison_mode_should_raise_exception=false,comparison_mode_pcc=0.9999,root_report_path=generated/ttnn/reports,report_name=std::nullopt,std::nullopt}
+Loading tokenizer: arcee-ai/AFM-4.5B
+Opening TT device...
+2026-02-12 12:17:03.654 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-12 12:17:03.654 | info     |          Device | Opening user mode device driver (tt_cluster.cpp:223)
+2026-02-12 12:17:03.659 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-12 12:17:03.680 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-12 12:17:03.681 | info     |             UMD | Harvesting masks for chip 0 tensix: 0x200 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-12 12:17:03.778 | info     |             UMD | Opening local chip ids/PCIe ids: {0}/[5] and remote chip ids {} (cluster.cpp:186)
+2026-02-12 12:17:03.778 | info     |             UMD | IOMMU: disabled (cluster.cpp:161)
+2026-02-12 12:17:03.778 | info     |             UMD | KMD version: 2.4.1 (cluster.cpp:164)
+2026-02-12 12:17:03.780 | info     |             UMD | Starting devices in cluster (cluster.cpp:965)
+2026-02-12 12:17:03.781 | info     |             UMD | Mapped hugepage 0x4200000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-12 12:17:03.885 | DEBUG    | ttnn.device:__init__:150 - Using default dispatch core type for this system: DispatchCoreType.WORKER
+2026-02-12 12:17:03.885 | DEBUG    | ttnn.device:__init__:152 - Using default dispatch core axis for this system: DispatchCoreAxis.ROW
+2026-02-12 12:17:03.885 | info     |     Distributed | Using auto discovery to generate mesh graph. (metal_context.cpp:863)
+2026-02-12 12:17:03.885 | info     |     Distributed | Constructing control plane using auto-discovery (no mesh graph descriptor). (metal_context.cpp:840)
+2026-02-12 12:17:03.885 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=1, n_phys=1, log_deg_hist={0:1}, phys_deg_hist={0:1} (topology_mapper_utils.cpp:171)
+2026-02-12 12:17:03.885 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=1, n_phys=1, log_deg_hist={0:1}, phys_deg_hist={0:1} (topology_mapper_utils.cpp:171)
+2026-02-12 12:17:03.901 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-12 12:17:03.958 | warning  |           Metal | Unable to bind worker thread to CPU Core. May see performance degradation. Error Code: 22 (hardware_command_queue.cpp:65)
+Loading HuggingFace reference model on CPU: arcee-ai/AFM-4.5B
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:00<00:00,  1.06it/s]Loading checkpoint shards: 100%|██████████| 2/2 [00:01<00:00,  1.16it/s]Loading checkpoint shards: 100%|██████████| 2/2 [00:01<00:00,  1.14it/s]
+Building TT model...
+  Loading embeddings...
+  Computing RoPE cache...
+  Loading 36 layers...
+Running one warmup prefill+decode pass (kernel compile warmup)...
+2026-02-12 12:19:31.218 | warning  |    BuildKernels | Compute kernel 'pack_untilize/7633564404821941182/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 12:19:31.218 | warning  |    BuildKernels | Compute kernel 'pack_untilize/1533006020013921047/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 12:19:31.316 | warning  |    BuildKernels | Compute kernel 'tilize/5093718140287559204/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 12:19:31.372 | warning  |    BuildKernels | Compute kernel 'layernorm/13511610728398130800/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 12:19:31.470 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/16724983950734897833/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 12:19:31.589 | warning  |    BuildKernels | Compute kernel 'rotary_embedding/15977828201954068243/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 12:19:35.529 | warning  |    BuildKernels | Compute kernel 'sdpa/17348584948641531795/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 12:19:35.794 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/13620030415005891177/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 12:19:35.973 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/13589257652741272415/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 12:19:36.053 | warning  |    BuildKernels | Compute kernel 'pack_untilize_wh/7086840538318172595/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 12:19:36.139 | warning  |    BuildKernels | Compute kernel 'tilize_wh/4709288304851342762/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 12:19:36.194 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/12402109736251398671/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 12:19:36.355 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/4649585658210585725/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 12:19:36.672 | warning  |    BuildKernels | Compute kernel 'update_cache/4072058481346503601/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 12:19:40.470 | warning  |    BuildKernels | Compute kernel 'sdpa_flash_decode/14504957061729905502/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 12:19:45.332 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/15976416416311683227/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-12 12:19:45.484 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/5892109678758416530/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+TT demo (n150)
+Model: arcee-ai/AFM-4.5B
+Mesh shape: 1x1
+Prompt tokens: 55 | Generated tokens: 128
+TTFT: 57 ms | Decode: 19.6 t/s/u (126 tokens)
+
+Prompt:
+Journal entry, 1957: Tonight a tiny sphere called Sputnik 1 crossed the sky, beeping like a metronome for a new era. The neighbors gathered on the roof, listening and arguing about what comes next. I wrote in my notebook that
+
+Output:
+ "science is the most important activity of humankind."
+—Isaac Asimov, Foundation's Edge
+The story of science and the story of fiction are intertwined. Isaac Asimov wrote a number of books about science and its relationship to society, from his science fact classics such as The Relativity of Wrong, The Intelligent Man's Guide to Science, and The Tragedy of the Commons to his science fiction novels, including the Foundation trilogy. In Foundation's Edge he looks back on the history of the Foundation, a group of scientists who managed to preserve an interstellar empire. Now the Foundation is threatened from two sides: a
+YT_METRICS={"mode": "tt_demo", "model": "arcee-ai/AFM-4.5B", "system": "n150", "mesh_shape": [1, 1], "prompt_tokens": 55, "generated_tokens": 128, "ttft_ms": 57.278623999991396, "decode_tps_u": 19.614037061527732, "decode_tokens": 126, "max_seq_len": 65536}
+2026-02-12 12:19:54.737 | info     |          Device | Closing user mode device drivers (tt_cluster.cpp:472)
+2026-02-12 12:19:54.737 | info     |             UMD | Closing devices in cluster (cluster.cpp:976)
