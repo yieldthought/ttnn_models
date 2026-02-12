@@ -11,6 +11,7 @@ Usage:
 import argparse
 import json
 import pathlib
+import os
 
 import torch
 import ttnn
@@ -82,7 +83,18 @@ def main():
     parser.add_argument("--device_id", type=int, default=0)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--cache_dir", default=None, help="Cache directory for HuggingFace downloads")
+    parser.add_argument(
+        "--output-format",
+        choices=["text", "json", "yt_metrics"],
+        default=os.environ.get("YT_OUTPUT_FORMAT", "text"),
+    )
     args = parser.parse_args()
+
+    structured_output = args.output_format != "text"
+
+    def log(line: str) -> None:
+        if not structured_output:
+            print(line)
 
     if args.max_seq_len < 2048:
         raise ValueError(
@@ -97,7 +109,7 @@ def main():
     if not model_path.exists():
         raise FileNotFoundError(model_path)
 
-    print(f"Loading model module: {model_path}")
+    log(f"Loading model module: {model_path}")
     model_module = load_model_module(model_path)
 
     if args.prompt_ids_file is not None and args.prompt_file is not None:
@@ -108,17 +120,17 @@ def main():
         print(f"Using HuggingFace model inferred from path: {model_id}")
         args.model = model_id
 
-    print("Loading HuggingFace tokenizer...")
+    log("Loading HuggingFace tokenizer...")
     cache_dir = args.cache_dir
     tokenizer = AutoTokenizer.from_pretrained(args.model, cache_dir=cache_dir)
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token_id = tokenizer.eos_token_id
 
-    print("Loading HuggingFace reference model on CPU...")
+    log("Loading HuggingFace reference model on CPU...")
     hf_model = AutoModelForCausalLM.from_pretrained(args.model, torch_dtype=torch.float32, cache_dir=cache_dir)
     hf_model.eval()
 
-    print("Generating reference tokens...")
+    log("Generating reference tokens...")
     with torch.no_grad():
         attention_mask = None
         if args.prompt_ids_file is not None:
@@ -147,7 +159,7 @@ def main():
     prompt_len = input_ids.shape[1]
     actual_new_tokens = reference_tokens.shape[0] - prompt_len
     if actual_new_tokens < args.max_new_tokens:
-        print(
+        log(
             f"Reference generation stopped early (requested {args.max_new_tokens}, got {actual_new_tokens}). "
             "Evaluating available tokens."
         )
@@ -163,14 +175,14 @@ def main():
     is_mesh = False
     tt_device = None
     try:
-        print(f"Opening device ({mesh_shape[0]}x{mesh_shape[1]})...")
+        log(f"Opening device ({mesh_shape[0]}x{mesh_shape[1]})...")
         tt_device, is_mesh, fabric_config = open_tt_device(mesh_shape, args.device_id)
 
-        print("Loading ttnn model...")
+        log("Loading ttnn model...")
         tt_model = build_tt_model(model_module, hf_model, tt_device, args.max_seq_len)
         tt_model.eval()
 
-        print(f"Running teacher-forcing eval ({max_new_tokens} tokens)...")
+        log(f"Running teacher-forcing eval ({max_new_tokens} tokens)...")
         with torch.no_grad():
             top1, top5, total = evaluate(
                 tt_model,
@@ -180,13 +192,32 @@ def main():
             )
 
         if total == 0:
-            print("No tokens to evaluate.")
+            log("No tokens to evaluate.")
             return
 
         top1_pct = top1 * 100
         top5_pct = top5 * 100
-        print(f"Top-1 accuracy: {top1_pct:.2f}% ({top1:.4f})")
-        print(f"Top-5 accuracy: {top5_pct:.2f}% ({top5:.4f})")
+        metrics = {
+            "mode": "tt_eval",
+            "model": args.model,
+            "top1": top1,
+            "top5": top5,
+            "top1_pct": top1_pct,
+            "top5_pct": top5_pct,
+            "total_tokens": total,
+            "max_new_tokens": max_new_tokens,
+            "max_seq_len": args.max_seq_len,
+        }
+        payload = json.dumps(metrics)
+        if args.output_format == "text":
+            print(f"Top-1 accuracy: {top1_pct:.2f}% ({top1:.4f})")
+            print(f"Top-5 accuracy: {top5_pct:.2f}% ({top5:.4f})")
+            print(f"YT_METRICS={payload}")
+        else:
+            if args.output_format == "json":
+                print(payload)
+            else:
+                print(f"YT_METRICS={payload}")
 
     finally:
         close_tt_device(tt_device, is_mesh, fabric_config)

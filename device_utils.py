@@ -17,6 +17,12 @@ SYSTEM_MESH_SHAPES = {
 }
 
 
+def env_flag(name: str) -> bool:
+    """Return True when an env var is set to a truthy value."""
+    value = os.environ.get(name, "")
+    return value.lower() in ("1", "true", "yes", "y", "on")
+
+
 def load_model_module(model_path: pathlib.Path):
     """Load a TT model module from a Python file."""
     spec = importlib.util.spec_from_file_location("ttnn_model", model_path)
@@ -84,14 +90,22 @@ def open_tt_device(mesh_shape: Tuple[int, int], device_id: int):
         ttnn.SetDefaultDevice(device)
         return device, False, None
 
-    fabric_config = ttnn.FabricConfig.FABRIC_2D if mesh_shape[0] > 1 and mesh_shape[1] > 1 else ttnn.FabricConfig.FABRIC_1D
-    ttnn.set_fabric_config(fabric_config)
-
+    requested_mesh_shape = tuple(mesh_shape)
+    allow_mesh_fallback = env_flag("TTNN_ALLOW_SYSTEM_MESH_FALLBACK")
     system_mesh_desc = ttnn._ttnn.multi_device.SystemMeshDescriptor()
     system_shape = tuple(system_mesh_desc.shape())
-    if mesh_shape[0] > system_shape[0] or mesh_shape[1] > system_shape[1]:
-        raise RuntimeError(f"Requested mesh {mesh_shape} exceeds system mesh {system_shape}")
+    if requested_mesh_shape[0] > system_shape[0] or requested_mesh_shape[1] > system_shape[1]:
+        if not allow_mesh_fallback:
+            raise RuntimeError(f"Requested mesh {requested_mesh_shape} exceeds system mesh {system_shape}")
+        print(
+            f"Requested mesh {requested_mesh_shape} exceeds discovered system mesh {system_shape}; "
+            "falling back to discovered mesh because TTNN_ALLOW_SYSTEM_MESH_FALLBACK is enabled."
+        )
+        mesh_shape = system_shape
 
+    if mesh_shape != (1, 1):
+        fabric_config = ttnn.FabricConfig.FABRIC_2D if mesh_shape[0] > 1 and mesh_shape[1] > 1 else ttnn.FabricConfig.FABRIC_1D
+        ttnn.set_fabric_config(fabric_config)
     tt_device = ttnn.open_mesh_device(ttnn.MeshShape(*mesh_shape), trace_region_size=TRACE_REGION_SIZE)
     return tt_device, True, fabric_config
 
