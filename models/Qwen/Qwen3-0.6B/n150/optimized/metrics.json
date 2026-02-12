@@ -1,0 +1,26 @@
+{
+  "model": "Qwen/Qwen3-0.6B",
+  "hardware": "n150",
+  "variant": "optimized",
+  "functional_baseline": {
+    "top1_pct": 99.0,
+    "top5_pct": 100.0,
+    "ttft_ms": 52.0,
+    "decode_tps_u": 28.0,
+    "seq_len": 40960
+  },
+  "optimized_final": {
+    "top1_pct": 97.0,
+    "top5_pct": 100.0,
+    "ttft_ms": 25.209326999174664,
+    "decode_tps_u": 46.19365982631435,
+    "seq_len": 40960
+  },
+  "acceptance": {
+    "top1_top5_pass": true,
+    "decode_trace_enabled": true,
+    "ttft_improved": true,
+    "decode_tps_improved": true,
+    "seq_len_non_regressed": true
+  }
+}
