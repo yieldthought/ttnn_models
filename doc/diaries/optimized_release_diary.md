@@ -175,3 +175,11 @@
   - Reserved aus-wh-20 (selection ID 4) and launched `scripts/worker.sh agent4 n150`.
   - Setup initially failed `git pull` due to untracked `models/Qwen/Qwen3-0.6B/n150/functional/{demo,eval}.log`; removed them, fast-forwarded to origin/main, then restarted agent4 successfully.
 - Local: attempted `git pull --ff-only` but it hung; killed the `git pull`/`git fetch` processes and left the working tree clean.
+
+## 2026-02-12 11:43
+
+- Project status: Done 62, In progress 3, Ready 16.
+- Merged PR #169 (gemma-3-4b-it t3000 optimized): issue #149 auto-closed and project item moved to Done; MODELS.md now has t3000 optimized row (Top-1 91%, Top-5 100%, TTFT 78ms, 19.4 t/s/u, seq len 40960) with demo/eval logs, metrics.json, and traced decode in code.
+- Closed PR #170 (Llama-3.2-1B n300 optimized): results were collected with `TTNN_ALLOW_SYSTEM_MESH_FALLBACK=1` causing a 1x1 mesh; added watcher note to #139, removed owner label, and moved #139 back to Ready for rerun on real n300 mesh (expected 1x2).
+- Runners: wh-lb-44 (t3000 agent3 working on #152 Phi-3-mini-128k-instruct t3000 optimized), aus-wh-08 (n150 agent1 running demo for #129 Arcee-Spark n150 optimized), aus-wh-20 (n150 agent4 running eval for #135 ALLaM n150 optimized), wh-03 (n300 agent2 codexapi still running; now unblocked to pick up another Ready item). All reservations >5h remaining.
+- Local: pulled main to merge commit `3954638` after merging PR #169.
