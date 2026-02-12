@@ -240,3 +240,9 @@
 - Reviewed and merged PR #179 (Arcee-Spark n150 optimized): acceptance met (Top-1 91%, Top-5 100%, TTFT 77ms vs 99ms functional, t/s/u 14.5 vs 13.9 functional, seq len 29952, traced decode implemented via `ttnn.begin_trace_capture`/`ttnn.execute_trace`). Issue #129 was already closed; moved its project item to Done and removed stale ownership.
 - Project status: In progress 1 (#130), Ready 12, In review 0.
 - Runners/reservations: aus-wh-08 (n150 agent1), aus-wh-20 (n150 agent4), wh-04 (n300 agent3). All reservations still have >5h remaining; agent3 is actively running Arcee-Spark n300 demo on a real 2-chip mesh (auto-discovery shows 2 logical/2 physical devices).
+
+## 2026-02-12 16:01
+
+- Restarted the n150 workers to clear idle state and align agent IDs with IRD selection IDs (agent1 on aus-wh-08, agent2 on aus-wh-20). Cleaned up an accidental double-worker start by killing the older worker/codexapi processes on each host.
+- Reset #141 (Mistral-7B-Instruct-v0.3 n150 optimized) back to Ready after it was briefly claimed by a now-stopped agent4 (owner label drift).
+- In progress now: #130 (n300 agent3), #144 (n150 agent2), #147 (n150 agent1).
