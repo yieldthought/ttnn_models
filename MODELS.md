@@ -52,6 +52,7 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | microsoft/Phi-3-mini-128k-instruct  |  t3000   | functional |   90% |  100% |  184ms |   6.8 |   12288 |
 | microsoft/Phi-3-mini-128k-instruct  |  t3000   | optimized  |   92% |   99% |  105ms |  23.6 |   12288 |
 | tiiuae/Falcon3-7B-Instruct          |   n150   | functional |   97% |  100% |  144ms |  13.4 |   32768 |
+| tiiuae/Falcon3-7B-Instruct          |   n150   | optimized  |   97% |  100% |  102ms |  15.2 |   32768 |
 | tiiuae/Falcon3-7B-Instruct          |   n300   | functional |   97% |  100% |  661ms |   5.6 |   32768 |
 | tiiuae/Falcon3-7B-Instruct          |  t3000   | functional |   97% |  100% |  199ms |   7.3 |   32768 |
 | tiiuae/Falcon3-7B-Instruct          |  t3000   | optimized  |   97% |  100% |   58ms |  26.3 |   32768 |
