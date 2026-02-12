@@ -212,3 +212,15 @@
 - In progress: #129 (Arcee-Spark n150), #130 (Arcee-Spark n300; PR #176 opened), #155 (Falcon3-7B-Instruct t3000; PR #175 open).
 - Runners/reservations: all `codexapi task` processes running; time remaining ~5:32 (t3000), ~5:33 (n150), ~4:48 (n300), ~5:25 (n150).
 - Local: fast-forward pulled main to `f0ea92a` (AFM-4.5B n150 optimized artifacts merged).
+
+## 2026-02-12 14:33
+
+- Project status: Done 66, In progress 3, Ready 12. No In review items after merges/cleanup.
+- Cleaned up project state:
+  - #133 (AFM-4.5B n150 optimized) had drifted back into In review; took/moved/released it back to Done.
+- Reviewed and merged PR #175 (Falcon3-7B-Instruct t3000 optimized): acceptance met (Top-1 97%, Top-5 100%, TTFT 58ms vs 199ms functional, t/s/u 26.3 vs 7.3 functional, seq len 32768, traced decode present in model.py). Issue #155 closed and project item moved out of In review.
+- Open PRs: #176 (Arcee-Spark n300 traced decode bringup) still open; issue #130 remains In progress.
+- Runners/reservations:
+  - Released t3000 reservation (wh-lb-44 / agent3) since there are no remaining Ready tasks matching `/t3000/`.
+  - Remaining reservations: aus-wh-08 (n150), wh-03 (n300), aus-wh-20 (n150). Time remaining ~4:56, ~4:11, ~4:48 respectively (n300 will need extension once <4h).
+- Local: fast-forward pulled main to include Falcon3 t3000 optimized artifacts (commit `f3070a1`).
