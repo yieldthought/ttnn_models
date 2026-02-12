@@ -288,3 +288,10 @@
 
 - Reviewed and merged PR #182 (Mistral-7B-Instruct-v0.3 n150 optimized): acceptance met (Top-1 96%, Top-5 100%, TTFT 90ms vs 105ms functional, t/s/u 17.9 vs 16.5 functional, seq len 32768, traced decode enabled by default via `TTNN_USE_DECODE_TRACE=1`). Issue #141 auto-closed; removed stale `owner: agent2` label and added ✓.
 - Current project state: In progress #139/#142/#150; Ready #145/#148/#151/#153/#154; no In review items.
+
+## 2026-02-12 18:12
+
+- Unstuck #150 (Phi-3-mini-128k-instruct n150 optimized): removed stale `owner: agent1` (agent1 worker on aus-wh-08 was dead), took/moved/released the issue back to Ready so a runner could pick it up again.
+- Restarted agent1 worker on aus-wh-08 and verified `scripts/worker.sh agent1 n150` + `codexapi task` are running; agent1 reclaimed #150 and moved it back to In progress.
+- Extended IRD timeouts for aus-wh-08 and aus-wh-20 to 8h to keep >4h headroom.
+- Current project state: In progress #139/#142/#150; Ready #145/#148/#151/#153/#154; no In review items.
