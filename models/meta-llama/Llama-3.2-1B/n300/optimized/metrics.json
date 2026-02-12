@@ -1,0 +1,26 @@
+{
+  "model": "meta-llama/Llama-3.2-1B",
+  "hardware": "n300",
+  "variant": "optimized",
+  "functional_baseline": {
+    "top1_pct": 90.0,
+    "top5_pct": 100.0,
+    "ttft_ms": 610.0,
+    "decode_tps_u": 6.7,
+    "seq_len": 131072
+  },
+  "optimized_final": {
+    "top1_pct": 91.0,
+    "top5_pct": 100.0,
+    "ttft_ms": 31.392600998515263,
+    "decode_tps_u": 49.97510334685587,
+    "seq_len": 131072
+  },
+  "acceptance": {
+    "top1_top5_pass": true,
+    "decode_trace_enabled": true,
+    "ttft_improved": true,
+    "decode_tps_improved": true,
+    "seq_len_non_regressed": true
+  }
+}
