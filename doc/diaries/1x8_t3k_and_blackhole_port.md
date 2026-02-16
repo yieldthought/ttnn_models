@@ -10,3 +10,8 @@
 - Repo state: pushed commits `New release goal` and `Add blackhole bringup task` to main.
 
 Plan: wait for a runner to pick up #192 or allocate a blackhole-capable runner if needed.
+
+## 2026-02-17 (tick 2)
+- Project board: #192 (models/Qwen/Qwen3-0.6B/p100/functional) still in Ready; no items in In review.
+- Runners: no active IRD reservations.
+- No new actions; waiting for a runner to pick up #192.
