@@ -1,0 +1,66 @@
+prompt: |
+  Welcome to the ttnn_models project! Take your time to read the source code and understand it. This is based on tt-metal and ttnn. You can find the tt-metal source in /proj_sw/user_dev/moconnor/tt-metal/ if you need to look something up.
+
+  Our task today is to port a functional model to Blackhole p100, run the demo + long eval, and update MODELS.md.
+
+  The issue title should include '/p100/' and point at a directory like:
+    models/<org>/<MODEL>/p100/functional
+  Use <org>/<MODEL> and <system> from that path. The issue details are {{item}}.
+
+  Requirements:
+  - Use the n150 functional implementation as the architecture/weight reference.
+  - Keep paged attention + paged KV cache if the n150 model uses it; do not regress to a non-paged cache.
+  - Add p100 to system inference so device_utils can resolve model paths:
+    - Update device_utils.SYSTEMS to include "p100".
+    - Add SYSTEM_MESH_SHAPES["p100"] = (1, 1) (Blackhole p100 is single device).
+    - If there are other system lists that hardcode n150/n300/t3000, update them to accept p100 as well.
+  - Prefer the HF config max position embeddings for max_seq_len; if that OOMs, reduce only as much as needed and document the reason.
+  - Final metrics must come from:
+      python eval.py <model.py> --model <hf-id> --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100 --max_seq_len <max_seq_len>
+  - Also run the demo and sanity-check the output is not clearly garbage/corrupted.
+  - Always produce demo.log and eval.log, even if the command fails (capture stdout/stderr, then continue).
+  - Update MODELS.md with a new row for this model on p100 (functional), filling Top-1/Top-5/TTFT/t/s/u/Seq len.
+
+  Work plan:
+  1. Create models/<org>/<MODEL>/p100/functional/ (if missing).
+  2. Start from models/<org>/<MODEL>/n150/functional/model.py and port it to p100 with minimal changes.
+     - Keep the architecture and dtypes identical unless Blackhole requires a specific adjustment.
+  3. Add models/<org>/<MODEL>/p100/functional/MODEL_BRINGUP.md describing:
+     - Any deviations from the n150 implementation.
+     - The chosen max_seq_len (and why, if reduced).
+  4. Run demo and eval (capture logs):
+     - demo: python demo.py models/<org>/<MODEL>/p100/functional/model.py
+     - eval: python eval.py models/<org>/<MODEL>/p100/functional/model.py --model <hf-id> --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100 --max_seq_len <max_seq_len>
+  5. Update MODELS.md and add demo.log/eval.log under the p100 functional directory.
+
+  Notes:
+  - If you see `cannot map elf file into memory: No space left on device`, rerun with `TT_METAL_CACHE=/tmp/tt-metal-cache` and `TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-runtime-root`.
+  - If you see TT JIT compile errors in `llk_*` headers (e.g. `_llk_unpack_untilize_init_` arg mismatch), run:
+    `cd /proj_sw/user_dev/moconnor/tt-metal && git submodule update --init --recursive`
+    and then rerun demo/eval.
+
+  Deliverables:
+  - models/<org>/<MODEL>/p100/functional/model.py
+  - models/<org>/<MODEL>/p100/functional/MODEL_BRINGUP.md
+  - models/<org>/<MODEL>/p100/functional/demo.log and eval.log (command line + output)
+  - MODELS.md updated for the model/p100 functional row
+  - device_utils.py updated to recognize p100
+
+set_up: |
+  Make sure you are in /localdev/moconnor/ttnn_models
+  If there are any unsaved changes, stash them and be sure to mention it in your output.
+  Create and switch to a new branch named p100_<sanitized_title>, where <sanitized_title> is the issue title with the leading 'models/' stripped and slashes replaced by dashes: {{item}}
+  Run 'tt-smi -r' to reset the device.
+  Run 'tt-smi -ls' and confirm the expected board(s) are visible before running demo/eval.
+
+on_success: |
+  Add, commit and push MODELS.md, MODEL_BRINGUP.md, model.py, device_utils.py, and the demo/eval log files, remove anything in generated/.
+  If a PR already exists for this branch, update it (push new commits). Otherwise open a PR and link it back to the issue {{item}}.
+  Include `Fixes #<issue-number>` on its own line in the PR body, and use `gh pr create --body-file ...` (not `--body` with `\n` escapes) so GitHub recognizes the closing keyword.
+
+on_failure: |
+  Add, commit and push MODELS.md, MODEL_BRINGUP.md, model.py, device_utils.py, and the demo/eval log files
+  If you made meaningful progress, open a PR for review, but do NOT include a closing keyword (use `Refs #<issue-number>` instead).
+
+tear_down: |
+  Switch back to the main branch and leave the repo is in a clean state, e.g. no temporary files etc.
