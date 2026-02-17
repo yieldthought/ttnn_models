@@ -1,0 +1,68 @@
+prompt: |
+  Welcome to the ttnn_models project! Take your time to read the source code and understand it. This is based on tt-metal and ttnn. You can find the tt-metal source in /proj_sw/user_dev/moconnor/tt-metal/ if you need to look something up.
+
+  Our task today is to port an existing t3000 model implementation from a 2x4 mesh layout to a 1x8 mesh layout, then run demo/eval and update MODELS.md.
+
+  The issue details are {{item}}.
+
+  Requirements:
+  - The issue title should point at a directory like: models/<org>/<MODEL>/t3000/<variant>
+    (<variant> is usually functional or optimized).
+  - The target <dir>/model.py should already exist. Modify it for 1x8 mesh instead of creating a new bringup from scratch.
+  - Update the target model.py so `MESH_SHAPE = (1, 8)` and adjust mesh-axis/sharding/all-reduce assumptions to match a 1D 8-device mesh.
+  - Keep the model architecture and weight mapping unchanged unless a change is required for the 1x8 conversion.
+  - Keep paged attention + paged KV cache behavior if already present.
+  - Run both:
+    - demo (TTFT + decode t/s/u)
+    - long eval (Top-1 + Top-5) using `--max_new_tokens 100 --prompt_file prompts/bringup_eval_long.txt`
+  - Always produce demo.log and eval.log, even if the command fails (capture stdout/stderr, then continue).
+  - Update MODELS.md for the target row with Top-1, Top-5, TTFT, t/s/u, and Seq len from the run artifacts.
+  - If demo output is clearly garbage/corrupted, set Top-1 and Top-5 to `bad`.
+
+  Notes:
+  - If you see `cannot map elf file into memory: No space left on device`, rerun with `TT_METAL_CACHE=/tmp/tt-metal-cache` and `TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-runtime-root`.
+  - If you see TT JIT compile errors in `llk_*` headers (e.g. `_llk_unpack_untilize_init_` arg mismatch), run:
+    `cd /proj_sw/user_dev/moconnor/tt-metal && git submodule update --init --recursive`
+    and then rerun demo/eval.
+
+  Deliverables:
+  - Updated <dir>/model.py (+ any helper files touched for the mesh conversion).
+  - Updated MODELS.md.
+  - <dir>/demo.log and <dir>/eval.log (command line + output).
+check: |
+  Output EXACTLY one line of JSON, and nothing else.
+  - First character MUST be "{"
+  - Last character MUST be "}"
+  - No code fences, no markdown, no extra text
+  - 'reason' must be a single line (no newlines)
+
+  Choose exactly one output (copy the format exactly):
+  {"success": true, "reason": "PASS"}
+  {"success": false, "reason": "FAIL: <single line reason>"}
+
+  Do NOT run any tests or TT/TTNN workloads (no demo/eval, no tt-smi) and do NOT download models.
+  Use only repository evidence (files and diffs) to verify completion against the task intent.
+
+  Pass criteria:
+  1. Target model directory from the task details has both demo.log and eval.log.
+  2. demo.log starts with the demo command and includes TTFT + decode t/s/u output.
+  3. eval.log starts with the eval command and includes Top-1 + Top-5 accuracy output.
+  4. MODELS.md has the target row updated with Top-1, Top-5, TTFT, t/s/u, and Seq len values from the run artifacts.
+  5. Target model.py sets `MESH_SHAPE = (1, 8)` and no active assignment keeps it at `(2, 4)`.
+  6. The target model.py is changed in this work (not logs-only).
+  7. Demo output text is coherent enough to not be obviously corrupted; if it is clearly corrupted, MODELS.md uses 'bad' for Top-1 and Top-5.
+set_up: |
+  Make sure you are in /localdev/moconnor/ttnn_models
+  If there are any unsaved changes, stash them and be sure to mention it in your output.
+  Create and switch to a new branch named mesh_<sanitized_title>, where <sanitized_title> is the issue title with the leading 'models/' stripped and slashes replaced by dashes: {{item}}
+  Run 'tt-smi -r' to reset the device.
+  Run 'tt-smi -ls' and confirm the expected board(s) are visible before running demo/eval.
+on_success: |
+  Add, commit and push MODELS.md, model.py, any helper files touched for mesh conversion, and the demo/eval log files. Remove anything in generated/.
+  If a PR already exists for this branch, update it (push new commits). Otherwise open a PR and link it back to the issue {{item}}.
+  Include `Fixes #<issue-number>` on its own line in the PR body, and use `gh pr create --body-file ...` (not `--body` with `\n` escapes) so GitHub recognizes the closing keyword.
+on_failure: |
+  Add, commit and push MODELS.md, model.py, any helper files touched for mesh conversion, and the demo/eval log files. Remove anything in generated/.
+  If you made meaningful progress, open a PR for review, but do NOT include a closing keyword (use `Refs #<issue-number>` instead).
+tear_down: |
+  Switch back to the main branch and leave the repo is in a clean state, e.g. no temporary files etc.
