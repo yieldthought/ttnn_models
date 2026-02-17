@@ -59,6 +59,8 @@ Rule of thumb:
 - If a generic task works with a few extra lines in the issue body, keep the task generic and put the model-specific guidance in the issue.
 - If multiple attempts keep failing for the same reason, promote those guardrails into the task file.
 
+If you're going to repurpose a task for a new use or make it more general, be very careful to read it thoroughly and think about the implications of the task instructions as they are written, especially the check / verifier and the instructions for what should be committed and pushed. Example: repurposing the `run_evals` test to perform model work led to many failures because the `on_success` instructions listed logs and MODELS.md to be committed but did not list models.py, so agents were stashing it and then the PR was rejected. The right thing to do in this circumstance would have been to make a new task because `run_evals` does not sound like the right place to also perform model work in any case.
+
 ## Hardware Filtering (Worker Prefilter)
 
 Workers prefilter by issue title with `--only-matching "/<system>/"` (for `<system>` in `n150|n300|t3000`).
