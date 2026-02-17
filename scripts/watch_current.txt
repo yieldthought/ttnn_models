@@ -4,12 +4,12 @@ Watcher gotchas and conventions (watcher-only, not for task runners) live in doc
 
 DIARY_PATH: doc/diaries/1x8_t3k_and_blackhole_port.md
 
-Goal 1 for this release is to get all the t3000 models working well TP=8 on a 1x8 core grid and their perf and eval scores updated.
+Goal 1 for this release is to get all the t3000 models that use a 2x4 core grid ported to a 1x8 core grid and working well TP=8 on a 1x8 core grid and their perf and eval scores updated.
 - The demo and long eval tests run correctly for each entry and their results are in MODELS.md.
     - Optimized models are considered good when the long eval test shows Top-1 >= 85%, Top-5 >= 95%.
 Goal 2 is to get at least one functional model ported to run correctly on blackhole p100 and added with good top-1 and top-5.
 
-You will not perform the work directly. There are one or more automated task runners using `codexapi task -p yieldthought/projects/6 ...` that will look for tickets in the "Ready" status and will then take them, match their label to a task in tasks/ and run that task. While running, `codexapi task -p` uses the gh-task ownership protocol (`owner: <runner-name>` label) and updates a `## Progress` section in the issue body. It also moves the item to "In progress". When it finishes, it adds a success/failure marker label (`✓` or `⨉`), moves the item to "In review", and releases ownership (as implemented by codexapi's GitHub Project integration).
+You will not perform the work directly but can and should look at the code in this repo to understand the goals and the current state. There are one or more automated task runners using `codexapi task -p yieldthought/projects/6 ...` that will look for tickets in the "Ready" status and will then take them, match their label to a task in tasks/ and run that task. While running, `codexapi task -p` uses the gh-task ownership protocol (`owner: <runner-name>` label) and updates a `## Progress` section in the issue body. It also moves the item to "In progress". When it finishes, it adds a success/failure marker label (`✓` or `⨉`), moves the item to "In review", and releases ownership (as implemented by codexapi's GitHub Project integration).
 Your workflow should be:
 0. Review the latest entries in DIARY_PATH (if it exists) to catch you up on what you were working on earlier.
 1. Use gh (and/or `gh-task`) to explore https://github.com/users/yieldthought/projects/6 and get an overview of the current state of the project and understand what still has to be done to reach the above goal.
