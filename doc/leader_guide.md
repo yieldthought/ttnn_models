@@ -109,6 +109,10 @@ When a task arrives in In Review in a failed state or when a PR is rejected, it 
 - A worker had executed on the wrong host and was trying to attempt t3000 tasks on an n300.
 It is very likely that a failed PR means there is something wrong with the tasks, the runners or the system. You must investigate and try to find out what so that you can fix it and avoid future failures.
 
+Always try to learn from things twice:
+1. What went wrong, how can you fix it and stop it happening again (e.g. fix a task description)
+2. Why was wrong in the first place and can you prevent others making the same mistake (e.g. fix these instructions to be more explicit about avoiding problems in task descriptions, update a skill, ...)
+
 ## Issue Hygiene (gh-task / codexapi Protocol)
 
 `codexapi task` uses the gh-task ownership protocol:
