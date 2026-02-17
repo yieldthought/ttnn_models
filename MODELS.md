@@ -10,7 +10,7 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | ----------------------------------- | :------: | :--------: | ----: | ----: | -----: | ----: | ------: |
 | arcee-ai/Arcee-Spark                |   n150   | functional |   92% |  100% |   99ms |  13.9 |   29952 |
 | arcee-ai/Arcee-Spark                |   n300   | functional |   91% |  100% |  338ms |   5.0 |   32768 |
-| arcee-ai/Arcee-Spark                |  t3000   | functional |   90% |  100% |  343ms |   4.9 |   32768 |
+| arcee-ai/Arcee-Spark                |  t3000   | functional |   90% |  100% |  194ms |   7.3 |   32768 |
 | arcee-ai/AFM-4.5B                   |   n150   | functional |   98% |  100% |   72ms |  17.2 |   65536 |
 | arcee-ai/AFM-4.5B                   |   n300   | functional |   97% |  100% |  283ms |   5.6 |   65536 |
 | arcee-ai/AFM-4.5B                   |  t3000   | functional |   98% |  100% |  181ms |   7.1 |   65536 |
