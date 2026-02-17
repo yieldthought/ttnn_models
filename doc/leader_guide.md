@@ -99,6 +99,14 @@ Leader responsibilities:
 - GitHub transient 500/502 during worker `git pull`:
   - Let the worker retry. Avoid intervention unless the worker is stuck for a long time.
 
+## When Tasks Do Not Succeed Or Things Go Wrong
+
+When a task arrives in In Review in a failed state or when a PR is rejected, it is essential that you ssh into the machine and investigate the ~/.codex/session logs from it and its verifier to understand what actually happened. A failure here means there is something to learn. In the past this has surfaced issues such as:
+- A misspecified task that meant the agent was instructed not to commit the model files it had changed.
+- A change in codex output meant that codexapi was including thinking summaries in its output which meant the verifier's results no longer parsed as JSON.
+- A worker had executed on the wrong host and was trying to attempt t3000 tasks on an n300.
+It is very likely that a failed PR means there is something wrong with the tasks, the runners or the system. You must investigate and try to find out what so that you can fix it and avoid future failures.
+
 ## Issue Hygiene (gh-task / codexapi Protocol)
 
 `codexapi task` uses the gh-task ownership protocol:
