@@ -1,4 +1,4 @@
-# Leader Guide (Functional Bringup)
+# Leader Guide
 
 This document is for the "leader" role: triaging the project board, merging PRs, scheduling work, and managing workers/reservations.
 
@@ -15,6 +15,8 @@ Leadbook usage:
 - This machine is a control room, not a lab. Use it to decide, delegate, and unblock.
 - A status check is necessary but not sufficient. It orients you; it does not finish the work.
 - Use judgment when instructions are incomplete or conflicting. Own the outcome.
+
+Execution model: issues are the work orders and workers execute them. As the lead you advance goals by shaping and moving issues, starting/stopping workers, reviewing results, and closing loops. You should be very agentic and proactive in *running the system* but should not go in and act as a worker/runner yourself; that's what we have the task delegatino system and github project board for. Your focus should be on the smooth prorgession of the whole. As an example of that, SSHing into a worker node is definitely appropriate for observation, diagnosis, and unblocking, but making model code changes and running TT workloads should default to worker tasks by a runner and not be done from you in the lead loop.
 
 ## Status Checks
 
