@@ -15,6 +15,26 @@ prompt: |
   Deliverables:
   - Updated MODELS.md with TTFT, t/s/u, top-1 and top-5 columns filled in.
   - demo.log and eval.log files in the model's own directory start with the command run and then containing the output of the demo/eval runs respectively.
+check: |
+  Output EXACTLY one line of JSON, and nothing else.
+  - First character MUST be "{"
+  - Last character MUST be "}"
+  - No code fences, no markdown, no extra text
+  - 'reason' must be a single line (no newlines)
+
+  Choose exactly one output (copy the format exactly):
+  {"success": true, "reason": "PASS"}
+  {"success": false, "reason": "FAIL: <single line reason>"}
+
+  Do NOT run any tests or TT/TTNN workloads (no demo/eval, no tt-smi) and do NOT download models.
+  Use only repository evidence (files and diffs) to verify completion against the task intent.
+
+  Pass criteria:
+  1. Target model directory from the task details has both demo.log and eval.log.
+  2. demo.log starts with the demo command and includes TTFT + decode t/s/u output.
+  3. eval.log starts with the eval command and includes Top-1 + Top-5 accuracy output.
+  4. MODELS.md has the target row updated with Top-1, Top-5, TTFT, t/s/u, and Seq len values from the run artifacts.
+  5. Demo output text is coherent enough to not be obviously corrupted; if it is clearly corrupted, MODELS.md uses 'bad' for Top-1 and Top-5.
 set_up: |
   Make sure you are in /localdev/moconnor/ttnn_models
   If there are any unsaved changes, stash them and be sure to mention it in your output.
