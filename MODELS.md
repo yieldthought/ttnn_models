@@ -37,7 +37,7 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | tiiuae/Falcon3-7B-Instruct          |  t3000   | functional |   97% |  100% |  199ms |   7.3 |   32768 |
 | arcee-ai/Arcee-Spark                |   n150   | optimized  |   91% |  100% |   77ms |  14.5 |   29952 |
 | arcee-ai/Arcee-Spark                |   n300   | optimized  |   85% |  100% |  101ms |  16.0 |   32768 |
-| arcee-ai/Arcee-Spark                |  t3000   | optimized  |   90% |  100% |   72ms |  17.6 |   32768 |
+| arcee-ai/Arcee-Spark                |  t3000   | optimized  |   87% |  100% |   64ms |  21.5 |   32768 |
 | arcee-ai/AFM-4.5B                   |   n150   | optimized  |   98% |  100% |   57ms |  19.6 |   65536 |
 | arcee-ai/AFM-4.5B                   |   n300   | optimized  |   99% |  100% |   56ms |  23.6 |   65536 |
 | arcee-ai/AFM-4.5B                   |  t3000   | optimized  |   98% |  100% |   69ms |  29.0 |   65536 |

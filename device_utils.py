@@ -94,14 +94,25 @@ def open_tt_device(mesh_shape: Tuple[int, int], device_id: int):
     allow_mesh_fallback = env_flag("TTNN_ALLOW_SYSTEM_MESH_FALLBACK")
     system_mesh_desc = ttnn._ttnn.multi_device.SystemMeshDescriptor()
     system_shape = tuple(system_mesh_desc.shape())
+    requested_device_count = requested_mesh_shape[0] * requested_mesh_shape[1]
+    system_device_count = system_shape[0] * system_shape[1]
     if requested_mesh_shape[0] > system_shape[0] or requested_mesh_shape[1] > system_shape[1]:
-        if not allow_mesh_fallback:
-            raise RuntimeError(f"Requested mesh {requested_mesh_shape} exceeds system mesh {system_shape}")
-        print(
-            f"Requested mesh {requested_mesh_shape} exceeds discovered system mesh {system_shape}; "
-            "falling back to discovered mesh because TTNN_ALLOW_SYSTEM_MESH_FALLBACK is enabled."
-        )
-        mesh_shape = system_shape
+        if requested_device_count <= system_device_count:
+            print(
+                f"Requested mesh {requested_mesh_shape} differs from discovered system mesh {system_shape}; "
+                "proceeding because requested device count fits within discovered capacity."
+            )
+        elif not allow_mesh_fallback:
+            raise RuntimeError(
+                f"Requested mesh {requested_mesh_shape} exceeds system mesh {system_shape} "
+                f"(requested devices={requested_device_count}, discovered devices={system_device_count})"
+            )
+        else:
+            print(
+                f"Requested mesh {requested_mesh_shape} exceeds discovered system mesh {system_shape}; "
+                "falling back to discovered mesh because TTNN_ALLOW_SYSTEM_MESH_FALLBACK is enabled."
+            )
+            mesh_shape = system_shape
 
     if mesh_shape != (1, 1):
         fabric_config = ttnn.FabricConfig.FABRIC_2D if mesh_shape[0] > 1 and mesh_shape[1] > 1 else ttnn.FabricConfig.FABRIC_1D
