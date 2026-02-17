@@ -24,5 +24,5 @@ This project favors simple, direct code over layered abstractions or rich typing
 - If you see `cannot map elf file into memory: No space left on device` from the TT metal cache, rerun with `TT_METAL_CACHE=/tmp/tt-metal-cache` and point `TT_METAL_RUNTIME_ROOT` at `/proj_sw/user_dev/moconnor/tt-runtime-root`.
 
 ## Watcher docs
-- Watcher-only runbook + gotchas from the functional bringup: `doc/watcher_guide.md`
+- Leader-only runbook + gotchas from the functional bringup: `doc/leader_guide.md`
   Task runners should ignore this; it is only for the watcher role.

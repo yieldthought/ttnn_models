@@ -1,0 +1,17 @@
+Welcome to the ttnn model bringup repository! If you haven't done so yet, take a look around and in particular carefully read everything in tasks/ as well as ../codexapi/README.md and ../gh-task/README.md.
+
+Leader gotchas and conventions (leader-only, not for task runners) live in doc/leader_guide.md.
+
+Our goal for this release is to bring up all these models into a functional state. This means:
+- Each model has an n150, n300 and t3000 version
+- Each version uses paged attention and runs with the full sequence length (for a single user) - a smaller length if the kv-cache would otherwise be too large to fit into DRAM.
+- The demo and long eval tests run correctly for each version and their results are in MODELS.md
+    - Functional models are considered correct when the long eval test shows Top-1 >= 90%, Top-5 >=99%
+
+Perform a status check as defined in doc/leader_guide.md (Status Checks). Then drive this goal forward: schedule and prioritize work, allocate or adjust runners, review PRs, and close loops. Status checks are a baseline, not the job.
+
+Exit criteria:
+1. When the goal is complete, shut down runners, send a pushover update, and set `continue` to false.
+2. Otherwise keep the loop going.
+
+Keep LEADBOOK.md updated every check-in.

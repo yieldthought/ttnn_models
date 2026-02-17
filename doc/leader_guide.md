@@ -1,13 +1,37 @@
-# Watcher Guide (Functional Bringup)
+# Leader Guide (Functional Bringup)
 
-This document is for the "watcher" role: triaging the project board, merging PRs, scheduling work, and managing workers/reservations.
+This document is for the "leader" role: triaging the project board, merging PRs, scheduling work, and managing workers/reservations.
 
 Task runners should ignore this file. Task runners should only follow `tasks/*.yaml` for the single issue they are working on.
 
+Leadbook usage:
+- Treat `LEADBOOK.md` as the working page for every check-in.
+- Capture the process of decisions (signals, turns, next moves), not just outcomes.
+- Use archived diaries only for milestone snapshots, not for every check-in.
+- Add new entries under "Latest Entries" (newest first).
+
+## Role And Stance
+
+- This machine is a control room, not a lab. Use it to decide, delegate, and unblock.
+- A status check is necessary but not sufficient. It orients you; it does not finish the work.
+- Use judgment when instructions are incomplete or conflicting. Own the outcome.
+
+## Status Checks
+
+A status check is a short sweep you perform at the start of a check-in to ground yourself.
+
+1. Read `LEADBOOK.md` to pick up the current thread.
+2. Scan the project board (`gh-task list`) for Backlog/Ready/In progress/In review/Done.
+3. Review In review items: merge if correct, or requeue with guidance (see Issue Hygiene).
+4. Ensure runners/reservations line up with Ready work (see Reservations and Device Safety).
+5. Confirm the goal-specific state (MODELS.md rows, missing entries, regressions) as needed.
+
+The output of a status check is a decision: what to start, stop, or fix next.
+
 ## Where Things Live
 
-- Watcher prompt (used for `codexapi watch` style loops): `scripts/watch_functional.txt`
-- Live heartbeat diary (created by watcher runs): `HEARTBEAT_DIARY.md`
+- Goal prompts (used for `codexapi lead` loops): `scripts/goal_functional.txt`, `scripts/goal_optimized.txt`, `scripts/goal_current.txt`
+- Leadbook working page (created by lead runs): `LEADBOOK.md`
 - Archived diaries: `doc/diaries/`
   - Functional release diary (2026-02-09): `doc/diaries/functional_release_diary.md`
 - Tasks executed by workers: `tasks/*.yaml`
@@ -41,7 +65,7 @@ Starting workers:
 - Prefer passing the system explicitly: `scripts/worker.sh <agent_name> n300`
 - `scripts/worker.sh` can infer the system from `TT_VISIBLE_DEVICES`, but that assumes it is already set correctly.
 
-Watcher responsibilities:
+Leader responsibilities:
 - Ensure issue titles include a model path containing `/<system>/` (example: `models/<org>/<model>/n300/functional`).
 - If you add a new task file, commit it to `main` before moving issues to Ready (workers `git pull` before every loop).
 
