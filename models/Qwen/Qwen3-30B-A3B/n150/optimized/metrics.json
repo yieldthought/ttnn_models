@@ -1,0 +1,24 @@
+{
+  "model": "Qwen/Qwen3-30B-A3B",
+  "system": "n150",
+  "variant": "optimized",
+  "max_seq_len": 40960,
+  "demo": {
+    "prompt_tokens": 56,
+    "generated_tokens": 128,
+    "ttft_ms": 2336.6593370446935,
+    "decode_tps_u": 4.056646310182861,
+    "decode_tokens": 127
+  },
+  "eval": {
+    "prompt_file": "prompts/bringup_eval_long.txt",
+    "max_new_tokens": 40,
+    "top1": 0.975,
+    "top5": 1.0,
+    "total_tokens": 40
+  },
+  "baseline_demo": {
+    "ttft_ms": 77689.76088706404,
+    "decode_tps_u": 0.46353146164293035
+  }
+}
