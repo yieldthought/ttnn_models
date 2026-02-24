@@ -10,6 +10,9 @@ Bring up a HF transformer in TTNN with a minimal, readable `model.py` and a clea
 You are explicitly authorized and requested to download the full model weights and run long device workloads as part of bringup.
 Do not ask for confirmation before starting; just verify there is roughly enough local disk space for the download.
 
+This skill is guidance, not law. Treat each step as a default starting point, then adjust based on HF model facts, runtime evidence, and eval results.
+Avoid cargo-culting patterns in model code: keep implementation choices that are measurably correct/useful for the current model, and document choices that did not hold up.
+
 ## Workflow
 1. Use `hf-model-reading` to understand the HF model code, config, and required features.
 2. Scan existing TTNN models for available ops and conventions; avoid copying large blocks.
@@ -51,3 +54,41 @@ Do not ask for confirmation before starting; just verify there is roughly enough
 12. Write or update `MODEL_BRINGUP.md` with key gotchas and commands.
 
 Bringup is not complete until eval.py is passing; writing the code is only the start.
+
+## MoE Batch-1 Experts-On-Host (Optional Pattern)
+Use this section as decision support, not a literal checklist.
+
+When this pattern can make sense:
+- You only need batch-1 inference on a single card.
+- Expert weights are too large to keep resident in device DRAM.
+- Simpler correctness-first bringup is more important than trace-heavy complexity.
+
+General guidance:
+- Prepare expert weights once on host (including transpose/tilize) and avoid repeating expensive conversions every token.
+- Reuse buffers where possible; avoid per-step allocation churn in hot loops.
+- If routed-token counts vary, fixed-size chunking (for example `TILE_SIZE`) can reduce shape churn and recompilation risk.
+- Explicitly verify 1-token prompt behavior for prefill->decode handoff (`cur_pos_tensor` and cache update paths are common failure points).
+- Treat decode expert count (for example `decode_top_k`) as a quality/perf dial, not a free speedup. Re-run long eval before keeping changes.
+- Be careful with large host-side float32 expert caches on big MoE models; memory pressure can negate wins or cause OOM.
+- For the "weights too large for DRAM" case, default to host-side expert execution first. It is usually simpler and faster to validate.
+
+Two implementation approaches (choose deliberately):
+- Host-side expert execution (go-to for DRAM-limited expert weights).
+  - Typical shape: move activations to host, route and run expert matmuls with torch, aggregate on host, return activations to TT path.
+  - This is the recommended starting point for batch-1 bringup when full expert residency on device is not feasible.
+- Device-side expert execution with dynamic host->device expert weight copies (alternative).
+  - Typical shape: pre-tilize experts on host once, copy only selected experts into reusable device buffers, run expert matmuls on device.
+  - Consider this when expert compute intensity is high enough that keeping compute on device may offset transfer complexity.
+  - An LRU-style cache of recently used experts on device can be a useful variant to test.
+- Practical selection rule:
+  - Start with host-side expert execution for correctness and speed of implementation.
+  - When evaluating dynamic device-side expert placement, compare achieved host-device transfer speeds with host expert compute time. If device DRAM can support an LRU expert cache and the hit rate is high enough, this can be more performant overall.
+  - Keep only what passes long eval and repeatable full-demo runs.
+
+Worked example (informative, not prescriptive):
+- `models/Qwen/Qwen3-30B-A3B/n150/functional/model.py`: dynamic selected-expert host->device copy with host-prepared expert tensors.
+- `models/Qwen/Qwen3-30B-A3B/n150/optimized/model.py`: host-side expert execution path and decode-only routed-expert tuning.
+- `models/Qwen/Qwen3-30B-A3B/n150/optimized/SCIENCE.md`: keep/reject decisions driven by full demo + long eval, including rejected short-run wins.
+
+Reasoning rule:
+- If this section conflicts with model-specific evidence, trust the evidence and document why.
