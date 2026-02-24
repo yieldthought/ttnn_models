@@ -1,0 +1,68 @@
+# Command
+HF_HOME=/localdev/moconnor/hf-cache TT_METAL_CACHE=/tmp/tt-metal-cache TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-metal PYTHONUNBUFFERED=1 python -u demo.py models/Qwen/Qwen3-30B-A3B/n150/functional/model.py --seed 0 --max_seq_len 40960 --max-new-tokens 128 --temperature 0 --output-format text
+
+# Output
+/proj_sw/user_dev/moconnor/tt-metal/python_env/lib/python3.10/site-packages/transformers/utils/hub.py:111: FutureWarning: Using `TRANSFORMERS_CACHE` is deprecated and will be removed in v5 of Transformers. Use `HF_HOME` instead.
+  warnings.warn(
+2026-02-23 19:36:00.079 | DEBUG    | ttnn:<module>:77 - Initial ttnn.CONFIG:
+Config{cache_path=/home/moconnor/.cache/ttnn,model_cache_path=/home/moconnor/.cache/ttnn/models,tmp_dir=/tmp/ttnn,enable_model_cache=false,enable_fast_runtime_mode=true,throw_exception_on_fallback=false,enable_logging=false,enable_graph_report=false,enable_detailed_buffer_report=false,enable_detailed_tensor_report=false,enable_comparison_mode=false,comparison_mode_should_raise_exception=false,comparison_mode_pcc=0.9999,root_report_path=generated/ttnn/reports,report_name=std::nullopt,std::nullopt}
+Loading tokenizer: Qwen/Qwen3-30B-A3B
+Opening TT device...
+2026-02-23 19:36:01.078 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-23 19:36:01.078 | info     |          Device | Opening user mode device driver (tt_cluster.cpp:223)
+2026-02-23 19:36:01.081 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-23 19:36:01.102 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-23 19:36:01.103 | info     |             UMD | Harvesting masks for chip 0 tensix: 0x80 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-23 19:36:01.203 | info     |             UMD | Opening local chip ids/PCIe ids: {0}/[5] and remote chip ids {} (cluster.cpp:186)
+2026-02-23 19:36:01.204 | info     |             UMD | IOMMU: disabled (cluster.cpp:161)
+2026-02-23 19:36:01.204 | info     |             UMD | KMD version: 2.4.0 (cluster.cpp:164)
+2026-02-23 19:36:01.205 | info     |             UMD | Starting devices in cluster (cluster.cpp:965)
+2026-02-23 19:36:01.208 | info     |             UMD | Mapped hugepage 0x4340000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-23 19:36:01.277 | DEBUG    | ttnn.device:__init__:150 - Using default dispatch core type for this system: DispatchCoreType.WORKER
+2026-02-23 19:36:01.277 | DEBUG    | ttnn.device:__init__:152 - Using default dispatch core axis for this system: DispatchCoreAxis.ROW
+2026-02-23 19:36:01.277 | info     |     Distributed | Using auto discovery to generate mesh graph. (metal_context.cpp:863)
+2026-02-23 19:36:01.277 | info     |     Distributed | Constructing control plane using auto-discovery (no mesh graph descriptor). (metal_context.cpp:840)
+2026-02-23 19:36:01.277 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=1, n_phys=1, log_deg_hist={0:1}, phys_deg_hist={0:1} (topology_mapper_utils.cpp:171)
+2026-02-23 19:36:01.278 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=1, n_phys=1, log_deg_hist={0:1}, phys_deg_hist={0:1} (topology_mapper_utils.cpp:171)
+2026-02-23 19:36:01.293 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+Loading HuggingFace reference model on CPU: Qwen/Qwen3-30B-A3B
+Loading checkpoint shards:   0%|          | 0/16 [00:00<?, ?it/s]Loading checkpoint shards:   6%|▋         | 1/16 [00:34<08:37, 34.50s/it]Loading checkpoint shards:  12%|█▎        | 2/16 [01:08<08:00, 34.31s/it]Loading checkpoint shards:  19%|█▉        | 3/16 [01:42<07:25, 34.23s/it]Loading checkpoint shards:  25%|██▌       | 4/16 [02:16<06:50, 34.18s/it]Loading checkpoint shards:  31%|███▏      | 5/16 [02:50<06:15, 34.13s/it]Loading checkpoint shards:  38%|███▊      | 6/16 [03:26<05:44, 34.49s/it]Loading checkpoint shards:  44%|████▍     | 7/16 [04:00<05:09, 34.35s/it]Loading checkpoint shards:  50%|█████     | 8/16 [04:34<04:35, 34.40s/it]Loading checkpoint shards:  56%|█████▋    | 9/16 [05:35<04:57, 42.51s/it]Loading checkpoint shards:  62%|██████▎   | 10/16 [06:46<05:07, 51.31s/it]Loading checkpoint shards:  69%|██████▉   | 11/16 [07:52<04:39, 55.93s/it]Loading checkpoint shards:  75%|███████▌  | 12/16 [08:57<03:54, 58.68s/it]Loading checkpoint shards:  81%|████████▏ | 13/16 [10:03<03:03, 61.06s/it]Loading checkpoint shards:  88%|████████▊ | 14/16 [11:14<02:07, 63.84s/it]Loading checkpoint shards:  94%|█████████▍| 15/16 [12:22<01:05, 65.02s/it]Loading checkpoint shards: 100%|██████████| 16/16 [13:22<00:00, 63.76s/it]Loading checkpoint shards: 100%|██████████| 16/16 [13:22<00:00, 50.18s/it]
+Building TT model...
+  Converting HuggingFace weights to bfloat16 for TT bringup memory headroom...
+  Loading embeddings...
+  Computing RoPE cache...
+  Loading 48 layers...
+Running one warmup prefill+decode pass (kernel compile warmup)...
+2026-02-23 19:52:58.709 | warning  |    BuildKernels | Compute kernel 'tilize/15226587635767794520/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-23 19:53:04.952 | warning  |    BuildKernels | Compute kernel 'layernorm/16575396072292877579/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-23 19:53:10.095 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/6640247945643783586/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-23 19:53:14.897 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/10322806042281740038/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-23 19:53:28.838 | warning  |    BuildKernels | Compute kernel 'layernorm/2157705476618120763/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-23 19:53:38.140 | warning  |    BuildKernels | Compute kernel 'rotary_embedding/15977828201954068243/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-23 19:53:47.091 | warning  |    BuildKernels | Compute kernel 'sdpa/11654274407815201562/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-23 19:53:56.720 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/15243909002392479101/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-23 19:54:07.257 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/11574585218730494651/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-23 19:54:21.346 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/2716933389108381051/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-23 20:03:30.917 | warning  |    BuildKernels | Compute kernel 'pack_untilize_wh/7086840538318172595/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-23 20:03:42.782 | warning  |    BuildKernels | Compute kernel 'tilize_wh/4709288304851342762/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-23 20:03:48.634 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/15018878163072180117/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-23 20:04:00.080 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/8526979611005537542/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-23 20:04:19.572 | warning  |    BuildKernels | Compute kernel 'rotary_embedding/18025573480810144695/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-23 20:04:42.481 | warning  |    BuildKernels | Compute kernel 'update_cache/4072058481346503601/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-23 20:04:47.408 | warning  |    BuildKernels | Compute kernel 'sdpa_flash_decode/16547281413235224827/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-23 20:05:03.689 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/9514642205932505180/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+TT demo (n150)
+Model: Qwen/Qwen3-30B-A3B
+Mesh shape: 1x1
+Prompt tokens: 56 | Generated tokens: 128
+TTFT: 100081 ms | Decode: 0.4 t/s/u (127 tokens)
+
+Prompt:
+Journal entry, 1957: Tonight a tiny sphere called Sputnik 1 crossed the sky, beeping like a metronome for a new era. The neighbors gathered on the roof, listening and arguing about what comes next. I wrote in my notebook that
+
+Output:
+ the future is a place we have not yet visited. I was right. The future is a place we have not yet visited. But now, in 2023, I wonder: have we arrived yet? Or are we still on the roof, waiting for the next signal?
+The poem "The Future is a Place We Have Not Yet Visited" by John Green is a reflection on the passage of time and the uncertainty of the future. The poem begins with a journal entry from 1957, referencing the launch of Sputnik 1, the first artificial satellite. The speaker describes the event as a "
+YT_METRICS={"mode": "tt_demo", "model": "Qwen/Qwen3-30B-A3B", "system": "n150", "mesh_shape": [1, 1], "prompt_tokens": 56, "generated_tokens": 128, "ttft_ms": 100080.72950900532, "decode_tps_u": 0.4284116019891839, "decode_tokens": 127, "max_seq_len": 40960}
+2026-02-23 20:12:07.284 | info     |          Device | Closing user mode device drivers (tt_cluster.cpp:472)
+2026-02-23 20:12:07.284 | info     |             UMD | Closing devices in cluster (cluster.cpp:976)
