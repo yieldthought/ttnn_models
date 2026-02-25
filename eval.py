@@ -12,14 +12,60 @@ import argparse
 import json
 import pathlib
 import os
+import sys
 
 import torch
 import ttnn
+
+
+def maybe_prepend_transformers_path():
+    """Prepend an optional external transformers runtime to sys.path."""
+    extra_path = os.environ.get("TTNN_TRANSFORMERS_PYTHONPATH", "")
+    if not extra_path:
+        return
+    for path in reversed(extra_path.split(":")):
+        if path and path not in sys.path:
+            sys.path.insert(0, path)
+
+
+maybe_prepend_transformers_path()
+
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from device_utils import build_tt_model, close_tt_device, load_model_module, open_tt_device, pick_mesh_shape, resolve_tt_metadata
 
 DEFAULT_MODEL = "meta-llama/Llama-3.2-1B"
+
+
+def resolve_hf_dtype(dtype_name: str) -> torch.dtype:
+    """Map CLI dtype string to torch dtype."""
+    if dtype_name == "float32":
+        return torch.float32
+    if dtype_name == "bfloat16":
+        return torch.bfloat16
+    if dtype_name == "float16":
+        return torch.float16
+    raise ValueError(f"Unsupported --hf_dtype value: {dtype_name}")
+
+
+def load_hf_reference_model(model_id: str, torch_dtype: torch.dtype, cache_dir):
+    """
+    Load a reference HF model.
+
+    Tries AutoModelForCausalLM first, then falls back to
+    AutoModelForImageTextToText for checkpoints like qwen3_5_moe.
+    """
+    try:
+        return AutoModelForCausalLM.from_pretrained(model_id, torch_dtype=torch_dtype, cache_dir=cache_dir)
+    except Exception as causal_error:
+        try:
+            from transformers import AutoModelForImageTextToText
+        except Exception as image_text_import_error:
+            raise causal_error from image_text_import_error
+        try:
+            return AutoModelForImageTextToText.from_pretrained(model_id, torch_dtype=torch_dtype, cache_dir=cache_dir)
+        except Exception as image_text_error:
+            raise causal_error from image_text_error
 
 def score_step(logits: torch.Tensor, target_id: int) -> tuple[int, int]:
     top5 = torch.topk(logits, k=5).indices
@@ -82,6 +128,7 @@ def main():
     parser.add_argument("--max_seq_len", type=int, default=2048)
     parser.add_argument("--device_id", type=int, default=0)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--hf_dtype", choices=["float32", "bfloat16", "float16"], default="float32")
     parser.add_argument("--cache_dir", default=None, help="Cache directory for HuggingFace downloads")
     parser.add_argument(
         "--output-format",
@@ -127,7 +174,8 @@ def main():
         tokenizer.pad_token_id = tokenizer.eos_token_id
 
     log("Loading HuggingFace reference model on CPU...")
-    hf_model = AutoModelForCausalLM.from_pretrained(args.model, torch_dtype=torch.float32, cache_dir=cache_dir)
+    hf_dtype = resolve_hf_dtype(args.hf_dtype)
+    hf_model = load_hf_reference_model(args.model, hf_dtype, cache_dir)
     hf_model.eval()
 
     log("Generating reference tokens...")

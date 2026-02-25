@@ -19,6 +19,20 @@ warnings.filterwarnings(
     "ignore",
     message="Passing a tuple of `past_key_values` is deprecated",
 )
+
+
+def maybe_prepend_transformers_path() -> None:
+    """Prepend an optional external transformers runtime to sys.path."""
+    extra_path = os.environ.get("TTNN_TRANSFORMERS_PYTHONPATH", "")
+    if not extra_path:
+        return
+    for path in reversed(extra_path.split(":")):
+        if path and path not in sys.path:
+            sys.path.insert(0, path)
+
+
+maybe_prepend_transformers_path()
+
 os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
 os.environ.setdefault("TRANSFORMERS_NO_ADVISORY_WARNINGS", "1")
 
@@ -122,7 +136,19 @@ def run_hf_eval(hf_model_id: str, tokenizer, prompt_ids: list, decode_len: int, 
     if decode_len < 1:
         return 0.0, 0.0, 0
 
-    model = AutoModelForCausalLM.from_pretrained(hf_model_id, torch_dtype=torch.float32, cache_dir=cache_dir)
+    try:
+        model = AutoModelForCausalLM.from_pretrained(hf_model_id, torch_dtype=torch.float32, cache_dir=cache_dir)
+    except Exception as causal_error:
+        try:
+            from transformers import AutoModelForImageTextToText
+        except Exception as image_text_import_error:
+            raise causal_error from image_text_import_error
+        try:
+            model = AutoModelForImageTextToText.from_pretrained(
+                hf_model_id, torch_dtype=torch.float32, cache_dir=cache_dir
+            )
+        except Exception as image_text_error:
+            raise causal_error from image_text_error
     model.eval()
 
     input_ids = torch.tensor([prompt_ids], dtype=torch.long)

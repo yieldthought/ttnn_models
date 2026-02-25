@@ -1,0 +1,70 @@
+2026-02-25 18:02:32.914 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-25 18:02:32.915 | info     |          Device | Opening user mode device driver (tt_cluster.cpp:223)
+2026-02-25 18:02:32.918 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-25 18:02:32.939 | info     |             UMD | Established firmware bundle version: 18.12.1 (topology_discovery.cpp:368)
+2026-02-25 18:02:32.939 | info     |             UMD | Harvesting masks for chip 0 tensix: 0x8 dram: 0x0 eth: 0x0 pcie: 0x0 l2cpu: 0x0 (cluster.cpp:339)
+2026-02-25 18:02:33.034 | info     |             UMD | Opening local chip ids/PCIe ids: {0}/[4] and remote chip ids {} (cluster.cpp:186)
+2026-02-25 18:02:33.034 | info     |             UMD | IOMMU: disabled (cluster.cpp:161)
+2026-02-25 18:02:33.034 | info     |             UMD | KMD version: 2.4.0 (cluster.cpp:164)
+2026-02-25 18:02:33.037 | info     |             UMD | Starting devices in cluster (cluster.cpp:965)
+2026-02-25 18:02:33.040 | info     |             UMD | Mapped hugepage 0x4300000000 to NOC address 0x800000000 (silicon_sysmem_manager.cpp:207)
+2026-02-25 18:02:33.100 | info     |     Distributed | Using auto discovery to generate mesh graph. (metal_context.cpp:863)
+2026-02-25 18:02:33.100 | info     |     Distributed | Constructing control plane using auto-discovery (no mesh graph descriptor). (metal_context.cpp:840)
+2026-02-25 18:02:33.100 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=1, n_phys=1, log_deg_hist={0:1}, phys_deg_hist={0:1} (topology_mapper_utils.cpp:171)
+2026-02-25 18:02:33.100 | info     |          Fabric | TopologyMapper mapping start (mesh=0): n_log=1, n_phys=1, log_deg_hist={0:1}, phys_deg_hist={0:1} (topology_mapper_utils.cpp:171)
+2026-02-25 18:02:33.128 | info     |    BuildKernels | Skipping deleting built cache (build.cpp:110)
+2026-02-25 18:02:45.511 | warning  |    BuildKernels | Compute kernel 'tilize/15226587635767794520/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:02:49.779 | warning  |    BuildKernels | Compute kernel 'layernorm/16575396072292877579/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:02:49.953 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/16360872776899857311/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:02:50.026 | warning  |    BuildKernels | Compute kernel 'pack_untilize_wh/17544250902928970362/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:02:50.026 | warning  |    BuildKernels | Compute kernel 'pack_untilize_wh/3439027545829768104/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:02:50.026 | warning  |    BuildKernels | Compute kernel 'pack_untilize_wh/12901720947572003557/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:02:50.156 | warning  |    BuildKernels | Compute kernel 'tilize_wh/14830489381768126517/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:02:50.156 | warning  |    BuildKernels | Compute kernel 'tilize_wh/9996419749883439258/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:02:50.156 | warning  |    BuildKernels | Compute kernel 'tilize_wh/8847397933638572764/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:02:50.406 | warning  |    BuildKernels | Compute kernel 'reduce_h/10675942420541454879/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:02:50.562 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/8526979611005537542/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:02:50.620 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/11574585218730494651/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:02:50.998 | warning  |    BuildKernels | Compute kernel 'pack_untilize/4184250303762210281/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:02:51.089 | warning  |    BuildKernels | Compute kernel 'tilize/277704166598336703/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:02:51.146 | warning  |    BuildKernels | Compute kernel 'reduce_w/10419827634840420652/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:02:51.617 | warning  |    BuildKernels | Compute kernel 'reduce_h/12593450228955379892/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:02:51.992 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/9514642205932505180/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:02:52.067 | warning  |    BuildKernels | Compute kernel 'pack_untilize_wh/7086840538318172595/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:02:56.653 | warning  |    BuildKernels | Compute kernel 'tilize_wh/4709288304851342762/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:02:56.911 | warning  |    BuildKernels | Compute kernel 'pack_untilize_wh/6757226692317415011/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:03:01.363 | warning  |    BuildKernels | Compute kernel 'tilize_wh/17147716358963789791/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:03:15.340 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/14561873237065761077/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:03:20.371 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/10322806042281740038/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:03:30.054 | warning  |    BuildKernels | Compute kernel 'layernorm/319938462059653120/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:03:30.202 | warning  |    BuildKernels | Compute kernel 'rotary_embedding/5804696304524586410/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:03:38.871 | warning  |    BuildKernels | Compute kernel 'sdpa/4564348158500069521/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:03:52.074 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/15243909002392479101/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:04:04.440 | warning  |    BuildKernels | Compute kernel 'bmm_large_block_zm_fused_bias_activation/14038127984848162252/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:04:04.794 | warning  |    BuildKernels | Compute kernel 'rotary_embedding/11544455884028682462/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:04:04.950 | warning  |    BuildKernels | Compute kernel 'update_cache/9182400797925367185/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+2026-02-25 18:04:05.009 | warning  |    BuildKernels | Compute kernel 'sdpa_flash_decode/4580502651347969668/' uses deprecated 'namespace NAMESPACE { void MAIN { } }' syntax. Please migrate to simplified 'void kernel_main() { }' syntax. (genfiles.cpp:187)
+Loading tokenizer: Qwen/Qwen3.5-35B-A3B
+Opening TT device...
+Loading HuggingFace reference model on CPU (bf16): Qwen/Qwen3.5-35B-A3B
+Building ttnn model...
+  Loading embedding + final norm + lm_head...
+  Computing RoPE cache...
+  Loading 40 layers...
+Running warmup prefill+decode...
+TT demo (n150)
+Model: Qwen/Qwen3.5-35B-A3B
+Mesh shape: 1x1
+Prompt tokens: 54 | Generated tokens: 128
+TTFT: 5424 ms | Decode: 3.6 t/s/u (127 tokens)
+
+Prompt:
+Journal entry, 1957: Tonight a tiny sphere called Sputnik 1 crossed the sky, beeping like a metronome for a new era. The neighbors gathered on the roof, listening and arguing about what comes next. I wrote in my notebook that
+
+Output:
+ the future is not a straight line but a spiral, and that we are all caught in its whirl.
+Journal entry, 1962: The moon is a silent witness to our madness. We sent men to walk on it, but they left footprints that will never be washed away. I wonder if the moon remembers us, or if it just watches us stumble through our own history.
+Journal entry, 1975: The world is shrinking, but our hearts are growing colder. We have more connections than ever, yet we feel more alone. I wrote that the future is a mirror, reflecting our fears
+YT_METRICS={"mode": "tt_demo", "model": "Qwen/Qwen3.5-35B-A3B", "system": "n150", "mesh_shape": [1, 1], "prompt_tokens": 54, "generated_tokens": 128, "ttft_ms": 5424.467304022983, "decode_tps_u": 3.6096228822667054, "decode_tokens": 127, "max_seq_len": 4096}
+2026-02-25 18:04:49.146 | info     |          Device | Closing user mode device drivers (tt_cluster.cpp:472)
+2026-02-25 18:04:49.146 | info     |             UMD | Closing devices in cluster (cluster.cpp:976)
