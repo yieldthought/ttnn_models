@@ -1,0 +1,35 @@
+# demo.log — models/Qwen/Qwen3.5-35B-A3B/n150
+
+## Baseline (functional)
+Command:
+PYTHONPATH=/tmp/transformers520_custom:$PYTHONPATH TTNN_TRANSFORMERS_PYTHONPATH=/tmp/transformers520_custom HF_HOME=/localdev/moconnor/hf-cache HF_HUB_DISABLE_PROGRESS_BARS=1 TT_METAL_CACHE=/tmp/tt-metal-cache TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-metal python -u models/Qwen/Qwen3.5-35B-A3B/n150/run_demo_bf16.py models/Qwen/Qwen3.5-35B-A3B/n150/model.py --max-new-tokens 128 --max_seq_len 4096 --temperature 0 --seed 0
+
+Output (key lines):
+TTFT: 5403 ms | Decode: 2.5 t/s/u (127 tokens)
+YT_METRICS={"mode": "tt_demo", "model": "Qwen/Qwen3.5-35B-A3B", "system": "n150", "mesh_shape": [1, 1], "prompt_tokens": 54, "generated_tokens": 128, "ttft_ms": 5403.092756867409, "decode_tps_u": 2.464734602922183, "decode_tokens": 127, "max_seq_len": 4096}
+
+## Optimized (trace-enabled default)
+Command:
+PYTHONPATH=/tmp/transformers520_custom:$PYTHONPATH TTNN_TRANSFORMERS_PYTHONPATH=/tmp/transformers520_custom HF_HOME=/localdev/moconnor/hf-cache HF_HUB_DISABLE_PROGRESS_BARS=1 TT_METAL_CACHE=/tmp/tt-metal-cache TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-metal python -u models/Qwen/Qwen3.5-35B-A3B/n150/run_demo_bf16.py models/Qwen/Qwen3.5-35B-A3B/n150/model.py --max-new-tokens 128 --max_seq_len 4096 --temperature 0 --seed 0 --output-format yt_metrics
+
+Output (key lines):
+decode_trace: captured lm_head trace
+2026-02-26 00:40:38.881 | warning  |           Metal | Allocating device buffers is unsafe due to the existence of an active trace. These buffers may be corrupted once a trace is executed. (allocator.cpp:105)
+decode_trace: executing captured lm_head trace
+YT_METRICS={"mode": "tt_demo", "model": "Qwen/Qwen3.5-35B-A3B", "system": "n150", "mesh_shape": [1, 1], "prompt_tokens": 54, "generated_tokens": 128, "ttft_ms": 5393.270309781656, "decode_tps_u": 4.037444069807221, "decode_tokens": 126, "max_seq_len": 4096}
+
+## Coherence Evidence (optimized, trace-enabled)
+Command:
+PYTHONPATH=/tmp/transformers520_custom:$PYTHONPATH TTNN_TRANSFORMERS_PYTHONPATH=/tmp/transformers520_custom HF_HOME=/localdev/moconnor/hf-cache HF_HUB_DISABLE_PROGRESS_BARS=1 TT_METAL_CACHE=/tmp/tt-metal-cache TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-metal python -u models/Qwen/Qwen3.5-35B-A3B/n150/run_demo_bf16.py models/Qwen/Qwen3.5-35B-A3B/n150/model.py --max-new-tokens 64 --max_seq_len 4096 --temperature 0 --seed 0
+
+Output (excerpt):
+TT demo (n150)
+Model: Qwen/Qwen3.5-35B-A3B
+Mesh shape: 1x1
+Prompt tokens: 54 | Generated tokens: 64
+TTFT: 5382 ms | Decode: 3.9 t/s/u (62 tokens)
+
+Output:
+ the future is not a straight line but a spiral, and that we are all just notes in a song we haven’t finished composing.
+Journal entry, 1962: The moon is a silent promise. Tonight, the stars seem closer, as if they’re waiting for us to catch up. I sk
+YT_METRICS={"mode": "tt_demo", "model": "Qwen/Qwen3.5-35B-A3B", "system": "n150", "mesh_shape": [1, 1], "prompt_tokens": 54, "generated_tokens": 64, "ttft_ms": 5382.3705250397325, "decode_tps_u": 3.8546857605168765, "decode_tokens": 62, "max_seq_len": 4096}
