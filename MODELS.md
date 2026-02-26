@@ -41,7 +41,7 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | arcee-ai/Arcee-Spark                |  t3000   | optimized  |   90% |  100% |   72ms |  17.6 |   32768 |
 | arcee-ai/AFM-4.5B                   |   n150   | optimized  |   98% |  100% |   57ms |  19.6 |   65536 |
 | arcee-ai/AFM-4.5B                   |   n300   | optimized  |   99% |  100% |   56ms |  23.6 |   65536 |
-| arcee-ai/AFM-4.5B                   |  t3000   | optimized  |   98% |  100% |   69ms |  29.0 |   65536 |
+| arcee-ai/AFM-4.5B                   |  t3000   | optimized  |   97% |  100% |   62ms |  32.0 |   65536 |
 | humain-ai/ALLaM-7B-Instruct-preview |   n150   | optimized  |   97% |  100% |   69ms |  15.8 |    4096 |
 | humain-ai/ALLaM-7B-Instruct-preview |   n300   | optimized  |   97% |  100% |   69ms |  15.9 |    4096 |
 | humain-ai/ALLaM-7B-Instruct-preview |  t3000   | optimized  |   97% |  100% |   61ms |  24.3 |    4096 |
