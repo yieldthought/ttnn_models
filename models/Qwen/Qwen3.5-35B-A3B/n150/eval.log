@@ -1,0 +1,19 @@
+# eval.log — models/Qwen/Qwen3.5-35B-A3B/n150
+
+## Baseline (functional)
+Command:
+PYTHONPATH=/tmp/transformers520_custom:$PYTHONPATH TTNN_TRANSFORMERS_PYTHONPATH=/tmp/transformers520_custom HF_HOME=/localdev/moconnor/hf-cache HF_HUB_DISABLE_PROGRESS_BARS=1 TT_METAL_CACHE=/tmp/tt-metal-cache TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-metal python -u models/Qwen/Qwen3.5-35B-A3B/n150/run_eval_bf16.py models/Qwen/Qwen3.5-35B-A3B/n150/model.py --model Qwen/Qwen3.5-35B-A3B --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100 --max_seq_len 4096
+
+Output (key lines):
+Top-1 accuracy: 97.00% (0.9700)
+Top-5 accuracy: 100.00% (1.0000)
+YT_METRICS={"mode": "tt_eval", "model": "Qwen/Qwen3.5-35B-A3B", "top1": 0.97, "top5": 1.0, "top1_pct": 97.0, "top5_pct": 100.0, "total_tokens": 100, "max_new_tokens": 100, "max_seq_len": 4096}
+
+## Optimized
+Command:
+PYTHONPATH=/tmp/transformers520_custom:$PYTHONPATH TTNN_TRANSFORMERS_PYTHONPATH=/tmp/transformers520_custom HF_HOME=/localdev/moconnor/hf-cache HF_HUB_DISABLE_PROGRESS_BARS=1 TT_METAL_CACHE=/tmp/tt-metal-cache TT_METAL_RUNTIME_ROOT=/proj_sw/user_dev/moconnor/tt-metal python -u models/Qwen/Qwen3.5-35B-A3B/n150/run_eval_bf16.py models/Qwen/Qwen3.5-35B-A3B/n150/model.py --model Qwen/Qwen3.5-35B-A3B --prompt_file prompts/bringup_eval_long.txt --max_new_tokens 100 --max_seq_len 4096
+
+Output (key lines):
+Top-1 accuracy: 96.00% (0.9600)
+Top-5 accuracy: 100.00% (1.0000)
+YT_METRICS={"mode": "tt_eval", "model": "Qwen/Qwen3.5-35B-A3B", "top1": 0.96, "top5": 1.0, "top1_pct": 96.0, "top5_pct": 100.0, "total_tokens": 100, "max_new_tokens": 100, "max_seq_len": 4096}

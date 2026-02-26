@@ -27,6 +27,7 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | Qwen/Qwen3-0.6B                     |   n300   | functional |   99% |  100% |  943ms |   2.0 |   40960 |
 | Qwen/Qwen3-0.6B                     |  t3000   | functional |   98% |  100% |  229ms |   6.2 |   40960 |
 | Qwen/Qwen3-30B-A3B                  |   n150   | functional |   94% |  100% | 100081ms |   0.4 |   40960 |
+| Qwen/Qwen3.5-35B-A3B                |   n150   | functional |   97% |  100% |  5403ms |   2.5 |    4096 |
 | google/gemma-3-4b-it                |   n150   | functional |   92% |  100% |   98ms |  13.9 |   40960 |
 | google/gemma-3-4b-it                |   n300   | functional |   94% |  100% |  535ms |   3.2 |   40960 |
 | google/gemma-3-4b-it                |  t3000   | functional |   92% |  100% |  330ms |   4.7 |   40960 |
@@ -55,6 +56,7 @@ Note: Keep the table columns padded with spaces and right-justify numeric cells 
 | Qwen/Qwen3-0.6B                     |   n300   | optimized  |   99% |  100% |   54ms |  55.3 |   40960 |
 | Qwen/Qwen3-0.6B                     |  t3000   | optimized  |   98% |  100% |   59ms |  61.9 |   40960 |
 | Qwen/Qwen3-30B-A3B                  |   n150   | optimized  |   96% |  100% |  2197ms |   4.8 |   40960 |
+| Qwen/Qwen3.5-35B-A3B                |   n150   | optimized  |   96% |  100% |  5393ms |   4.0 |    4096 |
 | google/gemma-3-4b-it                |   n150   | optimized  |   92% |  100% |   70ms |  14.5 |   40960 |
 | google/gemma-3-4b-it                |   n300   | optimized  |   94% |  100% |   68ms |  18.5 |   40960 |
 | google/gemma-3-4b-it                |  t3000   | optimized  |   91% |  100% |   78ms |  19.4 |   40960 |
